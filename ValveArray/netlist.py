@@ -109,6 +109,7 @@ class Netlist_node():
             compKeys.append(compNode.getComponentKey())
 
         print(compKeys)
+        print('')
                  
 
 class NetlistGraph():
