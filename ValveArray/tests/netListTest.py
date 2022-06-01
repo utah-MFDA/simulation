@@ -18,11 +18,11 @@ for line in testString:
         data.remove('')
     except ValueError:
         pass
-    print(data)
+    #print(data)
     param = []
 
     for val in data:
-        print(val)
+        #print(val)
         if val.find('=') != -1:
             param.append(val)
         else:

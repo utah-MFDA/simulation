@@ -36,7 +36,7 @@ class Netlist():
 
         for ind, key in enumerate(nodekeys):
             keyFound = False
-            print(ind)
+            #print(ind)
             for node in self.nodeList:
                 if node.getKey() == key:
                     keyFound = True
@@ -69,7 +69,7 @@ class Netlist():
 
     def printNodes(self):
        for node in self.nodeList:
-           print(node.toString())
+           node.toString()
 
     def printComponents(self):
         print(str(self.componentList).replace('], [', '],\n['))
