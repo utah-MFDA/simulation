@@ -51,3 +51,7 @@ net1.printComponents()
 print('Nodes:')
 net1.printNodes()
 
+# Test getComponentList
+
+print(net1.getComponentList())
+

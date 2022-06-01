@@ -35,6 +35,9 @@ class Component():
 
         def getComponentKey(self):
             return self.component.getKey()
+
+        def getExternalNode(self):
+            return self.externalNode
     
     
     def __init__(self, key):
@@ -66,6 +69,13 @@ class Component():
 
     def assignExternalNode(self, e_node, nodeIndex):
         self.nodeList[nodeIndex].assignExternalNode(e_node)
+
+    def getExternalNodes(self):
+        # returns a list of nodes with [key, nodePointer]
+        e_node_list = []
+        for node in self.nodeList:
+            e_node_list.append([node.getExternalNode().getKey(), node.getExternalNode()])
+        return e_node_list
 
 # -- Valve Class -----------------------------------------------
 

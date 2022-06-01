@@ -62,6 +62,15 @@ class Netlist():
 
         self.componentList.append([componentKey, component])
 
+    def getComponentList(self):
+        return self.componentList
+
+    def getNodesFromComponent(self, component):
+        pass
+
+    # Probably for init component search
+    def getNodesFromComponentKey(self, componentKey):
+        pass
 
     def findOpenRoutes(self, component):
         pass
