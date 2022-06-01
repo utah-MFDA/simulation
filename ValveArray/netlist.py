@@ -1,4 +1,11 @@
 
+#import os, sys
+#sys.path.append('./')
+
+from pathlib import Path
+import sys
+path_root = Path(__file__).parents[0]
+sys.path.append(str(path_root))
 
 # How are interfaces handled?
 
@@ -11,13 +18,13 @@ class Netlist():
         self.componentList = []
         self.nodeList = []
 
-    def addComponent(self, key, componentType, componentKey, nodekeys, params=[]):
+    def addComponent(self, componentType, componentKey, nodekeys, params=[]):
         
         # selects component based on list
         # a more generic way will be developed in the future
         if componentType == 'channel':
             component = Channel(params[0], componentKey)
-        elif componentType == 'displacementValve' or 'displacement_valve' or 'MembraneValve':
+        elif componentType == 'displacementValve' or componentType == 'displacement_valve' or componentType == 'MembraneValve':
             if len(params) == 2:
                 component = MembraneValve(params[0], params[1], componentKey)
             else:
@@ -27,12 +34,13 @@ class Netlist():
 
         #compNodes = []
 
-        for key in nodekeys:
+        for ind, key in enumerate(nodekeys):
             keyFound = False
+            print(ind)
             for node in self.nodeList:
                 if node.getKey() == key:
                     keyFound = True
-                    node.addComponent(component)
+                    node.addComponent(component, ind)
                     #compNodes.append(node)
                     break
 
@@ -40,7 +48,7 @@ class Netlist():
                 newNode = Netlist_node(key)
                 self.nodeList.append(newNode)
                 #compNodes.append(node)
-                newNode.addComponent(component)
+                newNode.addComponent(component, ind)
 
 
         ## TODO check for component with same node
@@ -52,12 +60,20 @@ class Netlist():
 
         # add component to list
 
-        self.componentList.append([key, component])
+        self.componentList.append([componentKey, component])
 
 
     def findOpenRoutes(self, component):
         pass
         # need to index the component then search outward
+
+    def printNodes(self):
+       for node in self.nodeList:
+           print(node.toString())
+
+    def printComponents(self):
+        print(str(self.componentList).replace('], [', '],\n['))
+
 
         
 
@@ -78,13 +94,21 @@ class Netlist_node():
     # node points to component node
     # the component node points to component
     def addComponent(self, component, nodeIndex):
-        component.addNode(self, nodeIndex)
-        self.nodeComponentList.append([component.getNode(nodeIndex)])
+        component.assignExternalNode(self, nodeIndex)
+        self.nodeComponentList.append(component.getNode(nodeIndex))
 
     # Why did I need this?
     #def getInternalIndex(self, componentKey):
     #    for comp in self.nodeComponentList:
     #        if comp.getKey == componentKey:
+
+    def toString(self):
+        print('Node Key: ' + self.nodeKey)
+        compKeys = []
+        for compNode in self.nodeComponentList:
+            compKeys.append(compNode.getComponentKey())
+
+        print(compKeys)
                  
 
 class NetlistGraph():

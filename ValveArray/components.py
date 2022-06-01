@@ -32,11 +32,14 @@ class Component():
             for ind, node in self.component.nodeList:
                 if e_node == node.externalNode:
                     return ind
+
+        def getComponentKey(self):
+            return self.component.getKey()
     
     
     def __init__(self, key):
         self.nodeList = []
-        self.componentKey = key
+        self.key = key
 
     # TODO see if this is needed
     # the i node will be the internal node (int)
@@ -59,14 +62,17 @@ class Component():
         return self.nodeList[nodeIndex]
 
     def getKey(self):
-        return self.componentKey
+        return self.key
 
-# -- Valve Class
+    def assignExternalNode(self, e_node, nodeIndex):
+        self.nodeList[nodeIndex].assignExternalNode(e_node)
+
+# -- Valve Class -----------------------------------------------
 
 class Valve(Component):
     def __init__(self, key):
         # 1 - closed, 0 - open
-        self.componentKey
+        self.key = key
         self.valveState = 0
         self.displacement = 0
 
@@ -96,9 +102,15 @@ class Valve(Component):
 # -- Membrane valve class
 
 class MembraneValve(Valve):
-    def __init__(self, radius, fluid_chamber_height, nodes, completeSeal=True):
+    def __init__(self, radius, fluid_chamber_height, key, completeSeal=True):
+        self.key = key
+        
         # normally open
         self.valveState = 0
+
+        # convert str to float
+        radius = float(radius)
+        fluid_chamber_height = float(fluid_chamber_height)
 
         fluid_vol = 3.141 * radius * radius * fluid_chamber_height
 
@@ -108,7 +120,7 @@ class MembraneValve(Valve):
         self.completeSeal = completeSeal
 
         # A typical membrane valve has 2 nodes
-        self.nodeList = [Node(self)] * 2
+        self.nodeList = [Component.Node(self)] * 2
 
 # -- Channel Class
 
@@ -129,7 +141,7 @@ class Channel(Component):
 
         # nodes to point to other components
         # channels have 2 nodes
-        self.nodeList = [Node(self)] * 2
+        self.nodeList = [Component.Node(self)] * 2
         
         # nodes will be added as supplied by the list
         #i = 0
@@ -199,14 +211,13 @@ class Pump(Component):
 # -- IO class
 
 class IO_Connection(Component):
-    def __init__(self, nodes):
-        self.node = nodes
+    def __init__(self, key):
+        self.key = key
+        self.nodeList = [Component.Node(self)] * 1
 
     def isIO(self):
         return True
 
-    def getNode(self):
-        return self.node
 
 # -- Node Class
 

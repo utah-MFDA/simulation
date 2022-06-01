@@ -4,7 +4,7 @@ import os, sys
 sys.path.append('.')
 #sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 
-from components import Channel
+from ValveArray.components import Channel
 
 dev1 = Channel([0.200, 0.200, 4], [2, 3])
 

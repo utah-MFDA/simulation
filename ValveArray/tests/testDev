@@ -1,10 +1,10 @@
 
-channel c1 n1 n2
-displacement_valve v1 n2 n3 
-displacement_valve v2 n3 n4
-channel c2 n7 n5
-displacement_valve v3 n3 n7
-displacement_valve v4 n5 n6
+displacement_valve v1 n2 n3 r=0.3 fl_h=0.03
+channel c1 n1 n2 W=0.2 h=0.3 L=4
+displacement_valve v2 n3 n4 r=0.3 fl_h=0.03
+channel c2 n7 n5 W=0.2 H=0.2 L=4
+displacement_valve v3 n3 n7 r=0.3 fl_h=0.03
+displacement_valve v4 n5 n6 r=0.3 fl_h=0.03
 IO i1 n1
 IO i2 n4
 IO i3 n6 
