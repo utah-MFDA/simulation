@@ -1,9 +1,14 @@
-from types import NoneType
-from netlist import netlist
+
+from pathlib import Path
+import sys
+path_root = Path(__file__).parents[0]
+sys.path.append(str(path_root))
+
+from netlist import Netlist
 
 class valveArraySimulation():
     def __init__(self):
-        self.netlist = NoneType
+        self.netlist = None
 
     def loadNetList(self):
         pass
