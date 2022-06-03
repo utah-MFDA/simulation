@@ -89,9 +89,9 @@ class Valve(Component):
 
     def setState(self, state):
         # This will return the displacement of the valve
-        if self.valveState == 0 & state == 1:
+        if self.valveState == 0 and state == 1:
             self.closeValve()
-        if self.valveState == 1 & state == 0:
+        if self.valveState == 1 and state == 0:
             self.openValve()
 
     def getState(self):

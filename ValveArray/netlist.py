@@ -62,6 +62,7 @@ class Netlist():
 
         self.componentList.append([componentKey, component])
 
+
     def getComponentList(self):
         return self.componentList
 
