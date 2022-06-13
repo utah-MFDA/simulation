@@ -1,13 +1,12 @@
 
 import os, sys
-#sys.path.append('./..')
 sys.path.append('.')
 
 from numpy import test
 from ValveArray.netlist import Netlist
 
-def main():
-    testString = open('./ValveArray/tests/testDev1')
+def main(fileName):
+    testString = open(fileName)
 
     # initialize Netlist
     net1 = Netlist()

@@ -20,6 +20,7 @@ class Component():
         def __init__(self, component):
             self.externalNode = None
             self.component = component
+            self.index = None
             
 
         def assignExternalNode(self, e_node):
@@ -29,7 +30,9 @@ class Component():
             return self.component
 
         def getNodeIndex(self, e_node):
-            for ind, node in self.component.nodeList:
+            #print(e_node)
+            #print(self.component.nodeList)
+            for ind, node in enumerate(self.component.nodeList):
                 if e_node == node.externalNode:
                     return ind
 
@@ -76,6 +79,18 @@ class Component():
         for node in self.nodeList:
             e_node_list.append([node.getExternalNode().getKey(), node.getExternalNode()])
         return e_node_list
+
+    # TODO not implemented
+    """
+    def getNodeIndex(self, e_node):
+        for ind, node in self.nodeList:
+            if e_node == node.externalNode:
+                return ind
+    """
+    #def getInternalNode(self, e_node):
+    #    for node in self.nodeList:
+    #        if node.getExternalNode == e_node:
+    #            return 
 
 # -- Valve Class -----------------------------------------------
 
@@ -130,7 +145,7 @@ class MembraneValve(Valve):
         self.completeSeal = completeSeal
 
         # A typical membrane valve has 2 nodes
-        self.nodeList = [Component.Node(self)] * 2
+        self.nodeList = [Component.Node(self), Component.Node(self)]
 
 # -- Channel Class
 
@@ -151,7 +166,7 @@ class Channel(Component):
 
         # nodes to point to other components
         # channels have 2 nodes
-        self.nodeList = [Component.Node(self)] * 2
+        self.nodeList = [Component.Node(self), Component.Node(self)]
         
         # nodes will be added as supplied by the list
         #i = 0
@@ -198,6 +213,15 @@ class Channel(Component):
 
         pass
 
+    # --- LS methods
+
+    def getResistance(self):
+        # we assume water for now
+        eta = 1.0016e-3
+
+        R = 12*eta*self.length/((1-0.63(self.height/self.width)*(self.height**3*self.width)))
+        return R
+
     def fluidStr(self):
         returnString = ''
 
@@ -213,23 +237,31 @@ class Reservoir(Component):
     def __init__(self):
         pass
 
-# -- Pump Class
+# -- Pump Class -------------------------------------------------------------
 
 class Pump(Component):
     pass
 
-# -- IO class
+# -- IO class ---------------------------------------------------------------
 
 class IO_Connection(Component):
     def __init__(self, key):
         self.key = key
-        self.nodeList = [Component.Node(self)] * 1
+        self.nodeList = [Component.Node(self)]
 
     def isIO(self):
         return True
 
+# -- Junction Class ----------------------------------------------------------
 
-# -- Node Class
+class Junction(Component):
+    def __init__(self, key, numOfConnections):
+        self.key = key
+        self.nodeList = []
+        for i in range(numOfConnections):
+            self.nodeList.append(Component.Node(self))
+
+# -- Node Class --------------------------------------------------------------
 
 class Component_node():
     def __init__(self, internalNode, externalNode):
