@@ -1,4 +1,8 @@
 
+import numpy as np
+
+# local imports
+
 from pathlib import Path
 import sys
 
@@ -103,7 +107,7 @@ class LinearSolver(baseSimulation):
         
         # get number of nodes
 
-
+        numOfNodes = len(self.netlist.nodeList)
 
         pass
 
