@@ -189,7 +189,7 @@ class Netlist_node():
         return self.nodeKey
 
     # node points to component node
-    # the component node points to component
+    # the component node points to netlist node
     def addComponent(self, component, nodeIndex):
         # assign internal ndoe to point to external node
         component.assignExternalNode(self, nodeIndex)

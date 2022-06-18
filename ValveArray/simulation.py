@@ -19,6 +19,9 @@ class baseSimulation():
     def __init__(self):
         self.netlist = None
 
+    def __init__(self, netlist):
+        self.netlist = netlist
+
     def loadNetList(self):
         pass
 
@@ -100,14 +103,47 @@ class valveArraySimulation(baseSimulation):
 
 class LinearSolver(baseSimulation):
 
-    def __init__(self):
-        pass
 
     def generateEquations(self):
         
         # get number of nodes
 
+        # TODO use method call
         numOfNodes = len(self.netlist.nodeList)
+
+        nodeKeys = []
+
+        # one set of node for pressure another set for flow
+
+        solver_matrix = np.zeros((numOfNodes*2, numOfNodes*2))
+
+        for node in self.netlist.nodeList:
+            nodeKeys.append(node.getKey())
+
+        #print(nodeKeys)
+
+        for component in self.netlist.componentList:
+            nodes = component.getExternalNodes()
+            for branch in component:
+                nodes = branch.getNodes()
+                eq1 = np.zeros((1, numOfNodes*2))
+                eq2 = np.zeros((1, numOfNodes*2))
+                # get flow and potential node indexes
+                PInd1 = nodeKeys.index(nodes[0])
+                PInd2 = nodeKeys.index(nodes[1])
+                FInd1 = nodeKeys.index(nodes[0]) + numOfNodes
+                FInd2 = nodeKeys.index(nodes[1]) + numOfNodes
+
+                # set equation 1
+                eq1[PInd1] = -1
+                eq1[PInd2] = 1
+                eq1[FInd1] = component.getResistance()
+
+                # set equation 2
+                eq2[FInd1] = 1
+                eq2[FInd2] = -1
+
+            
 
         pass
 

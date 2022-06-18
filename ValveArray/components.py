@@ -42,9 +42,20 @@ class Component():
         def getExternalNode(self):
             return self.externalNode
     
+    class Branch():
+        def __init__(self):
+            self.nodeList = []
+
+        # A branch can only hold 2 nodes
+        def __init__(self, nodes):
+            self.nodeList = [nodes[0], nodes[1]]
+
+        def getNodes(self):
+            return self.nodeList
     
     def __init__(self, key):
         self.nodeList = []
+        self.branchList = []
         self.key = key
 
     # TODO see if this is needed
@@ -147,6 +158,8 @@ class MembraneValve(Valve):
         # A typical membrane valve has 2 nodes
         self.nodeList = [Component.Node(self), Component.Node(self)]
 
+        self.branchList = [Component.Branch()]
+
 # -- Channel Class
 
 class Channel(Component):
@@ -248,6 +261,15 @@ class IO_Connection(Component):
     def __init__(self, key):
         self.key = key
         self.nodeList = [Component.Node(self)]
+        self.flow = None
+        self.pressure = None
+
+    def setFlow(self, flow):
+        self.flow = flow
+
+    def setPressure(self, pressure):
+        self.pressure = pressure
+
 
     def isIO(self):
         return True

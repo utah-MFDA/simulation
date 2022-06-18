@@ -56,3 +56,6 @@ def main():
     print(net1.getComponentList())
 
     return net1
+
+if __name__ == "__main__":
+    main()
