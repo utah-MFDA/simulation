@@ -14,3 +14,7 @@ net1.subForJunctions()
 linSim = simulation.LinearSolver(net1)
 
 linSim.generateEquations()
+
+solutionVec = linSim.getSolution()
+
+print(solutionVec)

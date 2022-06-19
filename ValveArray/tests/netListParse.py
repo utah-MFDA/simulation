@@ -31,8 +31,13 @@ def main(fileName):
         param = []
 
         for val in paramTemp:
-            data.remove(val)
-            param.append(val.split('=')[1])
+            if data[0] == "IO":
+                data.remove(val)
+                param.append(val.split('=')[0])
+                param.append(val.split('=')[1])
+            else:
+                data.remove(val)
+                param.append(val.split('=')[1])
 
 
         if len(data) == 0:

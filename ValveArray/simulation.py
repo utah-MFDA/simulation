@@ -116,34 +116,112 @@ class LinearSolver(baseSimulation):
         # one set of node for pressure another set for flow
 
         solver_matrix = np.zeros((numOfNodes*2, numOfNodes*2))
+        solver_vector = np.zeros((1, numOfNodes*2))
 
         for node in self.netlist.nodeList:
             nodeKeys.append(node.getKey())
 
         #print(nodeKeys)
 
+        # Componnent is returned [key, pointer]
+        eqInd = 0
+
         for component in self.netlist.componentList:
-            nodes = component.getExternalNodes()
-            for branch in component:
-                nodes = branch.getNodes()
-                eq1 = np.zeros((1, numOfNodes*2))
-                eq2 = np.zeros((1, numOfNodes*2))
-                # get flow and potential node indexes
-                PInd1 = nodeKeys.index(nodes[0])
-                PInd2 = nodeKeys.index(nodes[1])
-                FInd1 = nodeKeys.index(nodes[0]) + numOfNodes
-                FInd2 = nodeKeys.index(nodes[1]) + numOfNodes
+            if component[1].isIO():
+                node = component[1].getExternalNode().getKey()
 
-                # set equation 1
-                eq1[PInd1] = -1
-                eq1[PInd2] = 1
-                eq1[FInd1] = component.getResistance()
+                PInd1 = nodeKeys.index(node)
+                FInd1 = nodeKeys.index(node) + numOfNodes
 
-                # set equation 2
-                eq2[FInd1] = 1
-                eq2[FInd2] = -1
+                defValue = component[1].hasConstraint()
+                
+                if defValue == "flow":
+                    ioInd = FInd1
+                    value = component[1].getFlow()
 
-            
+                elif defValue == "pressure":
+                    ioInd = PInd1
+                    value = component[1].getPressure()
+
+                else:
+                    # TODO throw exception
+                    print(str(component[1]) + " has issue")
+
+                solver_vector[0, eqInd] = value
+                eq = np.zeros((numOfNodes*2))
+                eq[ioInd] = 1
+                eq2 = solver_matrix[eqInd,:]
+                solver_matrix[eqInd,:] = eq
+                eqInd += 1
+
+                # add one equation with IO
+
+            elif component[1].isJunction():
+                PInd = []
+                FInd = []
+                for node in component[1].getExternalNodes():
+                    PInd.append(nodeKeys.index(node[1].getKey()))
+                    FInd.append(nodeKeys.index(node[1].getKey())+ numOfNodes)
+
+                    # TODO Figure how to solve
+
+                # set flow equation
+                FEq = np.zeros((numOfNodes*2))
+                for FIndInd in FInd:
+                    FEq[FIndInd] = 1
+
+                solver_matrix[eqInd,:] = FEq
+                eqInd += 1
+
+                # set Pressure Equations
+                PEq = []
+                for i in range(len(PInd)-1):
+                    tempEq = np.zeros((numOfNodes*2))
+                    tempEq[PInd[i]]   = 1
+                    tempEq[PInd[i+1]] = -1
+                    #PEq.append(tempEq)
+                    solver_matrix[eqInd,:] = tempEq
+                    eqInd += 1
+
+                
+
+
+            else:
+                nodes = component[1].getExternalNodes()
+                for branch in component[1].getBranches():
+                    nodes = branch.getNodes()
+                    eq1 = np.zeros((numOfNodes*2))
+                    eq2 = np.zeros((numOfNodes*2))
+                    # get flow and potential node indexes
+                    PInd1 = nodeKeys.index(nodes[0].getExternalNode().getKey())
+                    PInd2 = nodeKeys.index(nodes[1].getExternalNode().getKey())
+                    FInd1 = nodeKeys.index(nodes[0].getExternalNode().getKey()) + numOfNodes
+                    FInd2 = nodeKeys.index(nodes[1].getExternalNode().getKey()) + numOfNodes
+
+                    # set equation 1
+                    eq1[PInd1] = -1
+                    eq1[PInd2] = 1
+                    eq1[FInd1] = component[1].getResistance()
+
+                    # set equation 2
+                    eq2[FInd1] = 1
+                    eq2[FInd2] = -1
+
+                    # TODO insert into matrix
+
+                    solver_matrix[eqInd,:] = eq1
+                    eqInd += 1
+                    solver_matrix[eqInd,:] = eq2
+                    eqInd += 1
+
+        self.solverMatix = solver_matrix
+        self.solverVector= solver_vector
 
         pass
+
+    def getSolution(self):
+
+        solution = np.linalg.solve(self.solverMatix, self.solverVector.transpose())
+
+        return solution
 

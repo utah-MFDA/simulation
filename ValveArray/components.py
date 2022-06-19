@@ -2,6 +2,9 @@
 
 
 
+from defer import return_value
+
+
 class Component():
     """
     component definitions
@@ -91,6 +94,12 @@ class Component():
             e_node_list.append([node.getExternalNode().getKey(), node.getExternalNode()])
         return e_node_list
 
+    def getBranches(self):
+        return self.branchList
+
+    def isJunction(self):
+        return False
+
     # TODO not implemented
     """
     def getNodeIndex(self, e_node):
@@ -135,6 +144,7 @@ class Valve(Component):
     def isValve(self):
         return True
 
+
 # -- Membrane valve class
 
 class MembraneValve(Valve):
@@ -165,9 +175,11 @@ class MembraneValve(Valve):
 class Channel(Component):
 
     def __init__(self, ch_dimensions, key):
-        self.width = ch_dimensions[0]
-        self.height= ch_dimensions[1]
-        self.length= ch_dimensions[2]
+        super(Channel, self).__init__(key)
+        
+        self.width = float(ch_dimensions[0])
+        self.height= float(ch_dimensions[1])
+        self.length= float(ch_dimensions[2])
 
         #
         # The array has the following information
@@ -187,7 +199,7 @@ class Channel(Component):
         #    self.nodeList.append(Component_node(i, None))
         #    i += 1
 
-        self.key = key
+        self.branchList = [Component.Branch(self.nodeList)]
 
 
     def addFluid(self, node, fluidType, size, initDisplacement=0):
@@ -232,7 +244,7 @@ class Channel(Component):
         # we assume water for now
         eta = 1.0016e-3
 
-        R = 12*eta*self.length/((1-0.63(self.height/self.width)*(self.height**3*self.width)))
+        R = 12*eta*self.length/((1-0.63*(self.height/self.width)*(self.height**3*self.width)))
         return R
 
     def fluidStr(self):
@@ -264,12 +276,42 @@ class IO_Connection(Component):
         self.flow = None
         self.pressure = None
 
+    def __init__(self, key, params):
+        self.key = key
+        self.nodeList = [Component.Node(self)]
+        self.flow = None
+        self.pressure = None
+
+        self.setValue(params[0], params[1])
+
+    def setValue(self, name, value):
+        if name == 'pressure':
+            self.setPressure(value)
+        elif name == 'flow':
+            self.setFlow(value)
+
     def setFlow(self, flow):
         self.flow = flow
 
     def setPressure(self, pressure):
         self.pressure = pressure
 
+    def getPressure(self):
+        return self.pressure
+
+    def getFlow(self):
+        return self.flow
+
+    def getExternalNode(self):
+        return self.nodeList[0].getExternalNode()
+
+    def hasConstraint(self):
+        if self.flow != None and self.pressure == None:
+            return "flow"
+        elif self.flow == None and self.pressure != None:
+            return "pressure"
+        else:
+            print(str(self) + " needs contraint.")
 
     def isIO(self):
         return True
@@ -282,6 +324,9 @@ class Junction(Component):
         self.nodeList = []
         for i in range(numOfConnections):
             self.nodeList.append(Component.Node(self))
+
+    def isJunction(self):
+        return True
 
 # -- Node Class --------------------------------------------------------------
 

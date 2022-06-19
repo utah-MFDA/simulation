@@ -27,14 +27,14 @@ class Netlist():
         # selects component based on list
         # TODO develop a more generic way will be developed in the future
         if componentType == 'channel':
-            component = Channel(params[0], componentKey)
+            component = Channel(params, componentKey)
         elif componentType == 'displacementValve' or componentType == 'displacement_valve' or componentType == 'MembraneValve':
             if len(params) == 2:
                 component = MembraneValve(params[0], params[1], componentKey)
             else:
                 component = MembraneValve(params[0], params[1], componentKey, params[2])
         elif componentType == 'IO':
-            component = IO_Connection(componentKey)
+            component = IO_Connection(componentKey, params)
         elif componentType == 'Junction':
             component = Junction(componentKey, params[0])
 
