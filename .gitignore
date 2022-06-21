@@ -1,2 +1,3 @@
 JupyterTests/
-*.cpython-38.pyc
+/__pycache__/
+*.pyc
