@@ -1,0 +1,4 @@
+IO i2 n1 pressure=30
+IO i3 n3 pressure=0
+channel c1 n1 n2 W=0.2 H=0.2 L=2
+channel c1 n2 n3 W=0.2 H=0.2 L=2

@@ -214,14 +214,33 @@ class LinearSolver(baseSimulation):
                     solver_matrix[eqInd,:] = eq2
                     eqInd += 1
 
-        self.solverMatix = solver_matrix
+        self.solverMatrix = solver_matrix
         self.solverVector= solver_vector
 
         pass
 
     def getSolution(self):
 
-        solution = np.linalg.solve(self.solverMatix, self.solverVector.transpose())
+        solution = np.linalg.solve(self.solverMatrix, self.solverVector.transpose())
+
+        #tempMat = self.solverMatrix
+        print(self.solverMatrix)
+
+        if (solution[solution < 0]):
+            #print("has negatives")
+            nodes = (solution < 0)
+            nodes_vec = (solution < 0).astype(int)*-2 + 1 #[int(len(solution))/2:len(solution)-1]*-1
+
+            for ind, n in enumerate(nodes):
+                if n:
+                    #col = self.solverMatrix[ind, :].reshape((len(nodes_vec), 1))
+                    #newCol = np.multiply(col, nodes_vec)
+                    self.solverMatrix[:, ind] = np.multiply(self.solverMatrix[:, ind].reshape((len(nodes_vec), 1)), nodes_vec).reshape((len(nodes_vec)))
+
+        solution = np.linalg.solve(self.solverMatrix, self.solverVector.transpose())
+
+        print('')
+        print(self.solverMatrix)
 
         return solution
 

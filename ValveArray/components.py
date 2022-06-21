@@ -244,7 +244,7 @@ class Channel(Component):
         # we assume water for now
         eta = 1.0016e-3
 
-        R = 12*eta*self.length/((1-0.63*(self.height/self.width)*(self.height**3*self.width)))
+        R = 12*eta*self.length/((1-0.63*(self.height/self.width))*(self.height**3*self.width))
         return R
 
     def fluidStr(self):
