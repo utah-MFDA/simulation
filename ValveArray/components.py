@@ -2,7 +2,7 @@
 
 
 
-from defer import return_value
+from operator import length_hint
 
 
 class Component():
@@ -15,7 +15,6 @@ class Component():
     - displacement valve
     - heater
     - resivior
-    
     """
 
     # internal node that points to external nodes
@@ -100,6 +99,9 @@ class Component():
     def isJunction(self):
         return False
 
+    def getType(self):
+        return 'comp'
+
     # TODO not implemented
     """
     def getNodeIndex(self, e_node):
@@ -168,8 +170,21 @@ class MembraneValve(Valve):
         # A typical membrane valve has 2 nodes
         self.nodeList = [Component.Node(self), Component.Node(self)]
 
-        self.branchList = [Component.Branch()]
+        self.branchList = [Component.Branch([self.nodeList[0], self.nodeList[1]])]
 
+    def getType(self):
+        return 'mValve'
+
+    def getResistance(self):
+        # we assume water for now
+        eta = 1.0016e-3
+
+        length = 1e-3
+        height = 0.1e-3
+        width  = 0.1064e-3
+
+        R = 12*eta*length/((1-0.63*(height/width))*(height**3*width))
+        return R
 # -- Channel Class
 
 class Channel(Component):
@@ -199,7 +214,7 @@ class Channel(Component):
         #    self.nodeList.append(Component_node(i, None))
         #    i += 1
 
-        self.branchList = [Component.Branch(self.nodeList)]
+        self.branchList = [Component.Branch([self.nodeList[0], self.nodeList[1]])]
 
 
     def addFluid(self, node, fluidType, size, initDisplacement=0):
@@ -316,6 +331,9 @@ class IO_Connection(Component):
     def isIO(self):
         return True
 
+    def getType(self):
+        return 'io'
+
 # -- Junction Class ----------------------------------------------------------
 
 class Junction(Component):
@@ -327,6 +345,9 @@ class Junction(Component):
 
     def isJunction(self):
         return True
+
+    def getType(self):
+        return 'jct'
 
 # -- Node Class --------------------------------------------------------------
 

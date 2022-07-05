@@ -28,6 +28,9 @@ class baseSimulation():
     def loadFromNetlistObj(self, netlist):
         self.netlist = netlist
 
+    def generateGraph(self):
+        pass
+
 class valveArraySimulation(baseSimulation):
 
     def loadValveStates(self, state):
@@ -111,16 +114,23 @@ class LinearSolver(baseSimulation):
         # TODO use method call
         numOfNodes = len(self.netlist.nodeList)
 
-        nodeKeys = []
+        self.nodeKeys = []
+
+        self.componentList = np.empty((0,3))
+        self.componentCount = {'IO':0, 'Junction':0, 'else':0}
 
         # one set of node for pressure another set for flow
 
         solver_matrix = np.zeros((numOfNodes*2, numOfNodes*2))
         solver_vector = np.zeros((1, numOfNodes*2))
 
-        for node in self.netlist.nodeList:
-            nodeKeys.append(node.getKey())
+        junction_M = np.zeros((0, numOfNodes*2))
+        num_junc_eq = 0
 
+        for node in self.netlist.nodeList:
+            self.nodeKeys.append(node.getKey())
+
+        nodeKeys = self.nodeKeys
         #print(nodeKeys)
 
         # Componnent is returned [key, pointer]
@@ -156,6 +166,10 @@ class LinearSolver(baseSimulation):
 
                 # add one equation with IO
 
+                self.componentCount['IO'] += 1
+                #self.componentList.append('IO')
+                numEq = 1
+
             elif component[1].isJunction():
                 PInd = []
                 FInd = []
@@ -170,8 +184,10 @@ class LinearSolver(baseSimulation):
                 for FIndInd in FInd:
                     FEq[FIndInd] = 1
 
-                solver_matrix[eqInd,:] = FEq
-                eqInd += 1
+                # append flow equations
+                # solver_matrix[eqInd,:] = FEq
+                junction_M = np.append(junction_M, FEq.reshape(1, numOfNodes*2), axis=0)
+                num_junc_eq += 1
 
                 # set Pressure Equations
                 PEq = []
@@ -180,10 +196,12 @@ class LinearSolver(baseSimulation):
                     tempEq[PInd[i]]   = 1
                     tempEq[PInd[i+1]] = -1
                     #PEq.append(tempEq)
-                    solver_matrix[eqInd,:] = tempEq
-                    eqInd += 1
+                    junction_M = np.append(junction_M, tempEq.reshape(1, numOfNodes*2), axis=0)
+                    #solver_matrix[eqInd,:] = tempEq
+                    num_junc_eq += 1
 
-                
+                #self.componentCount['Junction'] += 1
+                #numEq = len(PInd)
 
 
             else:
@@ -214,33 +232,70 @@ class LinearSolver(baseSimulation):
                     solver_matrix[eqInd,:] = eq2
                     eqInd += 1
 
-        self.solverMatrix = solver_matrix
-        self.solverVector= solver_vector
+                    self.componentCount['else'] += 1
+                    numEq = 2
+                    #self.componentList.append(component.getKey())
+            #self.componentList = np.append(self.componentList, np.array([component[1].getKey(), component[1].getType(), numEq]).shape((1,3)), axis=1)
+        self.junctionMatrix= junction_M
+        self.solverMatrix = np.append(solver_matrix[0:solver_matrix.shape[0]-num_junc_eq, :], junction_M, axis=0)
+        self.solverVector = solver_vector
 
         pass
 
-    def getSolution(self):
+    def getFlowSolution(self):
+
+        numOfNodes = len(self.netlist.nodeList)
 
         solution = np.linalg.solve(self.solverMatrix, self.solverVector.transpose())
 
         #tempMat = self.solverMatrix
-        print(self.solverMatrix)
+        #print(self.solverMatrix)
+        #print(self.solverVector)
+        print(solution)
 
-        if (solution[solution < 0]):
+        while solution[solution < 0][-numOfNodes:].any():
+            #print( solution[solution < 0])
             #print("has negatives")
-            nodes = (solution < 0)
+            nodes = solution < 0
+            #nodes = (solution < 0)
+            #ind1 = int(len(solution)/2)
+            #ind2 = len(solution)-1
+            #nodes = nodes[0,int(len(solution)/2):len(solution)-1]
+            nodes = nodes[-numOfNodes:]
             nodes_vec = (solution < 0).astype(int)*-2 + 1 #[int(len(solution))/2:len(solution)-1]*-1
 
+
+            compList = self.componentList[:, 1]
+            jnct = (compList == 'jct')
+
             for ind, n in enumerate(nodes):
+                # get node key
+            
+                # get junction to equation
                 if n:
-                    #col = self.solverMatrix[ind, :].reshape((len(nodes_vec), 1))
-                    #newCol = np.multiply(col, nodes_vec)
-                    self.solverMatrix[:, ind] = np.multiply(self.solverMatrix[:, ind].reshape((len(nodes_vec), 1)), nodes_vec).reshape((len(nodes_vec)))
+                    #nodeIndex = self.nodeKeys.index(ind) + numOfNodes
+                    for rInd, row in enumerate(self.junctionMatrix):
 
-        solution = np.linalg.solve(self.solverMatrix, self.solverVector.transpose())
+                        #print(row[ind+numOfNodes])
 
-        print('')
-        print(self.solverMatrix)
+                        if row[ind+numOfNodes]:
+                            self.junctionMatrix[rInd, ind+numOfNodes] *= -1
+                    # if n:
+                        #col = self.solverMatrix[ind, :].reshape((len(nodes_vec), 1))
+                        #newCol = np.multiply(col, nodes_vec)
+                        
+                        #self.solverMatrix[ind, :] = np.multiply(self.solverMatrix[:, ind].reshape((len(nodes_vec), 1)), nodes_vec).reshape((len(nodes_vec)))
+
+            self.solverMatrix[-self.junctionMatrix.shape[0]:,:] = self.junctionMatrix
+
+            solution = np.linalg.solve(self.solverMatrix, self.solverVector.transpose())
+
+            print(solution)
+            print(' ')
+            a = 1
+
+        #print('')
+        #print(self.solverMatrix)
 
         return solution
 
