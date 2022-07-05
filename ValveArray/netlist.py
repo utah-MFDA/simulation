@@ -9,7 +9,7 @@ sys.path.append(str(path_root))
 
 # How are interfaces handled?
 
-from components import Component_node, Junction
+from components import Component, Component_node, Junction
 from components import Channel, IO_Connection, MembraneValve
 
 class Netlist():
@@ -158,7 +158,45 @@ class Netlist():
 
             # build junction component
             self.addComponent('Junction', 'J'+str(self.numJunction), nodeKeys ,[numComp])
-                    
+
+    # Graph generating code ----
+
+    def genGraphGetNode(self, component, outFile, nodeRef=None):
+        for node in component.getExternalNodes():
+            if nodeRef == node[1]:
+                # skip if it is the calling node
+                pass
+            else:
+                outFile.write('\t' + str(component.getKey()) + ' -- ' + str(node[1].getKey() + ';\n'))
+                self.genGraphGetComponent(node[1], outFile, component)
+
+    def genGraphGetComponent(self, node,  outFile, componentRef=None,):
+        for componentNode in node.getComponents():
+            component = componentNode.getComponent()
+            if componentRef == component:
+                # skip if it is the calling component
+                pass
+            else:
+                outFile.write('\t' + str(node.getKey()) + ' -- ' + str(component.getKey() + ';\n'))
+                self.genGraphGetNode(component, outFile, node)
+
+    def generateGraph(self, outFileName, graphName):
+        # get first IO
+        IO1 = None
+
+        outFile = open(outFileName, 'w+')
+
+        outFile.write('graph ' + str(graphName) + ' {\n')
+
+        for comp in self.componentList:
+            if comp[1].isIO():
+                IO1 = comp[1]
+                break
+
+        # Recersively look for next component then for the next node
+        self.genGraphGetNode(IO1, outFile)
+
+        outFile.write('}')
         
 
 
@@ -196,6 +234,8 @@ class Netlist_node():
         # assign external node to point to internal node
         self.nodeComponentList.append(component.getNode(nodeIndex))
 
+    def getComponents(self):
+        return self.nodeComponentList
     # Why did I need this?
     #def getInternalIndex(self, componentKey):
     #    for comp in self.nodeComponentList:

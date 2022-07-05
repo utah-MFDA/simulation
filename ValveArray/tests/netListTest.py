@@ -5,6 +5,7 @@ sys.path.append('.')
 
 from numpy import test
 from ValveArray.netlist import Netlist
+import netListParse
 
 def main():
     testString = open('./ValveArray/tests/testDev1')
@@ -12,6 +13,7 @@ def main():
     # initialize Netlist
     net1 = Netlist()
 
+    '''
     for line in testString:
         data = line.replace('\n', '').split(' ')
         try:
@@ -45,6 +47,11 @@ def main():
             compKey = data[1]
             nodeKeys = data[2:]
             net1.addComponent(compType, compKey, nodeKeys, param)
+
+            '''
+
+    net1 = netListParse.main('./ValveArray/tests/testDev1')
+    
             
     print('Components:')
     net1.printComponents()
@@ -58,4 +65,6 @@ def main():
     return net1
 
 if __name__ == "__main__":
-    main()
+    net1 = main()
+    net1.generateGraph('dev1Graph', 'dev1Test')
+
