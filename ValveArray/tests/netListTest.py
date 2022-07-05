@@ -68,3 +68,6 @@ if __name__ == "__main__":
     net1 = main()
     net1.generateGraph('dev1Graph', 'dev1Test')
 
+    net1.subForJunctions()
+    net1.generateGraph('dev1GraphJ', 'dev1TestJ')
+

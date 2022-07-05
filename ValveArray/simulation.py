@@ -18,6 +18,7 @@ from netlist import Netlist
 class baseSimulation():
     def __init__(self):
         self.netlist = None
+        self.debug = False
 
     def __init__(self, netlist):
         self.netlist = netlist
@@ -30,6 +31,9 @@ class baseSimulation():
 
     def generateGraph(self):
         pass
+
+    def setDebug(self, boolIn):
+        self.debug = boolIn
 
 class valveArraySimulation(baseSimulation):
 
@@ -106,6 +110,8 @@ class valveArraySimulation(baseSimulation):
 
 class LinearSolver(baseSimulation):
 
+    #def __init__(self):
+    #    super(LinearSolver, self).__init__()
 
     def generateEquations(self):
         
@@ -290,12 +296,17 @@ class LinearSolver(baseSimulation):
 
             solution = np.linalg.solve(self.solverMatrix, self.solverVector.transpose())
 
-            print(solution)
-            print(' ')
+            #print(solution)
+            #print(' ')
+            if self.debug:
+                self.netlist.setSolution(solution, self.nodeKeys)
+                self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug')
             a = 1
 
         #print('')
         #print(self.solverMatrix)
 
         return solution
+
+    
 

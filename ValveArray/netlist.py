@@ -22,6 +22,9 @@ class Netlist():
         self.numJunction = 0
         self.virtualNodes= 0
 
+        self.solution = None
+        self.solutionNodeKey = None
+
     def addComponent(self, componentType, componentKey, nodekeys, params=[]):
         
         # selects component based on list
@@ -159,6 +162,16 @@ class Netlist():
             # build junction component
             self.addComponent('Junction', 'J'+str(self.numJunction), nodeKeys ,[numComp])
 
+
+    def setSolution(self, solution, solutionNodeKey):
+        self.solution = solution
+        self.solutionNodeKey = solutionNodeKey
+
+    def getNodeSolutionIndex(self, key):
+        for index, n in enumerate(self.solutionNodeKey):
+            if n == key:
+                return index
+
     # Graph generating code ----
 
     def genGraphGetNode(self, component, outFile, nodeRef=None):
@@ -166,21 +179,37 @@ class Netlist():
             if nodeRef == node[1]:
                 # skip if it is the calling node
                 pass
+            elif self.solution is None:
+                outFile.write('\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '";\n')
+                self.genGraphGetComponent(node[1], outFile, component)
             else:
-                outFile.write('\t' + str(component.getKey()) + ' -- ' + str(node[1].getKey() + ';\n'))
+                nodeIndex = self.getNodeSolutionIndex(node[1].getKey())
+                NodeP = self.solution[nodeIndex]
+                NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
+                outFile.write('\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '\\n' +
+                    'P:'+ str(NodeP) + '\\n' +
+                    'F:'+ str(NodeF) + '";\n')
                 self.genGraphGetComponent(node[1], outFile, component)
 
-    def genGraphGetComponent(self, node,  outFile, componentRef=None,):
+    def genGraphGetComponent(self, node,  outFile, componentRef=None):
         for componentNode in node.getComponents():
             component = componentNode.getComponent()
             if componentRef == component:
                 # skip if it is the calling component
                 pass
+            elif self.solution is None:
+                outFile.write('\t"' + str(node.getKey()) + '" -- "' + str(component.getKey()) + '";\n')
+                self.genGraphGetNode(component, outFile, node)
             else:
-                outFile.write('\t' + str(node.getKey()) + ' -- ' + str(component.getKey() + ';\n'))
+                nodeIndex = self.getNodeSolutionIndex(node.getKey())
+                NodeP = self.solution[nodeIndex]
+                NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
+                outFile.write('\t"' + str(node.getKey()) + '\\n' +
+                    'P:'+ str(NodeP) + '\\n' +
+                    'F:'+ str(NodeF) + '" -- "' + str(component.getKey()) + '";\n')
                 self.genGraphGetNode(component, outFile, node)
 
-    def generateGraph(self, outFileName, graphName):
+    def generateGraph(self, outFileName, graphName, solutionVec=None):
         # get first IO
         IO1 = None
 
@@ -194,7 +223,7 @@ class Netlist():
                 break
 
         # Recersively look for next component then for the next node
-        self.genGraphGetNode(IO1, outFile)
+        self.genGraphGetNode(IO1, outFile, solutionVec)
 
         outFile.write('}')
         

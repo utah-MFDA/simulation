@@ -25,6 +25,8 @@ net1.subForJunctions()
 
 linSim = simulation.LinearSolver(net1)
 
+linSim.setDebug(True)
+
 linSim.generateEquations()
 
 solutionVec = linSim.getFlowSolution()
