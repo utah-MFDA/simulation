@@ -147,26 +147,29 @@ class LinearSolver(baseSimulation):
                 node = component[1].getExternalNode().getKey()
 
                 PInd1 = nodeKeys.index(node)
-                FInd1 = nodeKeys.index(node) + numOfNodes
+                FInd1 = nodeKeys.index(node) #+ numOfNodes
 
                 defValue = component[1].hasConstraint()
                 
                 if defValue == "flow":
-                    ioInd = FInd1
+                    ioInd = FInd1+numOfNodes
                     value = component[1].getFlow()
+                    #solver_vector[0, eqInd+numOfNodes] = value
+                    solver_vector[0, eqInd] = value
 
                 elif defValue == "pressure":
                     ioInd = PInd1
                     value = component[1].getPressure()
+                    solver_vector[0, eqInd] = value
 
                 else:
                     # TODO throw exception
                     print(str(component[1]) + " has issue")
 
-                solver_vector[0, eqInd] = value
+                #solver_vector[0, eqInd] = value
                 eq = np.zeros((numOfNodes*2))
                 eq[ioInd] = 1
-                eq2 = solver_matrix[eqInd,:]
+                #eq2 = solver_matrix[eqInd,:]
                 solver_matrix[eqInd,:] = eq
                 eqInd += 1
 
@@ -174,7 +177,7 @@ class LinearSolver(baseSimulation):
 
                 self.componentCount['IO'] += 1
                 #self.componentList.append('IO')
-                numEq = 1
+                #numEq = 1
 
             elif component[1].isJunction():
                 PInd = []
@@ -183,7 +186,7 @@ class LinearSolver(baseSimulation):
                     PInd.append(nodeKeys.index(node[1].getKey()))
                     FInd.append(nodeKeys.index(node[1].getKey())+ numOfNodes)
 
-                    # TODO Figure how to solve
+                
 
                 # set flow equation
                 FEq = np.zeros((numOfNodes*2))
@@ -238,8 +241,8 @@ class LinearSolver(baseSimulation):
                     solver_matrix[eqInd,:] = eq2
                     eqInd += 1
 
-                    self.componentCount['else'] += 1
-                    numEq = 2
+                    #self.componentCount['else'] += 1
+                    #numEq = 2
                     #self.componentList.append(component.getKey())
             #self.componentList = np.append(self.componentList, np.array([component[1].getKey(), component[1].getType(), numEq]).shape((1,3)), axis=1)
         self.junctionMatrix= junction_M
@@ -257,7 +260,8 @@ class LinearSolver(baseSimulation):
         #tempMat = self.solverMatrix
         #print(self.solverMatrix)
         #print(self.solverVector)
-        print(solution)
+        if self.debug:
+            print(solution)
 
         while solution[solution < 0][-numOfNodes:].any():
             #print( solution[solution < 0])
@@ -299,8 +303,17 @@ class LinearSolver(baseSimulation):
             #print(solution)
             #print(' ')
             if self.debug:
+                print(solution)
+                print('\n')
                 self.netlist.setSolution(solution, self.nodeKeys)
                 self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug')
+                matrixFile = open('matrixDebug', 'w+')
+                matrixFile.write(str(self.solverMatrix))
+                matrixFile.close()
+
+                vectorFile = open('vectorDebug', 'w+')
+                vectorFile.write(str(self.solverVector))
+                vectorFile .close()
             a = 1
 
         #print('')

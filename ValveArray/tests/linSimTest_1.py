@@ -18,8 +18,17 @@ import simulation
 # Output validated 
 #net1 = netListParse.main('./ValveArray/tests/testDev5')
 
+# Output validated 
+#net1 = netListParse.main('./ValveArray/tests/testDev6')
+
+# Output validated 
+#net1 = netListParse.main('./ValveArray/tests/testDev7')
+
+# Output validated 
+net1 = netListParse.main('./ValveArray/tests/testDev8')
+
 # Output validated not solving
-net1 = netListParse.main('./ValveArray/tests/testDev1')
+#net1 = netListParse.main('./ValveArray/tests/testDev1')
 
 net1.subForJunctions()
 

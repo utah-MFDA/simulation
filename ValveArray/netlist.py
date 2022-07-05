@@ -187,8 +187,8 @@ class Netlist():
                 NodeP = self.solution[nodeIndex]
                 NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
                 outFile.write('\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '\\n' +
-                    'P:'+ str(NodeP) + '\\n' +
-                    'F:'+ str(NodeF) + '";\n')
+                    'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
+                    'F:'+ "{:.4f}".format(NodeF[0]) + '";\n')
                 self.genGraphGetComponent(node[1], outFile, component)
 
     def genGraphGetComponent(self, node,  outFile, componentRef=None):
@@ -205,8 +205,8 @@ class Netlist():
                 NodeP = self.solution[nodeIndex]
                 NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
                 outFile.write('\t"' + str(node.getKey()) + '\\n' +
-                    'P:'+ str(NodeP) + '\\n' +
-                    'F:'+ str(NodeF) + '" -- "' + str(component.getKey()) + '";\n')
+                    'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
+                    'F:'+ "{:.4f}".format(NodeF[0]) + '" -- "' + str(component.getKey()) + '";\n')
                 self.genGraphGetNode(component, outFile, node)
 
     def generateGraph(self, outFileName, graphName, solutionVec=None):
