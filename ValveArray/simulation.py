@@ -130,6 +130,11 @@ class LinearSolver(baseSimulation):
         solver_matrix = np.zeros((numOfNodes*2, numOfNodes*2))
         solver_vector = np.zeros((1, numOfNodes*2))
 
+        # initialize component matrix
+        component_M = np.zeros((0, numOfNodes*2))
+        num_comp_eq = 0
+
+        # initialize junction matrix
         junction_M = np.zeros((0, numOfNodes*2))
         num_junc_eq = 0
 
@@ -236,17 +241,26 @@ class LinearSolver(baseSimulation):
 
                     # TODO insert into matrix
 
-                    solver_matrix[eqInd,:] = eq1
-                    eqInd += 1
-                    solver_matrix[eqInd,:] = eq2
-                    eqInd += 1
+                    #solver_matrix[eqInd,:] = eq1
+                    component_M = np.append(component_M, eq1.reshape(1, numOfNodes*2), axis=0)
+                    num_comp_eq += 1
+                    #eqInd += 1
+                    #solver_matrix[eqInd,:] = eq2
+                    component_M = np.append(component_M, eq2.reshape(1, numOfNodes*2), axis=0)
+                    num_comp_eq += 1
+                    #eqInd += 1
 
                     #self.componentCount['else'] += 1
                     #numEq = 2
                     #self.componentList.append(component.getKey())
             #self.componentList = np.append(self.componentList, np.array([component[1].getKey(), component[1].getType(), numEq]).shape((1,3)), axis=1)
         self.junctionMatrix= junction_M
-        self.solverMatrix = np.append(solver_matrix[0:solver_matrix.shape[0]-num_junc_eq, :], junction_M, axis=0)
+        self.componentMatrix = component_M
+        # build solver matrix
+        self.solverMatrix = solver_matrix
+        self.solverMatrix[-num_comp_eq-num_junc_eq:-num_junc_eq, :] = component_M
+        self.solverMatrix = np.append(solver_matrix[0:-num_junc_eq, :], junction_M, axis=0)
+        # create pointer to solver vector
         self.solverVector = solver_vector
 
         pass
@@ -262,7 +276,19 @@ class LinearSolver(baseSimulation):
         #print(self.solverVector)
         if self.debug:
             print(solution)
+            print('\n')
+            self.netlist.setSolution(solution, self.nodeKeys)
+            self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug')
+            matrixFile = open('matrixDebug', 'w+')
+            matrixFile.write(str(self.solverMatrix))
+            matrixFile.close()
 
+            vectorFile = open('vectorDebug', 'w+')
+            vectorFile.write(str(self.solverVector))
+            vectorFile .close()
+
+
+        # check for flow of nodes
         while solution[solution < 0][-numOfNodes:].any():
             #print( solution[solution < 0])
             #print("has negatives")
@@ -275,8 +301,8 @@ class LinearSolver(baseSimulation):
             nodes_vec = (solution < 0).astype(int)*-2 + 1 #[int(len(solution))/2:len(solution)-1]*-1
 
 
-            compList = self.componentList[:, 1]
-            jnct = (compList == 'jct')
+            #compList = self.componentList[:, 1]
+            #jnct = (compList == 'jct')
 
             for ind, n in enumerate(nodes):
                 # get node key
@@ -284,6 +310,22 @@ class LinearSolver(baseSimulation):
                 # get junction to equation
                 if n:
                     #nodeIndex = self.nodeKeys.index(ind) + numOfNodes
+                    # check for flow of components
+                    for rInd, row in enumerate(self.componentMatrix):
+                        # find component with negative node
+                        if row[ind] != 0:
+                            # check other node is negative
+                            for rNInd, rNode in enumerate(row[:int(len(row)/2)]):
+                                # check if the row has another other node
+                                # check if the node is also negative
+                                # check if it is not the same node
+                                indexNode = nodes[rNInd]
+                                if rNode and (ind != rNInd) and nodes[rNInd]:
+                                    self.componentMatrix[rInd,ind] *= -1
+                                    self.componentMatrix[rInd,rNInd] *= -1
+                                    continue
+
+                    # check for flow of junctions
                     for rInd, row in enumerate(self.junctionMatrix):
 
                         #print(row[ind+numOfNodes])
@@ -296,6 +338,7 @@ class LinearSolver(baseSimulation):
                         
                         #self.solverMatrix[ind, :] = np.multiply(self.solverMatrix[:, ind].reshape((len(nodes_vec), 1)), nodes_vec).reshape((len(nodes_vec)))
 
+            self.solverMatrix[-self.componentMatrix.shape[0]-self.junctionMatrix.shape[0]:-self.junctionMatrix.shape[0], :] = self.componentMatrix
             self.solverMatrix[-self.junctionMatrix.shape[0]:,:] = self.junctionMatrix
 
             solution = np.linalg.solve(self.solverMatrix, self.solverVector.transpose())
