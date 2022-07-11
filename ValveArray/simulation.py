@@ -364,5 +364,8 @@ class LinearSolver(baseSimulation):
 
         return solution
 
+    def getChemicalSolution(self):
+        pass
+
     
 

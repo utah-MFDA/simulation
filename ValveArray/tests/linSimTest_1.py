@@ -22,11 +22,11 @@ import simulation
 #net1 = netListParse.main('./ValveArray/tests/testDev6')
 
 # Output validated 
-#net1 = netListParse.main('./ValveArray/tests/testDev7')
+net1 = netListParse.main('./ValveArray/tests/testDev7')
 
 # Output validated 
 # order of node effect the solver ability to converge
-net1 = netListParse.main('./ValveArray/tests/testDev7.1.1')
+#net1 = netListParse.main('./ValveArray/tests/testDev7.1.1')
 
 # Output not solving as intended
 #net1 = netListParse.main('./ValveArray/tests/testDev8')
