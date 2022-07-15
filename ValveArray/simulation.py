@@ -349,7 +349,8 @@ class LinearSolver(baseSimulation):
                 print(solution)
                 print('\n')
                 self.netlist.setSolution(solution, self.nodeKeys)
-                self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug')
+                self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug', 'pressure')
+                self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
                 matrixFile = open('matrixDebug', 'w+')
                 matrixFile.write(str(self.solverMatrix))
                 matrixFile.close()
@@ -363,6 +364,34 @@ class LinearSolver(baseSimulation):
         #print(self.solverMatrix)
 
         return solution
+
+    def generateChemicalSolutions(self):
+        
+        # get number of nodes
+        numOfNodes = len(self.netlist.nodeList)
+
+        # get chemicals at each IO
+        numOfChem = len(self.netlist.chemicalList)
+
+        ### generate vectors
+        # solution vector
+        chem_solutionVec = np.zeros((numOfNodes, 1, numOfChem))
+
+        # solver matrix
+        chem_solverMatrix = np.zeros((numOfNodes, numOfNodes, numOfChem))
+
+        for component in self.netlist.getComponentList():
+            
+            if component.isIO():
+                pass
+            elif component.isJunction():
+                pass
+            else:
+                pass
+
+
+    def getChemicalSolution(self):
+        pass
 
     
 
