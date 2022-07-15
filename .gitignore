@@ -2,4 +2,12 @@ JupyterTests/
 __pycache__/**
 tests/__pycache__/**
 ValveArray/__pycache__/**
+*/__pycache__/**
 *.pyc
+*.cpython-38.pyc
+vectorDebug
+matrixDebug
+debugLinSim
+debugLinearSim
+debugLinSim.svg
+components.cpython-38.pyc
