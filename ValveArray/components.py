@@ -1,10 +1,5 @@
 
 
-
-
-from operator import length_hint
-
-
 class Component():
     """
     component definitions
@@ -290,20 +285,36 @@ class IO_Connection(Component):
         self.nodeList = [Component.Node(self)]
         self.flow = None
         self.pressure = None
+        self.chemicalName = None
+        self.cheimcalCon = None
 
     def __init__(self, key, params):
         self.key = key
         self.nodeList = [Component.Node(self)]
         self.flow = None
         self.pressure = None
+        self.chemicalName = []
+        self.cheimcalCon = []
+        #self.__init__(key)
 
-        self.setValue(params[0], params[1])
+        for i in range(0,len(params),2):
+            self.setValue(params[i], params[i+1])
+        
+        #self.setValue(params[0], params[1])
+        
 
     def setValue(self, name, value):
         if name == 'pressure':
             self.setPressure(value)
         elif name == 'flow':
             self.setFlow(value)
+        elif name == 'chemical':
+            self.addChemicalName(value)
+        elif name == 'chemicalCon':
+            self.addChemicalConcentration(value)
+
+
+    # --- Setters and getters
 
     def setFlow(self, flow):
         self.flow = flow
@@ -311,11 +322,32 @@ class IO_Connection(Component):
     def setPressure(self, pressure):
         self.pressure = pressure
 
+    def addChemicalName(self, name):
+        self.chemicalName.append(name)
+
+    def addChemicalConcentration(self, concentration):
+        self.cheimcalCon.append(concentration)
+
+    # TODO add remove methods
+    def removeChemical(self, name):
+        for ind, chem in enumerate(self.chemicalName):
+            if chem == self.chemicalName:
+                del self.chemicalName[ind]
+                del self.cheimcalCon[ind]
+                return
+
     def getPressure(self):
         return self.pressure
 
     def getFlow(self):
         return self.flow
+
+    def getChemicalNames(self):
+        return self.chemicalName
+
+    def getChemicalConcentrations(self):
+        return self.cheimcalCon
+
 
     def getExternalNode(self):
         return self.nodeList[0].getExternalNode()
@@ -333,6 +365,12 @@ class IO_Connection(Component):
 
     def getType(self):
         return 'io'
+
+    def hasChemical(self):
+        if self.chemicalName:
+            return True
+        else:
+            return False
 
 # -- Junction Class ----------------------------------------------------------
 
