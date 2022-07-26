@@ -1,4 +1,5 @@
 
+from unittest import skip
 import numpy as np
 
 # local imports
@@ -366,6 +367,8 @@ class LinearSolver(baseSimulation):
 
         return solution
 
+    # Chemical solution -----------------------------------------
+
     def generateChemicalSolutions(self):
         
         # get number of nodes
@@ -380,34 +383,42 @@ class LinearSolver(baseSimulation):
         ### generate vectors
         # solution vector
         # chem_solutionVec = np.zeros((numOfNodes, 1, numOfChem))
-        chem_solutionVec = np.zeros((numOfComp, 1, numOfChem))
+        chem_solutionVec = np.zeros((numOfChem, numOfNodes, 1))
 
         # solver matrix
         # chem_solverMatrix = np.zeros((numOfNodes, numOfNodes, numOfChem))
-        chem_solverMatrix = np.zeros((numOfComp, numOfNodes, numOfChem))
+        chem_solverMatrix = np.zeros((numOfChem, numOfNodes, numOfNodes))
 
         #nodeKeys = self.nodeKeys
+
+        numOutlets = 0
 
         for compInd, component in enumerate(self.netlist.getComponentList()):
             
             if component.isIO():
-                # Get chemical names
-                chemNames = component.getChemicalNames()
-                chemConc  = component.getChemicalConcentrations()
-                # Get chemical index
-                chemIndex = self.netlist.getChemIndex(chemNames)
+                if component.getDirection() is 'outlet':
+                    numOutlets += 1
+                else:
+                    # Get chemical names
+                    chemNames = component.getChemicalNames()
+                    chemConc  = component.getChemicalConcentrations()
+                    # Get chemical index
+                    chemIndex = self.netlist.getChemIndex(chemNames)
 
-                # Generate equation
-                eqS = np.zeros((1, 1, numOfChem))
-                eq1 = np.zeros((1, numOfNodes, numOfChem))
+                    # Generate equation
+                    eqS = np.zeros((numOfChem, 1))
+                    eq1 = np.zeros((numOfChem, 1, numOfNodes))
 
-                for chemC in chemConc:
-                    for chemI in chemIndex:
-                        eq1[0,compInd,chemI] = 1
-                        eqS[0,0,chemI] = chemC
+                    for chemC in chemConc:
+                        for chemI in chemIndex:
+                            eq1[chemI, 0,compInd] = 1
+                            eqS[chemI,0] = chemC
 
-                chem_solutionVec[compInd, :, :] = eqS
-                chem_solverMatrix[compInd, :, :]= eq1
+                    chem_solutionVec[:, compInd, :] = eqS
+                    # .reshape((numOfChem, 1, numOfNodes))
+                    for chemId, mat in enumerate(chem_solverMatrix):
+                        mat[compInd-numOutlets, :] = eq1[chemId, :, :]
+                    #chem_solverMatrix[:, compInd, :]= eq1
 
 
             elif component.isJunction():
@@ -428,34 +439,38 @@ class LinearSolver(baseSimulation):
                         pass
 
                 # generate equation
-                eq1 = np.zeros((1, numOfNodes, numOfChem))
+                eq1 = np.zeros((numOfChem, 1, numOfNodes))
 
                 for node in junctionNodes:
                     if node[1] == 'o':
-                        tempEq = -1 * np.ones((1, 1, numOfChem))
+                        tempEq = -1 * np.ones((numOfChem, 1, 1))
                     else:
-                        tempEq = np.ones((1, 1, numOfChem))
-                    eq1[0, node[0], :] = tempEq
-
-                chem_solverMatrix[compInd, :, :]= eq1
+                        tempEq = np.ones((numOfChem, 1, 1))
+                    for chemId, mat in enumerate(eq1):
+                        mat[0, node[0]] = tempEq[chemId, :, :]
+                    #eq1[:, 0, node[0]] = tempEq
+                for chemId, mat in enumerate(chem_solverMatrix):
+                    mat[compInd-numOutlets, :] = eq1[chemId, :, :]
+                #chem_solverMatrix[:, compInd, :]= eq1
 
 
             else: # component is a genaric flow component
                 
                 # get component nodes
                 componentNodes = component.getExternalNodes()
-                eq1 = np.zeros((1, numOfNodes, numOfChem))
+                eq1 = np.zeros((numOfChem, 1, numOfNodes))
 
                 # generate equation
                 tempEq = np.ones((1, 1, numOfChem))
                 nodeInd = self.nodeKeys.index(componentNodes[0][0])
-                eq1[0, nodeInd, :] = tempEq
+                eq1[:, 0, nodeInd] = tempEq
 
                 nodeInd = self.nodeKeys.index(componentNodes[1][0])
-                eq1[0, nodeInd, :] = -1*tempEq
+                eq1[:, 0, nodeInd] = -1*tempEq
 
-                
-                chem_solverMatrix[compInd, :, :]= eq1
+                for chemId, mat in enumerate(chem_solverMatrix):
+                    mat[compInd-numOutlets, :] = eq1[chemId, :, :]
+                #chem_solverMatrix[:, compInd, :]= eq1
 
         self.chem_solverMatrix = chem_solverMatrix
         self.chem_solutoinVec = chem_solutionVec

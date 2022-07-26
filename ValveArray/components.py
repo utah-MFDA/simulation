@@ -295,11 +295,19 @@ class IO_Connection(Component):
         self.pressure = None
         self.chemicalName = []
         self.cheimcalCon = []
-        #self.__init__(key)
+        # assumes outlet unless supplied chemical name or concentration
+        self.direction = 'outlet'
+        # self.__init__(key)
+
 
         for i in range(0,len(params),2):
             self.setValue(params[i], params[i+1])
         
+        #if params == None:
+        #    self.direction = 'outlet'
+        #    return
+        #else:
+        #    self.direction = 'inlet'
         #self.setValue(params[0], params[1])
         
 
@@ -310,8 +318,10 @@ class IO_Connection(Component):
             self.setFlow(value)
         elif name == 'chemical':
             self.addChemicalName(value)
+            self.direction = 'inlet'
         elif name == 'chemicalCon':
             self.addChemicalConcentration(value)
+            self.direction = 'inlet'
 
 
     # --- Setters and getters
@@ -371,6 +381,9 @@ class IO_Connection(Component):
             return True
         else:
             return False
+
+    def getDirection(self):
+        return self.direction
 
 # -- Junction Class ----------------------------------------------------------
 
