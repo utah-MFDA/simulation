@@ -26,11 +26,7 @@ import simulation
 
 # Output validated 
 # order of node effect the solver ability to converge
-<<<<<<< HEAD
-net1 = netListParse.main('./ValveArray/tests/testDev7.1')
-=======
 #net1 = netListParse.main('./ValveArray/tests/testDev7.1.1')
->>>>>>> 6d21f51d78ea21951eaadf9e999d8f99acfe7d35
 
 # Output not solving as intended
 #net1 = netListParse.main('./ValveArray/tests/testDev8')
@@ -38,7 +34,7 @@ net1 = netListParse.main('./ValveArray/tests/testDev7.1')
 # Output validated care with nodes
 #net1 = netListParse.main('./ValveArray/tests/testDev1')
 
-net1 = netListParse.main('./ValveArray/tests/testDev1Ch')
+net1 = netListParse.main('./ValveArray/tests/testDev1.1')
 
 net1.subForJunctions()
 
@@ -49,5 +45,7 @@ linSim.setDebug(True)
 linSim.generateEquations()
 
 solutionVec = linSim.getFlowSolution()
+
+linSim.generateChemicalSolutions()
 
 print(solutionVec)

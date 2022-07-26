@@ -278,7 +278,8 @@ class LinearSolver(baseSimulation):
             print(solution)
             print('\n')
             self.netlist.setSolution(solution, self.nodeKeys)
-            self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug')
+            self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug', 'flow')
+            self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
             matrixFile = open('matrixDebug', 'w+')
             matrixFile.write(str(self.solverMatrix))
             matrixFile.close()
@@ -349,7 +350,7 @@ class LinearSolver(baseSimulation):
                 print(solution)
                 print('\n')
                 self.netlist.setSolution(solution, self.nodeKeys)
-                self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug', 'pressure')
+                self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug', 'flow')
                 self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
                 matrixFile = open('matrixDebug', 'w+')
                 matrixFile.write(str(self.solverMatrix))
@@ -380,14 +381,59 @@ class LinearSolver(baseSimulation):
         # solver matrix
         chem_solverMatrix = np.zeros((numOfNodes, numOfNodes, numOfChem))
 
-        for component in self.netlist.getComponentList():
+        for compInd, component in enumerate(self.netlist.getComponentList()):
             
             if component.isIO():
-                pass
+                # Get chemical names
+                chemNames = component.getChemicalNames()
+                # Get chemical index
+                chemIndex = netlist.getChemIndex(chemNames)
+
+                # Generate equation
+                eq1 = np.zeros((1, 1, numOfChem))
+
+                for chemI in chemIndex:
+                    eq1[1,1,chemI]
+
+                chem_solutionVec[compInd, :, :]
+
+
             elif component.isJunction():
-                pass
-            else:
-                pass
+                # for each node the set chem in / flow in = chem out / flow out
+
+                # Get sign for nodes at junction
+
+                junctionNodes = []
+
+                #for equation_row in self.junctionMatrix:
+                for nodeInd, node in enumerate(self.solverMatrix[:, compInd]):
+                    if node == 1:
+                        junctionNodes.append([nodeInd, 'i'])
+                    if node == -1:
+                        junctionNodes.append([nodeInd, 'o'])
+                    else: # node == 0 
+                        # since no flow do not add node
+                        pass
+
+                # generate equation
+                eq1 = np.zeros((1, numOfNodes, numOfChem))
+
+                for node in junctionNodes:
+                    if node[1] == 'o':
+                        tempEq = -1 * np.ones((1, 1, numOfChem))
+                    else:
+                        tempEq = np.ones((1, 1, numOfChem))
+                    eq1[1, node[0], :] = tempEq
+
+
+            else: # component is a genaric flow component
+                
+                # get component nodes
+                componentNodes = component.getExternalNodes()
+
+                # generate equation
+                for node in componentNodes:
+                    tempEq = np.ones((1, 1, numOfChem))
 
 
     def getChemicalSolution(self):

@@ -186,8 +186,20 @@ class Netlist():
         return len(self.chemicalList)
 
     def getComponentList(self):
-        return self.componentList[:,1]
+        compList = []
+        for comp in self.componentList:
+            compList.append(comp[1])
+        #a = self.componentList[:]
+
+        return compList
     
+    def getChemIndex(self, chemNames):
+        chemIndex = []
+        
+        for chem in chemNames:
+            chemIndex.append(self.chemicalList.index(chem))
+
+        return chemIndex
 
     # Graph generating code ----
 
@@ -200,14 +212,14 @@ class Netlist():
                 outFile.write('\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '";\n')
                 self.genGraphGetComponent(node[1], outFile, component)
             else:
-                if simInfo == "pressure":
+                if simInfo == "flow":
                     nodeIndex = self.getNodeSolutionIndex(node[1].getKey())
                     NodeP = self.solution[nodeIndex]
                     NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
                     outFile.write('\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '\\n' +
                         'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
                         'F:'+ "{:.4f}".format(NodeF[0]) + '";\n')
-                    self.genGraphGetComponent(node[1], outFile, component)
+                    self.genGraphGetComponent(node[1], outFile, simInfo, component)
                 elif simInfo == "chem":
                     nodeIndex = self.getNodeSolutionIndex(node[1].getKey())
                     NodeP = self.solution[nodeIndex]
@@ -216,9 +228,9 @@ class Netlist():
                         'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
                         'F:'+ "{:.4f}".format(NodeF[0]) + '";\n')
                     # Chemical printing
-                    self.genGraphGetComponent(node[1], outFile, component)
+                    self.genGraphGetComponent(node[1], outFile, simInfo, component)
 
-    def genGraphGetComponent(self, node,  outFile, componentRef=None):
+    def genGraphGetComponent(self, node,  outFile, simInfo, componentRef=None):
         for componentNode in node.getComponents():
             component = componentNode.getComponent()
             if componentRef == component:
@@ -228,13 +240,41 @@ class Netlist():
                 outFile.write('\t"' + str(node.getKey()) + '" -- "' + str(component.getKey()) + '";\n')
                 self.genGraphGetNode(component, outFile, node)
             else:
-                nodeIndex = self.getNodeSolutionIndex(node.getKey())
-                NodeP = self.solution[nodeIndex]
-                NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
-                outFile.write('\t"' + str(node.getKey()) + '\\n' +
-                    'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
-                    'F:'+ "{:.4f}".format(NodeF[0]) + '" -- "' + str(component.getKey()) + '";\n')
-                self.genGraphGetNode(component, outFile, node)
+                if simInfo == "flow":
+                    nodeIndex = self.getNodeSolutionIndex(node.getKey())
+                    NodeP = self.solution[nodeIndex]
+                    NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
+                    outFile.write('\t"' + str(node.getKey()) + '\\n' +
+                        'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
+                        'F:'+ "{:.4f}".format(NodeF[0]) + '" -- "' + str(component.getKey()) + '";\n')
+                    self.genGraphGetNode(component, outFile, simInfo, node)
+                if simInfo == "chem":
+                    nodeIndex = self.getNodeSolutionIndex(node.getKey())
+                    NodeP = self.solution[nodeIndex]
+                    NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
+                    outFile.write('\t"' + str(node.getKey()) + '\\n' +
+                        'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
+                        'F:'+ "{:.4f}".format(NodeF[0]) + '" -- "' + str(component.getKey()) + '";\n')
+                    self.genGraphGetNode(component, outFile, simInfo, node)
+
+
+#    def genGraphGetComponent(self, node,  outFile, componentRef=None):
+#        for componentNode in node.getComponents():
+#            component = componentNode.getComponent()
+#            if componentRef == component:
+#                # skip if it is the calling component
+#                pass
+#            elif self.solution is None:
+#                outFile.write('\t"' + str(node.getKey()) + '" -- "' + str(component.getKey()) + '";\n')
+#                self.genGraphGetNode(component, outFile, node)
+#            else:
+#                nodeIndex = self.getNodeSolutionIndex(node.getKey())
+#                NodeP = self.solution[nodeIndex]
+#                NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
+#                outFile.write('\t"' + str(node.getKey()) + '\\n' +
+#                    'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
+#                    'F:'+ "{:.4f}".format(NodeF[0]) + '" -- "' + str(component.getKey()) + '";\n')
+#                self.genGraphGetNode(component, outFile, node)
 
     def generateGraph(self, outFileName, graphName, simInfo, solutionVec=None):
         # get first IO
@@ -253,6 +293,7 @@ class Netlist():
         self.genGraphGetNode(IO1, outFile, simInfo, None, solutionVec)
 
         outFile.write('}')
+        outFile.close()
         
 
 
