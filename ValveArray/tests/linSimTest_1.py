@@ -8,6 +8,7 @@ import netListParse
 import simulation
 
 #net1 = netListParse.main('./ValveArray/tests/testDev2')
+net1 = netListParse.main('./ValveArray/tests/testDev2Ch')
 
 # Output validated
 #net1 = netListParse.main('./ValveArray/tests/testDev3')
@@ -34,7 +35,7 @@ import simulation
 # Output validated care with nodes
 #net1 = netListParse.main('./ValveArray/tests/testDev1')
 
-net1 = netListParse.main('./ValveArray/tests/testDev1.1')
+#net1 = netListParse.main('./ValveArray/tests/testDev1.1')
 
 net1.subForJunctions()
 
@@ -48,4 +49,8 @@ solutionVec = linSim.getFlowSolution()
 
 linSim.generateChemicalSolutions()
 
+chemSoln = linSim.getChemicalSolution()
+
 print(solutionVec)
+
+print(chemSoln)
