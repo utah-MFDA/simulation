@@ -87,6 +87,12 @@ class Netlist():
     def getComponentList(self):
         return self.componentList
 
+    def getComponentFromKey(self, key):
+        for comp in self.componentList:
+            if comp[0] == key:
+                return comp[1]
+        #ind = self.componentList[0,:].
+
     def getNodesFromComponent(self, component):
         pass
 
@@ -316,9 +322,12 @@ class nl_component():
 class Netlist_node():
     def __init__(self, key):
         self.nodeComponentList = []
-
+        self.internalNodeList = []
         # the key is a unique string for the node, generally pretty short
         self.nodeKey  = key
+        self.pressure = None
+        self.flow = None
+        self.chemicalFlow = None
 
     def getKey(self):
         return self.nodeKey
@@ -337,6 +346,38 @@ class Netlist_node():
     #def getInternalIndex(self, componentKey):
     #    for comp in self.nodeComponentList:
     #        if comp.getKey == componentKey:
+
+    # TODO implement
+    def addInternalNode(self, iNode):
+        if len(self.internalNodeList) < 2:
+            self.internalNodeList.append(iNode)
+        #else:
+            #print('Node ' + )
+
+    def setChemicalVec(self, numOfChem):
+        self.chemicalFlow = [0]*numOfChem
+
+    def setPressure(self, pressure):
+        self.pressure = pressure
+
+    def getPressure(self):
+        return self.pressure
+
+    def setFlow(self, flow):
+        self.flow = flow
+
+    def getFlow(self):
+        return self.flow
+
+    def setChemicalFlow(self, chemFlow, ind):
+        self.chemicalFlow[ind] = chemFlow
+
+    def getChemicalFlow(self, ind):
+        return self.chemicalFlow[ind]
+
+    def getChemicalFlow(self):
+        return self.chemicalFlow
+
 
     def toString(self):
         print('Node Key: ' + self.nodeKey)
