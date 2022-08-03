@@ -1,0 +1,10 @@
+IO i1 n1 pressure=20 chemical="soln1" chemicalCon=0.2
+IO i2 n2 pressure=20 chemical="soln2" chemicalCon=0.2
+
+IO o1 n4 pressure=0
+channel c1 n1 n5 W=0.106 H=0.100 L=0.38
+
+channel c2 n2 n6 W=0.106 H=0.100 L=1.140
+channel c3 n6 n5 W=0.106 H=0.100 L=7.980
+
+channel c4 n5 n4 W=0.106 H=0.100 L=0.1

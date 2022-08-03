@@ -121,6 +121,11 @@ class Component():
             e_node_list.append([node.getExternalNode().getKey(), node.getExternalNode()])
         return e_node_list
 
+    def getInternalNodeFromExterenalNode(self, eNode):
+        for node in self.nodeList:
+            if node.getExternalNode() == eNode:
+                return node
+
     def getBranches(self):
         return self.branchList
 
@@ -430,7 +435,7 @@ class Junction(Component):
         self.nodeList = []
         for i in range(numOfConnections):
             node = Component.Node(self)
-            node.setDirection('inlet')
+            node.setDirection('outlet')
             self.nodeList.append(node)
 
     def isJunction(self):

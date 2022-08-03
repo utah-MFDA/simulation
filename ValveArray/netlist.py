@@ -25,6 +25,7 @@ class Netlist():
 
         self.solution = None
         self.solutionNodeKey = None
+        self.direction = None
 
     def addComponent(self, componentType, componentKey, nodekeys, params=[]):
         
@@ -142,7 +143,7 @@ class Netlist():
             # TODO check component keys
             #componentExist = False
             #while()
-            self.numJunction =+ 1
+            self.numJunction += 1
 
             # TODO this requires making virtual nodes 
 
@@ -179,6 +180,13 @@ class Netlist():
     def setSolution(self, solution, solutionNodeKey):
         self.solution = solution
         self.solutionNodeKey = solutionNodeKey
+
+    def setFlowSolution(self, flowSolution, solutionNodeKey):
+        self.solution_flow = flowSolution
+        self.solutionNodeKey = solutionNodeKey
+
+    def setChemSolution(self, chemSolution):
+        self.solution_chem = chemSolution
 
     def getNodeSolutionIndex(self, key):
         for index, n in enumerate(self.solutionNodeKey):
@@ -228,11 +236,16 @@ class Netlist():
                     self.genGraphGetComponent(node[1], outFile, simInfo, component)
                 elif simInfo == "chem":
                     nodeIndex = self.getNodeSolutionIndex(node[1].getKey())
-                    NodeP = self.solution[nodeIndex]
-                    NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
-                    outFile.write('\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '\\n' +
-                        'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
-                        'F:'+ "{:.4f}".format(NodeF[0]) + '";\n')
+                    NodeCh = self.solution_chem[nodeIndex]
+                    #NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
+                    outString = ''
+                    outString += '\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '\\n'
+                    #outFile.write('\t"' + str(component.getKey()) + '" -- "' + str(node[1].getKey()) + '\\n' +
+                    for i, chem in enumerate(NodeCh):
+                        outString += 'Ch'+str(i)+':'+ "{:.4f}".format(chem) + '\\n'
+                    outString += '";\n'
+                        #'F:'+ "{:.4f}".format(NodeF[0]) + '";\n')
+                    outFile.write(outString)
                     # Chemical printing
                     self.genGraphGetComponent(node[1], outFile, simInfo, component)
 
@@ -256,11 +269,17 @@ class Netlist():
                     self.genGraphGetNode(component, outFile, simInfo, node)
                 if simInfo == "chem":
                     nodeIndex = self.getNodeSolutionIndex(node.getKey())
-                    NodeP = self.solution[nodeIndex]
-                    NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
-                    outFile.write('\t"' + str(node.getKey()) + '\\n' +
-                        'P:'+ "{:.4f}".format(NodeP[0]) + '\\n' +
-                        'F:'+ "{:.4f}".format(NodeF[0]) + '" -- "' + str(component.getKey()) + '";\n')
+                    NodeCh = self.solution_chem[nodeIndex]
+                    #NodeF = self.solution[int(len(self.solution)/2 + nodeIndex)]
+                    outString = ''
+                    #outFile.write('\t"' + str(node.getKey()) + '\\n' +
+                    #    'Ch:'+ "{:.4f}".format(NodeCh[0]) + '" -- "' + str(component.getKey()) + '";\n') #+
+                        #'F:'+ "{:.4f}".format(NodeF[0]) + '" -- "' + str(component.getKey()) + '";\n')
+                    outString += '\t"' + str(node.getKey()) + '\\n'
+                    for i, chem in enumerate(NodeCh):
+                        outString += 'Ch'+ str(i) +':'+ "{:.4f}".format(chem) + '\\n'
+                    outString += '" -- "' + str(component.getKey()) + '";\n'
+                    outFile.write(outString)
                     self.genGraphGetNode(component, outFile, simInfo, node)
 
 
@@ -354,6 +373,8 @@ class Netlist_node():
         #else:
             #print('Node ' + )
 
+    #def getInter
+
     def setChemicalVec(self, numOfChem):
         self.chemicalFlow = [0]*numOfChem
 
@@ -369,8 +390,11 @@ class Netlist_node():
     def getFlow(self):
         return self.flow
 
-    def setChemicalFlow(self, chemFlow, ind):
-        self.chemicalFlow[ind] = chemFlow
+    def setChemicalFlowInd(self, chemFlow, ind):
+        self.chemicalFlow[ind] = float(chemFlow)
+
+    def setChemicalFlow(self, chemFlow):
+        self.chemicalFlow = chemFlow
 
     def getChemicalFlow(self, ind):
         return self.chemicalFlow[ind]
