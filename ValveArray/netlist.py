@@ -151,7 +151,7 @@ class Netlist():
             nodeKeys = [node.getKey()] + newNodes
             #nodeKeys.append(newNodes)
             # adds virtual node count
-            self.virtualNodes =+ 2
+            self.virtualNodes += 2
 
             for n in newNodes:
                 self.addNode(n)
