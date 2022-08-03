@@ -42,6 +42,8 @@ net1 = netListParse.main('./ValveArray/tests/testDev2Ch')
 net1 = netListParse.main('./ValveArray/tests/testSmart001')
 #net1 = netListParse.main('./ValveArray/tests/testSmart002')
 
+net1 = netListParse.main('./ValveArray/tests/testPCR001')
+
 net1.subForJunctions()
 
 linSim = simulation.LinearSolver(net1)

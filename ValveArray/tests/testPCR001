@@ -1,0 +1,40 @@
+IO i1 n1 pressure=20 chemical="FPrim" chemicalCon=0.2
+IO i2 n2 pressure=20 chemical="RPrim" chemicalCon=0.2
+IO i3 n3 pressure=20 chemical="EvaGr" chemicalCon=0.2
+IO i4 n4 pressure=20 chemical="H2O" chemicalCon=0.2
+IO i5 n5 pressure=20 chemical="Taq" chemicalCon=0.2
+
+IO i6 n6 pressure=20 chemical="DNA" chemicalCon=0.2
+
+IO o1 n7 pressure=0
+
+channel ch1 n1 n8 W=0.106 H=0.10 L=7.980
+channel ch2 n2 n8 W=0.106 H=0.10 L=7.980
+channel ch3 n8 n9 W=0.106 H=0.10 L=0.1
+
+channel ch3_1 n3 n10 W=0.106 H=0.10 L=0.38
+channel ch3_2 n10 n11 W=0.106 H=0.10 L=1.14
+channel ch3_3 n11 n9 W=0.106 H=0.10 L=7.980
+channel ch3_4 n9 n12 W=0.106 H=0.10 L=0.1
+
+channel ch4_1 n4 n13 W=0.106 H=0.10 L=1.14
+channel ch4_2 n14 n12 W=0.106 H=0.10 L=7.980
+channel ch4_3 n12 n15 W=0.106 H=0.10 L=0.1
+
+channel ch5_1 n5 n16 W=0.106 H=0.10 L=2.28
+channel ch5_2 n17 n15 W=0.106 H=0.10 L=13.68
+channel ch5_3 n15 n18 W=0.106 H=0.10 L=0.1
+
+channel chmix1 n18 n19 W=0.106 H=0.10 L=13.68
+
+channel v1 n19 n24 W=0.106 H=0.10 L=0.243
+
+channel ch6_1 n6 n20 W=0.106 H=0.10 L=1.14
+channel ch6_2 n20 n21 W=0.106 H=0.10 L=3.80
+channel ch6_3 n21 n22 W=0.106 H=0.10 L=13.68
+channel ch6_4 n22 n23 W=0.106 H=0.10 L=29.64
+channel ch6_5 n23 n24 W=0.106 H=0.10 L=29.64
+
+channel v2 n19 n6 W=0.106 H=0.10 L=0.243
+
+channel chmix2 n24 n7 W=0.106 H=0.10 L=13.68
