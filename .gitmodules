@@ -1,0 +1,10 @@
+
+[submodule "Continuous/V2Va_Parser"]
+	path = Continuous/V2Va_Parser
+	url = https://github.com/bgoenner/V2Va_Parser.git
+[submodule "Continuous/component_Library"]
+	path = Continuous/component_Library
+	url = https://github.com/utah-MFDA/component_library.git
+[submodule "Continuous/component_library"]
+	path = Continuous/component_library
+	url = https://github.com/utah-MFDA/component_library.git
