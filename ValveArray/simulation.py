@@ -362,10 +362,17 @@ class LinearSolver(baseSimulation):
                             # get node from index
                             nK = self.nodeKeys[ind]
                             # change direction of node (initially assumed inputs)
-                            c.changeDirection(nK)
+                            #c.changeDirection(nK)
 
                             # Changes direction of node in eqeuations
                             self.junctionMatrix[rInd, ind+numOfNodes] *= -1
+
+                            nodeSign = self.junctionMatrix[rInd, ind+numOfNodes]
+
+                            if nodeSign < 0:
+                                c.setDirection(nK, 'outlet')
+                            else:
+                                c.setDirection(nK, 'inlet')
                     # if n:
                         #col = self.solverMatrix[ind, :].reshape((len(nodes_vec), 1))
                         #newCol = np.multiply(col, nodes_vec)

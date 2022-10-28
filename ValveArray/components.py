@@ -435,7 +435,7 @@ class Junction(Component):
         self.nodeList = []
         for i in range(numOfConnections):
             node = Component.Node(self)
-            node.setDirection('outlet')
+            node.setDirection('inlet')
             self.nodeList.append(node)
 
     def isJunction(self):
@@ -455,6 +455,12 @@ class Junction(Component):
                 else:
                     print('Component ' + self.key + ', node ' + node.getExternalNode().getKey() +
                         ' does not have a valid direction')
+
+    def setDirection(self, nodeKey, direction):
+        for node in self.nodeList:
+            if node.getExternalNode().getKey() == nodeKey:
+                node.setDirection(direction)
+
         
 
 # -- Node Class --------------------------------------------------------------
