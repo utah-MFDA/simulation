@@ -17,6 +17,9 @@ import pandas as pd
 filePath = "./Continuous/V2Va_Parser/testFiles/smart_toilet_test2"#.replace("./", "./V2Va_Parser/")
 fileName = "smart_toilet2.v"
 
+#filePath = "./Continuous/V2Va_Parser/testFiles/PCR_1"#.replace("./", "./V2Va_Parser/")
+#fileName = "PCR1.v"
+
 #
 # Configuration strings
 #
