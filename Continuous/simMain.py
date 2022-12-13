@@ -40,7 +40,7 @@ getFileScript = remoteComDir + "/getFileHSpice.bash"
 # methods --------------------------------------------------------------------------------
 #
 
-def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file=None):
+def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file=None, preRoute=False):
     print("\n\nstart builing sp file\n")
 
     Verilog2VerilogA.Verilog2VerilogA(
@@ -49,7 +49,8 @@ def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file=
         solnFile = solnFile, 
         remoteTestPath = remoteTestPath, 
         library_csv = library_csv,
-        length_file = length_file)
+        length_file = length_file,
+        preRouteSim=preRoute)
 
     print("\nend building sp file\n\n")
 
@@ -146,7 +147,7 @@ def testing(platform=None, design=None, verilog_file=None, path=None, testCode=[
     simulate(path, verilog_file, design=design, _buildSP=testCode[0], _sendFiles=testCode[1], _runSimScript=testCode[2], _downloadFiles=testCode[3], _extractData=testCode[4])
 
 
-def simulate(path, fileName, design, length_file=None, _buildSP=True, _sendFiles=True, _runSimScript=True, _downloadFiles=True, _extractData=True):
+def simulate(path, fileName, design, preRoute=False, length_file=None, _buildSP=True, _sendFiles=True, _runSimScript=True, _downloadFiles=True, _extractData=True):
 
     filePath     = path
     fullFilePath = path + "/" + fileName
@@ -164,12 +165,16 @@ def simulate(path, fileName, design, length_file=None, _buildSP=True, _sendFiles
             testpath += dir + '/'
         testpath = testpath[:-1]
     else:
-        testpath = path
+        testpath = path.replace('./', '')
+
+    if preRoute:
+        testpath = testpath + '/preRoute'
+
     remoteTestPath = "~/Verilog_Tests/" + testpath
 
     # build sp file
     if _buildSP:
-        buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file)
+        buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file, preRoute)
 
     # send files to remote server
     
@@ -206,6 +211,9 @@ if __name__ == "__main__":
                     help='Path to the test files')
     ap.add_argument('--lengths_file', metavar='length_file', dest='length_file', type=str,
                     help='length file location')
+    ap.add_argument('--preRoute', metavar='preRoute', dest='preRoute', type=bool,
+                    help='Boolean if the simulation is pre oro post place and routing')
+
 
     args = ap.parse_args()
 
