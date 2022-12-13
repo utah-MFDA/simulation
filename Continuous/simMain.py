@@ -40,10 +40,16 @@ getFileScript = remoteComDir + "/getFileHSpice.bash"
 # methods --------------------------------------------------------------------------------
 #
 
-def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath):
+def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file=None):
     print("\n\nstart builing sp file\n")
 
-    Verilog2VerilogA.Verilog2VerilogA(fullFilePath, configFile, solnFile, remoteTestPath, library_csv)
+    Verilog2VerilogA.Verilog2VerilogA(
+        inputVerilogFile = fullFilePath, 
+        configFile = configFile, 
+        solnFile = solnFile, 
+        remoteTestPath = remoteTestPath, 
+        library_csv = library_csv,
+        length_file = length_file)
 
     print("\nend building sp file\n\n")
 
@@ -140,7 +146,7 @@ def testing(platform=None, design=None, verilog_file=None, path=None, testCode=[
     simulate(path, verilog_file, design=design, _buildSP=testCode[0], _sendFiles=testCode[1], _runSimScript=testCode[2], _downloadFiles=testCode[3], _extractData=testCode[4])
 
 
-def simulate(path, fileName, design, _buildSP=True, _sendFiles=True, _runSimScript=True, _downloadFiles=True, _extractData=True):
+def simulate(path, fileName, design, length_file=None, _buildSP=True, _sendFiles=True, _runSimScript=True, _downloadFiles=True, _extractData=True):
 
     filePath     = path
     fullFilePath = path + "/" + fileName
@@ -148,19 +154,25 @@ def simulate(path, fileName, design, _buildSP=True, _sendFiles=True, _runSimScri
     #solnFile   = "./V2Va_Parser/testFiles/smart_toilet_test2/solutionFile.csv"
     solnFile   = fullFilePath[:-2] + "_spec.csv"
 
-    remoteTestPath = "~/Verilog_Tests/"
+
+    testpath = ""
+    # generate path relative to testfiles
+    # used in testing
+    if 'testFiles' in filePath.split('/'):
+        testpath_dir = filePath.split('/')
+        for dir in testpath_dir[testpath_dir.index('testFiles'):]:
+            testpath += dir + '/'
+        testpath = testpath[:-1]
+    else:
+        testpath = path
+    remoteTestPath = "~/Verilog_Tests/" + testpath
 
     # build sp file
     if _buildSP:
-        buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath)
+        buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file)
 
     # send files to remote server
-    # generate path relative to testfiles
-    testpath_dir = filePath.split('/')
-    testpath = ""
-    for dir in testpath_dir[testpath_dir.index('testFiles'):]:
-        testpath += dir + '/'
-    testpath = testpath[:-1]
+    
     if _sendFiles:
         sendFiles(filePath, filePath, testpath)
     
@@ -174,7 +186,7 @@ def simulate(path, fileName, design, _buildSP=True, _sendFiles=True, _runSimScri
 
     # run file extraction
     if _extractData:
-        extractChemData(filePath)
+        extractChemData(filePath, design)
 
 if __name__ == "__main__":
     
@@ -192,13 +204,16 @@ if __name__ == "__main__":
                     help='The name of the Verilog file')
     ap.add_argument('--path', metavar='test_path', dest='test_path', type=str,
                     help='Path to the test files')
+    ap.add_argument('--lengths_file', metavar='length_file', dest='length_file', type=str,
+                    help='length file location')
 
     args = ap.parse_args()
 
     simulate(
         args.test_path, 
         args.verilog_file, 
-        design=args.design_name)
+        design=args.design,
+        length_file=args.length_file)
 
     """
     fullPath     = filePath
