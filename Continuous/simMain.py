@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-sys.path.append('./V2Va_Parser')
+sys.path.append(__file__.replace('simMain.py', '') + 'V2Va_Parser')
 sys.path.append('./Continuous/V2Va_Parser')
 
 import V2Va_Parser.Verilog2VerilogA as Verilog2VerilogA
@@ -14,8 +14,8 @@ import pandas as pd
 #
 
 # construct file path
-filePath = "./Continuous/V2Va_Parser/testFiles/smart_toilet_test2"#.replace("./", "./V2Va_Parser/")
-fileName = "smart_toilet2.v"
+#filePath = "./Continuous/V2Va_Parser/testFiles/PCR1"#.replace("./", "./V2Va_Parser/")
+#fileName = "PCR1.v"
 
 #filePath = "./Continuous/V2Va_Parser/testFiles/PCR_1"#.replace("./", "./V2Va_Parser/")
 #fileName = "PCR1.v"
@@ -24,11 +24,13 @@ fileName = "smart_toilet2.v"
 # Configuration strings
 #
 
-configFile = "./Continuous/VMF_template.json"
+local_dir = __file__.replace('simMain.py', '') 
 
-library_csv= "./Continuous/component_library/StandardCellLibrary.csv"
+configFile = local_dir + "VMF_template.json"
 
-remoteComDir = "./Continuous/remoteComFiles"
+library_csv= local_dir + "component_library/StandardCellLibrary.csv"
+
+remoteComDir = local_dir + "remoteComFiles"
 
 remoteShellScript = remoteComDir + "/sendFileHSpice.bash"
 runSimScript = remoteComDir + "/runSimsRemote.bash"
@@ -45,12 +47,13 @@ def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath):
 
     print("\nend building sp file\n\n")
 
-def sendFiles(filePath, fullPath):
+def sendFiles(filePath, fullPath, remotePath):
     # execute shell script
     #remoteShellScript = remoteComDir + "/sendFileHSpice.bash"
 
     # read list file
     # the spiceFiles is created by the V2Va parser
+
     spiceFilePath = fullPath + '/spiceFiles/spiceList'
     spiceListFile = pd.read_csv(spiceFilePath)
 
@@ -62,58 +65,142 @@ def sendFiles(filePath, fullPath):
     for line in spiceListFile.iterrows():
         # Construct command path
         line = line[1]['OutputFile']
-        sendFileCommand = remoteShellScript + " " + line.split('/')[-1] + " " + fullPath + "/spiceFiles "# + filePath.replace('./', '')
+        sendFileArgs = [
+            line.split('/')[-1], 
+            fullPath + "/spiceFiles", 
+            remotePath]
+        sendFileCommand = remoteShellScript + " " + " ".join(str(arg) for arg in sendFileArgs)# + filePath.replace('./', '')
         #sendFileCommand = sendFileCommand     
         subprocess.call(sendFileCommand, shell=True)
     
-    sendFileCommand = remoteShellScript + " runSims.csh " + fullPath + "/spiceFiles " + filePath.replace('./', '')
+    # send run sim script
+    sendFileArgs = [
+        "runSims.csh",
+        fullPath + "/spiceFiles",
+        remotePath
+    ]
+    sendFileCommand = remoteShellScript + " " + " ".join(str(arg) for arg in sendFileArgs)
     #sendFileCommand = sendFileCommand     
     subprocess.call(sendFileCommand, shell=True)
 
     print("\nend send files\n\n")
 
-def runSimFiles(filePath):
+def runSimFiles(remotePath):
     print("\nrun simulations\n")
 
-    runSimCommand = runSimScript + " " + filePath.replace('./', '') + "/spiceFiles"
+    runSimCommand = runSimScript + " " + remotePath #+ "/spiceFiles"
 
     subprocess.call(runSimCommand, shell=True)
 
     print("\nend run simulations\n\n")
 
-def downloadFiles(filePath, fullPath):
+def downloadFiles(filePath, fullPath, remotePath):
     
     # the spiceFiles is created by the V2Va parser
     spiceFilePath = fullPath + '/spiceFiles/spiceList'
     spiceListFile = pd.read_csv(spiceFilePath)
     
-    print("\nDownloading file\n")
+    print("\nRunning Download Commands\n")
     
     for line in spiceListFile.iterrows():
         # Construct command path
         line = line[1]['OutputFile']
-        remotePath = fullPath.replace('./', '') + "/spiceFiles/" + line.split('/')[-1].replace(".sp", "") + ""
-        getFileCommand = getFileScript + " " + line.split('/')[-1].replace(".sp", "_o") + " " + remotePath + " " + fullPath + "/spiceFiles " + fullPath + "/spiceFiles "# + filePath.replace('./', '')
+        remotePathLine = remotePath + '/' + line.split('/')[-1].replace(".sp", "") + ""
+        #remotePathLine = fullPath.replace('./', '') + '/' + line.split('/')[-1].replace(".sp", "") + ""
+        sendFileArgs = [
+            line.split('/')[-1].replace(".sp", "_o"), 
+            remotePathLine, 
+            fullPath + "/spiceFiles",
+            fullPath + "/spiceFiles"]
+        #getFileCommand = getFileScript + " " + line.split('/')[-1].replace(".sp", "_o") + " " + remotePath + " " + fullPath + "/spiceFiles " + fullPath + "/spiceFiles "# + filePath.replace('./', '')
+        getFileCommand = getFileScript + " " + " ".join(sendFileArgs)
         #sendFileCommand = sendFileCommand     
         subprocess.call(getFileCommand, shell=True)
 
     print("Done getting files")
 
-def extractChemData(fullPath):
+def extractChemData(fullPath, device):
 
     print("\nExtracting data\n\n")
 
-    spiceExtract.parseSpiceOut(fullPath + '/spiceFiles/', "spiceList")
+    spiceExtract.parseSpiceOut(fullPath + '/spiceFiles/', "spiceList", device)
 
     print("\nDone extracting data\n\n")
+
+def outputData(fullPath):
+
+    pass
 
 #
 # main -------------------------------------------
 #
 
+def testing(platform=None, design=None, verilog_file=None, path=None, testCode=[1,1,1,1,1]):
+    
+    simulate(path, verilog_file, design=design, _buildSP=testCode[0], _sendFiles=testCode[1], _runSimScript=testCode[2], _downloadFiles=testCode[3], _extractData=testCode[4])
+
+
+def simulate(path, fileName, design, _buildSP=True, _sendFiles=True, _runSimScript=True, _downloadFiles=True, _extractData=True):
+
+    filePath     = path
+    fullFilePath = path + "/" + fileName
+
+    #solnFile   = "./V2Va_Parser/testFiles/smart_toilet_test2/solutionFile.csv"
+    solnFile   = fullFilePath[:-2] + "_spec.csv"
+
+    remoteTestPath = "~/Verilog_Tests/"
+
+    # build sp file
+    if _buildSP:
+        buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath)
+
+    # send files to remote server
+    # generate path relative to testfiles
+    testpath_dir = filePath.split('/')
+    testpath = ""
+    for dir in testpath_dir[testpath_dir.index('testFiles'):]:
+        testpath += dir + '/'
+    testpath = testpath[:-1]
+    if _sendFiles:
+        sendFiles(filePath, filePath, testpath)
+    
+    # run simulation files
+    if _runSimScript:
+        runSimFiles(testpath)
+
+    # get files from remote server
+    if _downloadFiles:
+        downloadFiles(filePath, filePath, testpath)
+
+    # run file extraction
+    if _extractData:
+        extractChemData(filePath)
+
 if __name__ == "__main__":
     
+    #print(__file__.replace('simMain.py', '') + 'V2Va_Parser')
 
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    ap.add_argument('--platform', metavar='<platform>', dest='platform', type=str,
+                    help="Design platform.")
+    ap.add_argument('--design', metavar='<design_name>', dest='design', type=str,
+                    help="The design name.")
+    ap.add_argument('--verilog_file', metavar='<verilog_file>', dest='verilog_file', type=str,
+                    help='The name of the Verilog file')
+    ap.add_argument('--path', metavar='test_path', dest='test_path', type=str,
+                    help='Path to the test files')
+
+    args = ap.parse_args()
+
+    simulate(
+        args.test_path, 
+        args.verilog_file, 
+        design=args.design_name)
+
+    """
     fullPath     = filePath
     fullFilePath = fullPath + "/" + fileName
 
@@ -126,14 +213,20 @@ if __name__ == "__main__":
     buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath)
 
     # send files to remote server
-    sendFiles(filePath, fullPath)
+    # generate path relative to testfiles
+    testpath_dir = fullPath.split('/')
+    testpath = ""
+    for dir in testpath_dir[testpath_dir.index('testFiles'):]:
+        testpath += dir + '/'
+    testpath = testpath[:-1]
+    #sendFiles(filePath, fullPath, testpath)
     
     # run simulation files
-    runSimFiles(fullPath)
+    runSimFiles(testpath)
 
     # get files from remote server
-    downloadFiles(filePath, fullPath)
+    downloadFiles(filePath, fullPath, testpath)
 
     # run file extraction
     extractChemData(fullPath)
-    
+    """
