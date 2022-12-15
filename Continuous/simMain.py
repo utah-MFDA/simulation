@@ -40,10 +40,15 @@ getFileScript = remoteComDir + "/getFileHSpice.bash"
 # methods --------------------------------------------------------------------------------
 #
 
-def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file=None, preRoute=False):
+def buildSPfile(fullFilePath, 
+    configFile, 
+    solnFile, 
+    remoteTestPath, 
+    length_file=None, 
+    preRoute=False):
     print("\n\nstart builing sp file\n")
 
-    Verilog2VerilogA.Verilog2VerilogA(
+    SPFilePath = Verilog2VerilogA.Verilog2VerilogA(
         inputVerilogFile = fullFilePath, 
         configFile = configFile, 
         solnFile = solnFile, 
@@ -54,15 +59,17 @@ def buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file=
 
     print("\nend building sp file\n\n")
 
-def sendFiles(filePath, fullPath, remotePath):
+    return SPFilePath
+
+def sendFiles(filePath, fullPath, spiceFilePath, remotePath):
     # execute shell script
     #remoteShellScript = remoteComDir + "/sendFileHSpice.bash"
 
     # read list file
     # the spiceFiles is created by the V2Va parser
 
-    spiceFilePath = fullPath + '/spiceFiles/spiceList'
-    spiceListFile = pd.read_csv(spiceFilePath)
+    #spiceFilePath = spiceFilePath + '/spiceList'
+    spiceListFile = pd.read_csv(spiceFilePath + '/spiceList')
 
     # Construct command path
     #sendFileCommand = remoteShellScript + " " + fileName + " " + filePath
@@ -74,7 +81,7 @@ def sendFiles(filePath, fullPath, remotePath):
         line = line[1]['OutputFile']
         sendFileArgs = [
             line.split('/')[-1], 
-            fullPath + "/spiceFiles", 
+            spiceFilePath, 
             remotePath]
         sendFileCommand = remoteShellScript + " " + " ".join(str(arg) for arg in sendFileArgs)# + filePath.replace('./', '')
         #sendFileCommand = sendFileCommand     
@@ -83,7 +90,7 @@ def sendFiles(filePath, fullPath, remotePath):
     # send run sim script
     sendFileArgs = [
         "runSims.csh",
-        fullPath + "/spiceFiles",
+        spiceFilePath,
         remotePath
     ]
     sendFileCommand = remoteShellScript + " " + " ".join(str(arg) for arg in sendFileArgs)
@@ -101,11 +108,11 @@ def runSimFiles(remotePath):
 
     print("\nend run simulations\n\n")
 
-def downloadFiles(filePath, fullPath, remotePath):
+def downloadFiles(filePath, fullPath, spiceFilePath, remotePath):
     
     # the spiceFiles is created by the V2Va parser
-    spiceFilePath = fullPath + '/spiceFiles/spiceList'
-    spiceListFile = pd.read_csv(spiceFilePath)
+    #spiceFilePath = spiceFilePath + '/spiceList'
+    spiceListFile = pd.read_csv(spiceFilePath + 'spiceList')
     
     print("\nRunning Download Commands\n")
     
@@ -117,8 +124,8 @@ def downloadFiles(filePath, fullPath, remotePath):
         sendFileArgs = [
             line.split('/')[-1].replace(".sp", "_o"), 
             remotePathLine, 
-            fullPath + "/spiceFiles",
-            fullPath + "/spiceFiles"]
+            spiceFilePath[:-1], # removes extra /
+            spiceFilePath[:-1]]
         #getFileCommand = getFileScript + " " + line.split('/')[-1].replace(".sp", "_o") + " " + remotePath + " " + fullPath + "/spiceFiles " + fullPath + "/spiceFiles "# + filePath.replace('./', '')
         getFileCommand = getFileScript + " " + " ".join(sendFileArgs)
         #sendFileCommand = sendFileCommand     
@@ -126,11 +133,15 @@ def downloadFiles(filePath, fullPath, remotePath):
 
     print("Done getting files")
 
-def extractChemData(fullPath, device):
+def extractChemData(fullPath, device, spiceFilePath, preRoute=False):
 
     print("\nExtracting data\n\n")
 
-    spiceExtract.parseSpiceOut(fullPath + '/spiceFiles/', "spiceList", device)
+    spiceExtract.parseSpiceOut(fullPath,
+        "spiceList", 
+        device,
+        spiceFilePath=spiceFilePath, 
+        preRoute=preRoute)
 
     print("\nDone extracting data\n\n")
 
@@ -142,9 +153,9 @@ def outputData(fullPath):
 # main -------------------------------------------
 #
 
-def testing(platform=None, design=None, verilog_file=None, path=None, testCode=[1,1,1,1,1]):
+def testing(platform=None, design=None, verilog_file=None, path=None, testCode=[1,1,1,1,1], preRoute=False):
     
-    simulate(path, verilog_file, design=design, _buildSP=testCode[0], _sendFiles=testCode[1], _runSimScript=testCode[2], _downloadFiles=testCode[3], _extractData=testCode[4])
+    simulate(path, verilog_file, design=design, _buildSP=testCode[0], preRoute=preRoute, _sendFiles=testCode[1], _runSimScript=testCode[2], _downloadFiles=testCode[3], _extractData=testCode[4])
 
 
 def simulate(path, fileName, design, preRoute=False, length_file=None, _buildSP=True, _sendFiles=True, _runSimScript=True, _downloadFiles=True, _extractData=True):
@@ -174,12 +185,18 @@ def simulate(path, fileName, design, preRoute=False, length_file=None, _buildSP=
 
     # build sp file
     if _buildSP:
-        buildSPfile(fullFilePath, configFile, solnFile, remoteTestPath, length_file, preRoute)
+        spiceFileDir = buildSPfile(fullFilePath, 
+            configFile, 
+            solnFile, 
+            remoteTestPath, 
+            length_file, 
+            preRoute)
 
+    #spiceFileDir
     # send files to remote server
     
     if _sendFiles:
-        sendFiles(filePath, filePath, testpath)
+        sendFiles(filePath, filePath, spiceFileDir, testpath)
     
     # run simulation files
     if _runSimScript:
@@ -187,11 +204,11 @@ def simulate(path, fileName, design, preRoute=False, length_file=None, _buildSP=
 
     # get files from remote server
     if _downloadFiles:
-        downloadFiles(filePath, filePath, testpath)
+        downloadFiles(filePath, filePath, spiceFileDir, testpath)
 
     # run file extraction
     if _extractData:
-        extractChemData(filePath, design)
+        extractChemData(filePath, design, spiceFileDir, preRoute=preRoute)
 
 if __name__ == "__main__":
     
@@ -221,7 +238,8 @@ if __name__ == "__main__":
         args.test_path, 
         args.verilog_file, 
         design=args.design,
-        length_file=args.length_file)
+        length_file=args.length_file,
+        preRoute=args.preRoute)
 
     """
     fullPath     = filePath

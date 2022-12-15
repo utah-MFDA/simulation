@@ -17,6 +17,18 @@ def smartToiletPreRoute():
         design=fileName.replace('.v', ''),
         testCode=[1,0,0,0,0])
 
+def smartToiletPrePostRoute():
+    # add file path
+    filePath = "./Continuous/V2Va_Parser/testFiles/smart_toilet_test1"
+    fileName = "smart_toilet.v"
+
+    # run simulation
+    simMain.testing(verilog_file=fileName, 
+        path=filePath, 
+        design=fileName.replace('.v', ''),
+        testCode=[1,0,0,1,1],
+        preRoute=True)
+
 def smartToiletPostRoute():
     # add file path
     filePath = "./Continuous/V2Va_Parser/testFiles/smart_toilet_test1"
@@ -26,7 +38,7 @@ def smartToiletPostRoute():
     simMain.testing(verilog_file=fileName, 
         path=filePath, 
         design=fileName.replace('.v', ''),
-        testCode=[0,0,0,0,1])
+        testCode=[1,0,0,0,1])
 
 def smartToilet3():
     # add file path
@@ -56,8 +68,9 @@ def PCR1():
 if __name__ == '__main__':
     
     # smart toilet
-    smartToiletPreRoute()
-    #smartToiletPostRoute()
+    #smartToiletPreRoute()
+    smartToiletPrePostRoute()
+    smartToiletPostRoute()
     #smartToilet3()
     
     # PCR device
