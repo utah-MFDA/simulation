@@ -228,9 +228,8 @@ if __name__ == "__main__":
                     help='Path to the test files')
     ap.add_argument('--lengths_file', metavar='length_file', dest='length_file', type=str,
                     help='length file location')
-    ap.add_argument('--preRoute', metavar='preRoute', dest='preRoute', type=bool,
+    ap.add_argument('--preRoute', metavar='preRoute', dest='preRoute', type=str,
                     help='Boolean if the simulation is pre oro post place and routing')
-
 
     args = ap.parse_args()
 
@@ -239,7 +238,7 @@ if __name__ == "__main__":
         args.verilog_file, 
         design=args.design,
         length_file=args.length_file,
-        preRoute=args.preRoute)
+        preRoute=args.preRoute != 'False')
 
     """
     fullPath     = filePath
