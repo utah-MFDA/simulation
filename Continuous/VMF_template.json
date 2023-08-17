@@ -1,0 +1,7 @@
+{
+    "START": 
+    "* Converted from verilog for microfluidic simulation\n\n*Outputs as ASCII\n.option post=2\n.option POST_VERSION=2001\n\n"
+    ,
+    "END" : 
+    ".tran 0.1ms 1ms"
+}

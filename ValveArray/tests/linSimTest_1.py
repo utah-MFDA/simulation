@@ -7,6 +7,8 @@ sys.path.append('.')
 import netListParse
 import simulation
 
+import numpy as np
+
 #net1 = netListParse.main('./ValveArray/tests/testDev2')
 net1 = netListParse.main('./ValveArray/tests/testDev2Ch')
 
@@ -37,6 +39,11 @@ net1 = netListParse.main('./ValveArray/tests/testDev2Ch')
 
 #net1 = netListParse.main('./ValveArray/tests/testDev1.1')
 
+net1 = netListParse.main('./ValveArray/tests/testSmart001')
+#net1 = netListParse.main('./ValveArray/tests/testSmart002')
+
+#net1 = netListParse.main('./ValveArray/tests/testPCR001')
+
 net1.subForJunctions()
 
 linSim = simulation.LinearSolver(net1)
@@ -47,10 +54,16 @@ linSim.generateEquations()
 
 solutionVec = linSim.getFlowSolution()
 
-linSim.generateChemicalSolutions()
+linSim.generateChemicalSolution()
 
-chemSoln = linSim.getChemicalSolution()
+[keys, flowSoln, chemSoln] = linSim.getChemicalSolution()
 
 print(solutionVec)
 
-print(chemSoln)
+soln = np.concatenate((keys, flowSoln, chemSoln), axis=1)
+
+#print(chemSoln)
+#print(flowSoln)
+#print(keys)
+
+print(soln)

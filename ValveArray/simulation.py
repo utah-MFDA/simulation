@@ -1,4 +1,6 @@
 
+import string
+from tracemalloc import start
 from unittest import skip
 import numpy as np
 
@@ -122,6 +124,9 @@ class LinearSolver(baseSimulation):
         numOfNodes = len(self.netlist.nodeList)
 
         self.nodeKeys = []
+        self.componentKeys = []
+        self.juntionKeys = []
+        self.ioKeys = []
 
         self.componentList = np.empty((0,3))
         self.componentCount = {'IO':0, 'Junction':0, 'else':0}
@@ -179,9 +184,11 @@ class LinearSolver(baseSimulation):
                 solver_matrix[eqInd,:] = eq
                 eqInd += 1
 
+                self.ioKeys.append(component[1].getKey())
+
                 # add one equation with IO
 
-                self.componentCount['IO'] += 1
+                #self.componentCount['IO'] += 1
                 #self.componentList.append('IO')
                 #numEq = 1
 
@@ -217,6 +224,7 @@ class LinearSolver(baseSimulation):
 
                 #self.componentCount['Junction'] += 1
                 #numEq = len(PInd)
+                self.juntionKeys.append(component[1].getKey())
 
 
             else:
@@ -226,10 +234,13 @@ class LinearSolver(baseSimulation):
                     eq1 = np.zeros((numOfNodes*2))
                     eq2 = np.zeros((numOfNodes*2))
                     # get flow and potential node indexes
-                    PInd1 = nodeKeys.index(nodes[0].getExternalNode().getKey())
-                    PInd2 = nodeKeys.index(nodes[1].getExternalNode().getKey())
-                    FInd1 = nodeKeys.index(nodes[0].getExternalNode().getKey()) + numOfNodes
-                    FInd2 = nodeKeys.index(nodes[1].getExternalNode().getKey()) + numOfNodes
+                    n1 = nodes[0].getExternalNode().getKey()
+                    n2 = nodes[1].getExternalNode().getKey()
+
+                    PInd1 = nodeKeys.index(n1)
+                    PInd2 = nodeKeys.index(n2)
+                    FInd1 = nodeKeys.index(n1) + numOfNodes
+                    FInd2 = nodeKeys.index(n2) + numOfNodes
 
                     # set equation 1
                     eq1[PInd1] = -1
@@ -250,6 +261,11 @@ class LinearSolver(baseSimulation):
                     component_M = np.append(component_M, eq2.reshape(1, numOfNodes*2), axis=0)
                     num_comp_eq += 1
                     #eqInd += 1
+
+                    self.componentKeys.append(component[1].getKey())
+
+                    nodes[0].setDirection('inlet')
+                    nodes[1].setDirection('outlet')
 
                     #self.componentCount['else'] += 1
                     #numEq = 2
@@ -280,7 +296,7 @@ class LinearSolver(baseSimulation):
             print('\n')
             self.netlist.setSolution(solution, self.nodeKeys)
             self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug', 'flow')
-            self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
+            #self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
             matrixFile = open('matrixDebug', 'w+')
             matrixFile.write(str(self.solverMatrix))
             matrixFile.close()
@@ -299,6 +315,7 @@ class LinearSolver(baseSimulation):
             #ind1 = int(len(solution)/2)
             #ind2 = len(solution)-1
             #nodes = nodes[0,int(len(solution)/2):len(solution)-1]
+            #Gets flow nodes
             nodes = nodes[-numOfNodes:]
             nodes_vec = (solution < 0).astype(int)*-2 + 1 #[int(len(solution))/2:len(solution)-1]*-1
 
@@ -306,6 +323,7 @@ class LinearSolver(baseSimulation):
             #compList = self.componentList[:, 1]
             #jnct = (compList == 'jct')
 
+            #Iterate through nodes
             for ind, n in enumerate(nodes):
                 # get node key
             
@@ -325,6 +343,9 @@ class LinearSolver(baseSimulation):
                                 if rNode and (ind != rNInd) and nodes[rNInd]:
                                     self.componentMatrix[rInd,ind] *= -1
                                     self.componentMatrix[rInd,rNInd] *= -1
+
+                                    
+
                                     continue
 
                     # check for flow of junctions
@@ -333,7 +354,25 @@ class LinearSolver(baseSimulation):
                         #print(row[ind+numOfNodes])
 
                         if row[ind+numOfNodes]:
+
+                            # get key for junction
+                            k = self.juntionKeys[int(rInd/3)]
+                            # get component reference
+                            c = self.netlist.getComponentFromKey(k)
+                            # get node from index
+                            nK = self.nodeKeys[ind]
+                            # change direction of node (initially assumed inputs)
+                            #c.changeDirection(nK)
+
+                            # Changes direction of node in eqeuations
                             self.junctionMatrix[rInd, ind+numOfNodes] *= -1
+
+                            nodeSign = self.junctionMatrix[rInd, ind+numOfNodes]
+
+                            if nodeSign < 0:
+                                c.setDirection(nK, 'outlet')
+                            else:
+                                c.setDirection(nK, 'inlet')
                     # if n:
                         #col = self.solverMatrix[ind, :].reshape((len(nodes_vec), 1))
                         #newCol = np.multiply(col, nodes_vec)
@@ -352,7 +391,7 @@ class LinearSolver(baseSimulation):
                 print('\n')
                 self.netlist.setSolution(solution, self.nodeKeys)
                 self.netlist.generateGraph('debugLinearSim', 'LinearSolnDebug', 'flow')
-                self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
+                #self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
                 matrixFile = open('matrixDebug', 'w+')
                 matrixFile.write(str(self.solverMatrix))
                 matrixFile.close()
@@ -362,10 +401,25 @@ class LinearSolver(baseSimulation):
                 vectorFile .close()
             a = 1
 
+        self.setNodeValues(solution, 'flow')
+
         #print('')
         #print(self.solverMatrix)
 
         return solution
+
+    def setNodeValues(self, solution, solnType):
+        numOfNodes = len(self.nodeKeys)
+        
+        if solnType == 'flow':
+            for ind, node in enumerate(self.netlist.nodeList):
+                node.setPressure(solution[ind])
+                node.setFlow(solution[ind+numOfNodes])
+                # internal nodes
+                #for iNodes in node.getInternalNodes
+
+        if solnType == 'chem':
+            pass
 
     # Chemical solution -----------------------------------------
 
@@ -379,6 +433,130 @@ class LinearSolver(baseSimulation):
 
         pass
 
+    def generateChemicalSolution(self):
+        
+        # get number of nodes
+        numOfNodes = len(self.netlist.nodeList)
+
+        # get chemicals at each IO
+        numOfChem = len(self.netlist.chemicalList)
+
+        # solution vector
+        # chem_solutionVec = np.zeros((numOfNodes, 1, numOfChem))
+        chem_solutionVec = np.zeros((numOfChem, numOfNodes, 1))
+
+        for node in self.netlist.nodeList:
+            # set vector length
+            node.setChemicalVec(numOfChem)
+
+
+        IOcomp = []
+        # get inlet IO nodes
+        for comp in self.netlist.componentList:
+            if comp[1].isIO():
+                # go form in to out
+                if comp[1].getDirection() == 'inlet':
+                    IOcomp.append(comp[1])
+                    #break
+
+        # get chemical vector
+        chemVecKeys = self.netlist.chemicalList
+
+        
+
+        # set values for inlet node
+        for io in IOcomp:
+            # get first node
+            node1 = io.getExternalNode()
+            for ind, chemC in enumerate(io.getChemicalConcentrations()):
+                chemName = io.getChemicalNames()[ind]
+                chemVecInd = chemVecKeys.index(chemName)
+                node1.setChemicalFlowInd(chemC, chemVecInd)
+
+                # get component then get next node
+                self.genChemGetNextNode(node1, io)
+
+
+    def genChemGetNextNode(self, startNode, refComponent):
+        #c = startNode.getComponents()
+        for comp in startNode.getComponents():
+            comp = comp.component
+            if refComponent == comp:
+                pass
+            else:
+                if comp.isIO():
+                    #if comp.getDirection
+                    pass
+                elif comp.isJunction():
+                    nodes = comp.getExternalNodes()
+                    for node in nodes:
+                        node = node[1]
+                        if node is not startNode:
+                            direction = comp.getInternalNodeFromExterenalNode(node).getDirection()
+                            if direction == 'outlet':
+                                # get flow of ref node
+                                Q_ref  = startNode.getFlow()
+                                # get flow of next node
+                                Q_next = node.getFlow()
+                                # set chem as porportial of current node
+                                Chem_next = startNode.getChemicalFlow() * (Q_ref/Q_next)
+                                node.setChemicalFlow(node.getChemicalFlow() + Chem_next)
+                                self.genChemGetNextNode(node, comp)
+                            else:
+                                pass
+                else:
+                    nodes = comp.getExternalNodes()
+                    for node in nodes:
+                        node = node[1]
+                        direction = comp.getInternalNodeFromExterenalNode(node).getDirection()
+                        if node is not startNode and direction == 'outlet':
+                            chemFl = startNode.getChemicalFlow()
+                            node.setChemicalFlow(startNode.getChemicalFlow())
+                            self.genChemGetNextNode(node, comp)
+                    
+                    
+                    #for node in nodes:
+                    #    if node == nodes:
+                    #        pass
+                    #    else:
+                    #        self.genChemSetNodeSolution(node, startNode.getChemicalFlow())
+
+    def genChemSetNodeSolution(self, node, inletChem):
+        
+        #if 
+        
+        pass
+
+
+    def getChemicalSolution(self):
+        numOfNodes = len(self.netlist.nodeList)
+        numOfChem  = len(self.netlist.chemicalList)
+        chemSoln = np.empty((numOfNodes,numOfChem))
+        flowSoln = np.empty((numOfNodes,2))
+        nodeKeys = np.empty((numOfNodes), dtype='U4')
+
+        for ind, node in enumerate(self.netlist.nodeList):
+            nodeKeys[ind] = node.getKey()
+            flowSoln[ind] = np.array([node.getPressure(), node.getFlow()]).reshape((1,2))
+            chemSoln[ind] = np.array(node.getChemicalFlow()).reshape((1,numOfChem))
+
+        if self.debug:
+                #print(solution)
+                print('\n')
+                self.netlist.setChemSolution(chemSoln)
+                #self.netlist.setSolution(solution, self.nodeKeys)
+                self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
+                #self.netlist.generateGraph('debugLinearSimCh', 'LinearSolnDebugCh', 'chem')
+                #matrixFile = open('matrixDebug', 'w+')
+                #matrixFile.write(str(self.solverMatrix))
+                #matrixFile.close()
+
+                #vectorFile = open('vectorDebug', 'w+')
+                #vectorFile.write(str(self.solverVector))
+                #vectorFile .close()
+
+        return nodeKeys.reshape(numOfNodes, 1), flowSoln, chemSoln.reshape(numOfNodes, numOfChem)
+"""
     def generateChemicalSolutions(self):
         
         # get number of nodes
@@ -406,7 +584,7 @@ class LinearSolver(baseSimulation):
         for compInd, component in enumerate(self.netlist.getComponentList()):
             
             if component.isIO():
-                if component.getDirection() is 'outlet':
+                if component.getDirection() == 'outlet':
                     numOutlets += 1
                 else:
                     # Get chemical names
@@ -484,12 +662,12 @@ class LinearSolver(baseSimulation):
 
         self.chem_solverMatrix = chem_solverMatrix
         self.chem_solutoinVec = chem_solutionVec
-
-
+"""
+"""
     def getChemicalSolution(self):
         
         chemSolution = np.linalg.solve(self.chem_solverMatrix, self.chem_solutoinVec)
 
         return chemSolution
-    
+""" 
 

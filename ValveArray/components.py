@@ -1,5 +1,8 @@
 
 
+from platform import node
+
+
 class Component():
     """
     component definitions
@@ -18,6 +21,10 @@ class Component():
             self.externalNode = None
             self.component = component
             self.index = None
+            self.direction = None
+            self.pressure = None
+            self.flow = None
+            self.chemicalFlow = None
             
 
         def assignExternalNode(self, e_node):
@@ -38,6 +45,32 @@ class Component():
 
         def getExternalNode(self):
             return self.externalNode
+
+        def getDirection(self):
+            return self.direction
+
+        def setDirection(self, direction):
+            if direction == 'inlet':
+                self.direction = 'inlet'
+            elif direction == 'outlet':
+                self.direction = 'outlet'
+            elif direction == 'none':
+                self.direction = None
+            else:
+                print('Node ' + self.getExternalNode().getKey() + ' at component ' + self.getComponent() +\
+                    ' does not hav a valid direction; direction: ' + str(direction))
+
+        def setPressure(self, pressure):
+            self.pressure = pressure
+
+        def setFlow(self, flow):
+            self.flow = flow
+
+        def createChemicalVector(self, numOfInd):
+            self.chemicalFlow = [0]*numOfInd
+
+        def setChemical(self, chemicalFlowVal, ind):
+            self.chemicalFlow[ind] = chemicalFlowVal
     
     class Branch():
         def __init__(self):
@@ -87,6 +120,11 @@ class Component():
         for node in self.nodeList:
             e_node_list.append([node.getExternalNode().getKey(), node.getExternalNode()])
         return e_node_list
+
+    def getInternalNodeFromExterenalNode(self, eNode):
+        for node in self.nodeList:
+            if node.getExternalNode() == eNode:
+                return node
 
     def getBranches(self):
         return self.branchList
@@ -303,6 +341,10 @@ class IO_Connection(Component):
         for i in range(0,len(params),2):
             self.setValue(params[i], params[i+1])
         
+        printString = 'Component ' + str(self.key) + ' direction set to ' + \
+            str(self.direction)
+
+        print(printString)
         #if params == None:
         #    self.direction = 'outlet'
         #    return
@@ -392,13 +434,34 @@ class Junction(Component):
         self.key = key
         self.nodeList = []
         for i in range(numOfConnections):
-            self.nodeList.append(Component.Node(self))
+            node = Component.Node(self)
+            node.setDirection('inlet')
+            self.nodeList.append(node)
 
     def isJunction(self):
         return True
 
     def getType(self):
         return 'jct'
+
+    # node direcitons
+    def changeDirection(self, nodeKey):
+        for node in self.nodeList:
+            if node.getExternalNode().getKey() == nodeKey:
+                if node.getDirection() == 'outlet':
+                    node.setDirection('inlet')
+                elif node.getDirection() == 'inlet':
+                    node.setDirection('outlet')
+                else:
+                    print('Component ' + self.key + ', node ' + node.getExternalNode().getKey() +
+                        ' does not have a valid direction')
+
+    def setDirection(self, nodeKey, direction):
+        for node in self.nodeList:
+            if node.getExternalNode().getKey() == nodeKey:
+                node.setDirection(direction)
+
+        
 
 # -- Node Class --------------------------------------------------------------
 
