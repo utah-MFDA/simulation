@@ -369,6 +369,16 @@ class LinearSolver(baseSimulation):
 
     # Chemical solution -----------------------------------------
 
+    def getJunctionDirection(self):
+        # get junctions from list
+        for component in self.netlist.getComponentList():
+            if isinstance(component):
+                pass
+
+        # go through equations for direction
+
+        pass
+
     def generateChemicalSolutions(self):
         
         # get number of nodes
