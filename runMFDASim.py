@@ -5,6 +5,9 @@ import os
 import docker
 import tarfile
 
+import pandas as pd
+import matplotlib.pyplot as plt
+
 # local imports
 from V2Va_Parser import Verilog2Xyce
 
@@ -24,6 +27,78 @@ Steps
 - evaluate to spec
 
 """
+class SimulationXyce:
+        
+    class Node:    
+        def __init__(self, name, args):
+                self.name = name
+                self.args = args
+
+        def getName(self):
+            return self.name
+        
+        def getArgs(self):
+            return self.args
+    
+    class Inlet(Node):
+        def __init__(self, name, args):
+            super.__init__(name, args)
+
+    class Eval(Node):
+        def __init__(self, name, args):
+            super.__init__(name, args)
+
+    # this will need some more generic definitions
+    class Dev:
+        def __init__(self, type, node, args):
+            self.type = type
+            self.node = node
+            self.args = args
+
+        def getType(self):
+            return self.type
+
+        def getNode(self):
+            return self.node
+        
+        def getArgs(self):
+            return self.args
+
+    def __init__(self):
+        self.netListFiles = []
+        self.inlets = {}
+        self.eval   = {}
+        self.dev    = {}
+
+    def addNetlistFile(self, nFile):
+        self.netListFiles.append(nFile)
+
+    def removeNelistFile(self):
+        # find file that matches key
+
+        # remove file
+        pass
+
+    def clearNetlistFile(self):
+        self.netListFiles = []
+
+    def addInlet(self, inletName, inletArgs):
+        #' '.join(str.split()) reduces multispaces to single space
+        inletArgs = ' '.join(inletArgs.split()).split(' ')
+        self.inlets[inletName] = {'args':inletArgs}
+
+    def removeInlet(self):
+        pass
+
+    def addEval(self, evalNode, evalArgs):
+        evalArgs = ' '.join(evalArgs.split()).split(' ')
+        self.eval[evalNode] = {'args':evalArgs}
+
+    def removeEval(self):
+        pass
+
+    def addDev(self, dev, node, args):
+        self.dev[node] = {'dev':dev, 'args':args}
 
 def runSimulation(
         verilogFile, 
@@ -52,6 +127,32 @@ def runSimulation(
     # generate report
 
     pass
+
+def parseMFDAFile(mfda_file):
+    
+    iFile = open(mfda_file, "r")
+
+    xyceSimObj = SimulationXyce()
+
+    for line in iFile:
+
+        lineWSSplit = ' '.join(line.lstrip().split())
+
+        lineKey = lineWSSplit[0]
+        lineArgs = lineWSSplit[1:]
+
+        if lineKey == "NETLIST" and lineArgs[0] == "file":
+            xyceSimObj.addNetlistFile(lineArgs[1])
+        elif lineKey == "inlet":
+            xyceSimObj.addInlet(lineArgs[0], lineArgs[1:])
+        elif lineKey == "eval":
+            xyceSimObj.addEval(lineArgs[0], lineArgs[1:])
+        elif lineKey == "dev":
+            xyceSimObj
+        
+        
+
+        pass
 
 def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False):
 
@@ -191,12 +292,39 @@ def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=
     os.remove(targetFileAbs)
 
 
+def load_xyce_results(rFile):
+    r_df = pd.read_table(rFile, skipfooter=2, index_col=0, delim_whitespace=True)
+    #print(str(r_df))
+    return r_df
+
+
+def plot_xyce_results(r_df):
+    
+    x = r_df["TIME"]
+    y = {}
+
+    for col in r_df.keys():
+        if col == "TIME":
+            continue
+        else:
+            y[col] = r_df[col]
+
+    fig, ax = plt.subplots()
+
+    for p in y:
+        ax.plot(x, y[p], label=p)
+
+    ax.legend()
+    plt.show()
+
+
 def is_docker_container_running(client, container):
     if container not in [x.name for x in client.containers.list()]:
         #print(client.containers.list())
         raise ValueError('Container not in list (is it running?)' + "\n"+\
                          "Running images: " + str([x.name for x in client.containers.list()]))
     return True
+
 
 if __name__ == "__main__":
     

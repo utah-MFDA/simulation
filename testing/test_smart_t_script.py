@@ -220,6 +220,28 @@ def test_simple_channel_pullFileFromDocker():
                    simDockerWD=dockerTargetDir,
                    OR_fileExists=True)
     
+def test_parse_simple_channel():
+
+    from runMFDASim import load_xyce_results
+
+    result_file = "simple_channel_H2O.cir.prn"
+    result_wd   = "./testing/DockerPullTest/simple_channel_xyce_0"
+    
+    load_xyce_results(result_wd+"/"+result_file)
+
+def test_plot_simple_channel():
+
+    from runMFDASim import load_xyce_results
+    from runMFDASim import plot_xyce_results
+
+    result_file = "simple_channel_H2O.cir.prn"
+    result_wd   = "./testing/DockerPullTest/simple_channel_xyce_0"
+    
+    df = load_xyce_results(result_wd+"/"+result_file)
+
+    plot_xyce_results(df)
+
+
 if __name__ == "__main__":
     
     import sys
@@ -230,4 +252,5 @@ if __name__ == "__main__":
     #from runMFDASim import runRemoteXyce
     
     #test_gen_simple_cir()
-    test_simplechannel_runXyceDocker()
+    #test_simplechannel_runXyceDocker()
+    test_parse_simple_channel()
