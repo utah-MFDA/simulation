@@ -38,6 +38,22 @@ def test_gen_cir():
         libFile=libFile,
         configFile=cirConfig,
         preRouteSim=False)
+    
+def test_gen_simple_cir():
+    import runMFDASim
+
+    wd = "./testing/simpleChannelTest"
+    vFile = "simple_channel.v"
+    libFile="./testing/StandardCellLibrary.csv"
+    cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+
+    runMFDASim.convertToCir(
+        verilogFile=vFile,
+        wd=wd,
+        libFile=libFile,
+        configFile=cirConfig,
+        preRouteSim=False,
+        overwrite=True)
 
 def test_push2Docker():
 
@@ -66,7 +82,35 @@ def test_push2Docker():
         simArchive=simTar,  
         dockerContainer=dock_container, 
         dockerWD=dock_WD)
-        
+
+def runXyceDocker(verilogFile, wd, libFile, configFile, prerouteSim, overwrite, 
+                  docker_container, docker_WD, 
+                  simRunTime, simDir, simStartFile, simArgs):
+    import runMFDASim
+    import os
+
+    simTar = runMFDASim.convertToCir(
+        verilogFile=verilogFile,
+        wd=wd,
+        libFile=libFile,
+        configFile=configFile,
+        preRouteSim=prerouteSim,
+        overwrite=overwrite)
+
+    runMFDASim.pushCir2Docker(
+        simArchive=simTar,  
+        dockerContainer=docker_container, 
+        dockerWD=docker_WD)
+    
+    simDockerWDarg = "--workdir "+docker_WD+'/'+os.path.basename(simTar).replace('.tar','')
+
+    runSimComm = simRunTime+' '+\
+        simDir+'/'+simStartFile+' '+\
+        simArgs+' '+simDockerWDarg
+
+    runMFDASim.runRemoteXyce(runSimComm, docker_container, simDir)
+
+
 def test_runXyceDocker():
     import runMFDASim
 
@@ -108,6 +152,41 @@ def test_runXyceDocker():
 
     runMFDASim.runRemoteXyce(runSimComm, dock_container, simDir)
 
+def test_simplechannel_runXyceDocker():
+    import runMFDASim
+
+    import os
+
+    wd = "./testing/simpleChannelTest"
+    vFile = "simple_channel.v"
+    libFile="./testing/StandardCellLibrary.csv"
+    cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+
+    # Docker config
+    simDir      = "/mfda_simulation/xyce_docker_server"
+    simRunTime  = "python3"
+    simStartFile= "xyceRun.py"
+    simArgs     = "--list spiceList"
+    
+
+    dock_container = "vibrant_clarke"
+    dock_WD        = "/mfda_simulation/local/simulations"
+    
+    
+
+    runXyceDocker(verilogFile=vFile, 
+                  wd=wd, 
+                  libFile=libFile, 
+                  configFile=cirConfig, 
+                  prerouteSim=False, 
+                  overwrite=True,  
+                  docker_container=dock_container, 
+                  docker_WD=dock_WD, 
+                  simRunTime=simRunTime, 
+                  simDir=simDir, 
+                  simStartFile=simStartFile, 
+                  simArgs=simArgs)
+
     
 def test_pullFileFromDocker():
 
@@ -125,3 +204,30 @@ def test_pullFileFromDocker():
                    simDockerWD=dockerTargetDir,
                    OR_fileExists=True)
     
+def test_simple_channel_pullFileFromDocker():
+
+    #
+    targetDir       = "testing/DockerPullTest"
+    dockerContainer = "vibrant_clarke"
+    dockerTargetDir = "/mfda_simulation/local/simulations/simple_channel_xyce_0"
+
+    # 
+    from runMFDASim import pullFromDocker
+
+    # pullFromDocker(targetDirectory, dockerContainer, simDockerWD)
+    pullFromDocker(targetDirectory=targetDir,
+                   dockerContainer=dockerContainer,
+                   simDockerWD=dockerTargetDir,
+                   OR_fileExists=True)
+    
+if __name__ == "__main__":
+    
+    import sys
+
+    import os
+    sys.path.insert(1, os.getcwd())
+
+    #from runMFDASim import runRemoteXyce
+    
+    #test_gen_simple_cir()
+    test_simplechannel_runXyceDocker()
