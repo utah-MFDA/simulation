@@ -99,7 +99,24 @@ class SimulationXyce:
 
     def addDev(self, dev, node, args):
         self.dev[node] = {'dev':dev, 'args':args}
-
+"""
+verilogFile
+    - Verilog netlist
+workDir
+    - local directory for other files
+libraryFile
+    - file for list of components
+cirConfig
+    - 
+preRouteSim
+    -
+dockerContainer
+    - simulation docker container name
+dockerWD
+    - working directory for simulation
+xyceFiles
+    - location for xyce files to be generated
+"""
 def runSimulation(
         verilogFile, 
         workDir, 
@@ -110,21 +127,44 @@ def runSimulation(
         dockerWD=None,
         xyceFiles="spiceList"):
     
-    simRunComm = "python xyceRun.py --file "+xyceFiles
+    # hard coded simulation directory in docker image
+    docker_PyWD    = "/mfda_simulation/xyce_docker_server"
+
+    simRunComm = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
+
+    
 
     # Convert to cir from v
     arcName = convertToCir(verilogFile, workDir, libraryFile, cirConfigFile, preRouteSim)
+    # default result directory
+    result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
+    result_wd = workDir+"/results"
 
     # transfer files to docker image
-    pushCir2Docker(arcName, simRunComm, dockerContainer, dockerWD)
+    pushCir2Docker(arcName, dockerContainer, dockerWD)
 
-    simRunComm += "--workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
+    simRunComm += " --workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
 
     # wait for simulator
+    runRemoteXyce(simStartComm=simRunComm, 
+                  dockerContainer=dockerContainer, 
+                  simDockerPyWD=dockerWD)
 
     # load extracted data
+    pullFromDocker(targetDirectory=result_wd,
+                   dockerContainer=dockerContainer,
+                   simDockerWD=dockerWD+'/'+os.path.basename(arcName).replace('.tar',''),
+                   OR_fileExists=True)
 
     # generate report
+    rfiles = pd.read_csv(result_wd+"/spiceList")["OutputFile"]
+
+    for i, f in enumerate(rfiles):
+        rfiles[i] = f+".prn"
+
+    df = load_xyce_results(result_wd, rfiles)
+
+    plot_xyce_results_list(df)
 
     pass
 
@@ -245,7 +285,9 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
     print("send command: "+simStartComm)
     print("to directory: " + dockerContainer+":"+simDockerPyWD )
 
-    xyceContainer.exec_run(cmd=simStartComm, workdir=simDockerPyWD)
+    _, stream = xyceContainer.exec_run(cmd=simStartComm, workdir=simDockerPyWD, stream=True)
+    for data in stream:
+        print(data.decode())
 
 def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=False):
 
@@ -286,10 +328,17 @@ def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=
 
     # unpack archive
     local_arc = tarfile.open(targetFileAbs, 'r')
-
     local_arc.extractall(path=targetDirectory)
-
     os.remove(targetFileAbs)
+
+    # move files to results
+    for f1 in os.listdir(targetDirectory):
+        f1_ = targetDirectory+"/"+f1
+        if os.path.isdir(f1_):
+            for f2 in os.listdir(f1_):
+                
+                os.rename(f1_+"/"+f2, targetDirectory+"/"+f2)
+            os.removedirs(f1_)
 
 
 def load_xyce_results(rFile):
@@ -297,9 +346,22 @@ def load_xyce_results(rFile):
     #print(str(r_df))
     return r_df
 
+def load_xyce_results(rDir, rlist):
+    r_df = []
+    for rFile in rlist:
+        r_df.append(pd.read_table(rDir+"/"+rFile, skipfooter=2, index_col=0, delim_whitespace=True))
+        #print(str(r_df))
+        return r_df
+
+def plot_xyce_results_list(r_df):
+
+    for df in r_df:
+        plot_xyce_results(df)
+
 
 def plot_xyce_results(r_df):
     
+
     x = r_df["TIME"]
     y = {}
 

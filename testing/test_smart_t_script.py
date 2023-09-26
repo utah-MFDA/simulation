@@ -110,7 +110,6 @@ def runXyceDocker(verilogFile, wd, libFile, configFile, prerouteSim, overwrite,
 
     runMFDASim.runRemoteXyce(runSimComm, docker_container, simDir)
 
-
 def test_runXyceDocker():
     import runMFDASim
 
@@ -157,10 +156,10 @@ def test_simplechannel_runXyceDocker():
 
     import os
 
-    wd = "./testing/simpleChannelTest"
-    vFile = "simple_channel.v"
-    libFile="./testing/StandardCellLibrary.csv"
-    cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+    wd        ="./testing/simpleChannelTest"
+    vFile     ="simple_channel.v"
+    libFile   ="./testing/StandardCellLibrary.csv"
+    cirConfig ="./V2Va_Parser/VMF_xyce.mfsp"
 
     # Docker config
     simDir      = "/mfda_simulation/xyce_docker_server"
@@ -186,7 +185,6 @@ def test_simplechannel_runXyceDocker():
                   simDir=simDir, 
                   simStartFile=simStartFile, 
                   simArgs=simArgs)
-
     
 def test_pullFileFromDocker():
 
@@ -241,6 +239,27 @@ def test_plot_simple_channel():
 
     plot_xyce_results(df)
 
+def test_full_simulation_simpleChannel():
+    from runMFDASim import runSimulation
+
+    verilogFile    ="simple_channel.v"
+    workDir        ="./testing/simpleChannelTest"
+    libraryFile    ="./testing/StandardCellLibrary.csv"
+    cirConfigFile  ="./V2Va_Parser/VMF_xyce.mfsp"
+    preRouteSim    =False
+    dockerContainer="vibrant_clarke"
+    dockerWD       ="/mfda_simulation/local/simulations"
+    xyceFiles      ="spiceList"
+
+    runSimulation(
+        verilogFile=verilogFile, 
+        workDir=workDir, 
+        libraryFile=libraryFile,
+        cirConfigFile=cirConfigFile,
+        preRouteSim=preRouteSim,
+        dockerContainer=dockerContainer,
+        dockerWD=dockerWD,
+        xyceFiles=xyceFiles)
 
 if __name__ == "__main__":
     
@@ -253,4 +272,5 @@ if __name__ == "__main__":
     
     #test_gen_simple_cir()
     #test_simplechannel_runXyceDocker()
-    test_parse_simple_channel()
+    #test_parse_simple_channel()
+    test_full_simulation_simpleChannel()
