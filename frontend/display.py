@@ -1,6 +1,7 @@
 
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import ttk
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -9,7 +10,11 @@ matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
+import pandas as pd
+
 import docker
+
+import configparser
 
 ## local imports
 import sys, os
@@ -34,9 +39,19 @@ class GraphPage(tk.Frame):
         self.toolbar.update()
         self.mpl_canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-    def update_mpl_figure(self, x, y):
-        self.fig.update_plot_data(x, y)
+    def update_mpl_figure(self, x, y, label=None):
+        self.fig.update_plot_data(x, y, label=label)
         self.mpl_canvas.draw()
+
+    def add_plot_to_figure(self, x, y, label=None):
+        self.fig.add_plot_data(x, y, label=label)
+
+    def draw(self):
+        self.mpl_canvas.draw()
+
+    def clear(self):
+        self.fig.clear_plots()
+
 
 class MPLGraph(Figure):
 
@@ -45,9 +60,71 @@ class MPLGraph(Figure):
         self.plot = self.add_subplot(111)
         self.plot.plot([1, 2, 3, 4, 5, 6, 7], [4, 3, 5, 0, 2, 0, 6])
 
-    def update_plot_data(self, x, y):
+    def update_plot_data(self, x, y, label=None):
         self.plot.clear()
-        self.plot.plot(x, y)
+        self.add_plot_to_figure(x, y, label=label)
+
+    def add_plot_data(self, x, y, label):
+        if label == None:
+            self.plot.plot(x, y)
+        else:
+            self.plot.plot(x, y, label=label)
+
+    def clear_plots(self):
+        self.plot.clear()
+
+class tkTable(ttk.Treeview):
+    
+    #anchor = []
+
+    def __init__(self,
+                 parent,
+                 width,
+                 height,
+                 #bg='#AC99F2'
+                 ):
+        ttk.Treeview.__init__(
+            self, 
+            parent, 
+            #width=width, 
+            #height=height
+            )
+        self.width = width
+        self.height= height
+        #self.pack()
+
+
+    def import_data(self, data, index_colunm=True):
+        
+        if isinstance(pd.DataFrame):
+            
+            self.num_columns=len(list(data))
+            if index_colunm:
+                self.num_columns += 1
+
+            column_width=int(self.width/self.num_columns)
+
+            for c in list(data):
+                self.column(c, anchor=tk.CENTER, width=column_width)
+                self.heading(c, text=c, anchor=tk.CENTER)
+
+            self.num_rows = 0
+            for row in data.itterows():
+                row = list(row)
+
+                self.insert(parent='', index='end', iid=self.num_rows,
+                                  values=row)
+                self.num_rows += 1
+            
+
+
+
+
+    def add_column(coln, data=None):
+        pass
+
+    def add_row(row, data):
+        pass
 
 
 def get_docker_containers():
@@ -165,7 +242,15 @@ def validateXycescr(wd, proj_name, proj_config):
     if os.path.isfile(time_file):
         proj['time'] = time_file
 
-    os.path.isfile(time_file)
+    #os.path.isfile(time_file)
+    # check veirlog file
+    verilog_file = proj_wd+ \
+                    "/"+proj_name+".v"
+    
+    if os.path.isfile(verilog_file):
+        proj['netlist'] = verilog_file       
+
+    #if os.path.isfile()
 
 def getXyceFiles(wd, proj_name, proj_config):
 
@@ -205,7 +290,18 @@ def selectPnrDockerImage():
 For config the project files are under
     config["projects"][$proj]["result_files"]
 """
-def updateListBox(config, optionVar, listboxVar):
+def refreshProjectWidgets(config, optionVar, listboxVarPrn, listboxVarCir, verilogStatVar):
+    updateListBox(config, optionVar, listboxVarPrn, listboxVarCir)
+    updateVerilogStat(config, optionVar, verilogStatVar)
+
+def updateVerilogStat(config, optionVar, verilogVar):
+    selectProj = optionVar.get()
+    if 'netlist' in config['projects'][selectProj]:
+        verilogVar.set("Verilog netlist detected")
+    else:
+        verilogVar.set("Verilog netlist not detected!")
+
+def updateListBox(config, optionVar, listboxVarPrn, listboxVarCir):
     #if not isinstance(listboxVar, tk.Variable): 
     #    print("wrong list type")
     #    return
@@ -214,13 +310,17 @@ def updateListBox(config, optionVar, listboxVar):
     selectProj = optionVar.get()
     if selectProj in config['projects']:
         if 'result_files' in config['projects'][selectProj]: 
-            listboxVar.set(config['projects'][selectProj]['result_files'])
+            listboxVarPrn.set(config['projects'][selectProj]['result_files'])
+
+    if selectProj in config['projects']:
+        if 'result_files' in config['projects'][selectProj]: 
+            listboxVarCir.set(config['projects'][selectProj]['spice_files'])
             
                 
 
 ## Listbox plot the selected file
 
-def updatePlot_from_list(project, selectedFile, config, plotframe):
+def updatePlot_from_list(project, selectedFile, config, plotframe, selectedPlots):
 
     project = project.get() 
     if (project in config['projects'] and  
@@ -237,14 +337,34 @@ def updatePlot_from_list(project, selectedFile, config, plotframe):
                 )[0]
             
             # returns column names
-            rDataKeys = list(rData)
+            rDataKeys = list(rData)[1:]
 
+            plotframe.clear()
             for k in rDataKeys:
-                if k == "TIME":
-                    continue
-                else:
-                    plotframe.update_mpl_figure(rData["TIME"], rData[k])
+                if k in selectedPlots:
+                    plotframe.add_plot_to_figure(rData["TIME"], rData[k], label=k)
+            plotframe.draw()
+
+def updatePlot_variables(project, selectedFile, config, plotNodeVar):
+    project = project.get() 
+    if (project in config['projects'] and  
+        'result_files' in config['projects'][project]):
+        if selectedFile in config['projects'][project]['result_files']:
+            rFile = "/".join([
+                config['projects'][project]['results'],
+                selectedFile    
+            ])
+
+            rData = runMFDASim.load_xyce_results(
+                config['projects'][project]['results'],
+                [selectedFile]
+                )[0]
             
+            # returns column names
+            # removes TIME
+            rDataKeys = list(rData)[1:]
+
+            plotNodeVar.set(rDataKeys)
 
 def updatePlot():
     pass
@@ -261,7 +381,21 @@ def callback_b1(config, optionmenu, optionVar):
 
     refreshProjectOptions(config, optionmenu, optionVar)
 
+## Simulation buttons
+
+def callback_sim_button():
+    pass
+
+def callback_convert_verilog_button():
+    pass
+
+
+def load_frame_1_proj_selection():
+    pass
+
 def main():
+
+    
 
     ##################################
     # windows definitions
@@ -269,9 +403,27 @@ def main():
     w1.resizable(False, False)
     w1.title("MFDA Application")
 
-    # size
-    f1 = tk.Frame(w1, height=400, width=800)
+    # Main window frames
+    f_main = tk.Frame(w1, height=400, width=800)
+    f1 = tk.Frame(f_main)
+    f_err = tk.Frame(f_main)
+
+    f1.grid(column=0, row=0)
+    f_err.grid(column=0, row=1)
     
+    sub_f1 = tk.Frame(f1) # for sim selection
+    sub_f1.grid(column=0, row=0)
+    
+    sub_f2 = tk.Frame(f1) # for ploting
+    sub_f2.grid(column=2, row=0)
+    
+    sub_f3 = tk.Frame(sub_f1) # for node list
+    sub_f3.grid(column=1, row=3, rowspan=3, sticky=tk.NW)
+
+    # load configs
+    config_file = "./frontend/config.ini"
+    app_config = configparser.ConfigParser().read(config_file)
+    app_config = tk.Variable(w1, app_config)
 
 
     #### configurations impormation
@@ -280,58 +432,125 @@ def main():
     
     #### Directory selection
     l1_dir = tk.Label(
-        f1,
+        sub_f1,
         #text="test text",
         textvariable=prog_config['project_dir'],
         height=2,
-        width=50
+        width=50,
+        justify='left',
+        anchor='nw'
     )
-    l1_dir.grid(column=0, row=0)
+    proj_label_pad=10
+    l1_dir.grid(column=0, row=0, sticky=tk.W, padx=proj_label_pad, columnspan=2)
     #l1_dir.pack(ipadx=10, ipady=10)
 
-    listboxProjVar = tk.Variable()
+    listboxProjVarPrn = tk.Variable()
 
     lb1_proj= tk.Listbox(
-        f1,
-        listvariable=listboxProjVar,
+        sub_f1,
+        listvariable=listboxProjVarPrn,
         #command=lambda: updatePlot(
         #    projectVar,
         #    lb1_proj.curselection(),
         #    prog_config, 
         #    fig),
-        height=26,
+        height=16,
+        width=40,
+        selectmode=tk.EXTENDED,
+        exportselection=0
+    )
+    lb1_proj.grid(column=0, row=3)
+    
+    # list simulation files
+    listboxProjVarCir = tk.Variable()
+
+    lb2_proj= tk.Listbox(
+        sub_f1,
+        listvariable=listboxProjVarCir,
+        #command=lambda: updatePlot(
+        #    projectVar,
+        #    lb1_proj.curselection(),
+        #    prog_config, 
+        #    fig),
+        height=5,
         width=40,
         selectmode=tk.EXTENDED
     )
-    lb1_proj.grid(column=0, row=3)
+    lb2_proj.grid(column=0, row=5)
 
+    sub_f1_sim_but = tk.Frame(sub_f1)
+    sub_f1_sim_but.grid(column=0, row=4)
+
+    b5_simulate = tk.Button(
+        sub_f1_sim_but,
+        text=" Run Simulation "
+    )
+    b5_simulate.grid(column=1, row=0)
+
+    b6_convert_verilog = tk.Button(
+        sub_f1_sim_but,
+        text=" Convert Verilog "
+    )
+    b6_convert_verilog.grid(column=0, row=0)
+
+    l3_string = tk.StringVar(w1)
+    l3_string.set("Verilog detected: ----- ")
+    #l3_string.trace_add('write', lambda *args:)
+    l3_verilog_stat=tk.Label(
+        sub_f1_sim_but,
+        textvariable=l3_string,
+        justify='left',
+        anchor='w'
+    )
+    l3_verilog_stat.grid(column=0, columnspan=2, row=1, sticky=tk.W)
 
     projectVar = tk.StringVar(w1)
     projectVar.set("Project List")
     #projectVar.trace_add('wirte', lambda *args: print(projectVar.get()))
-    projectVar.trace_add('write', lambda *args: updateListBox(prog_config, projectVar, listboxProjVar))
+    projectVar.trace_add(
+        'write', 
+        lambda *args: refreshProjectWidgets(prog_config, projectVar, listboxProjVarPrn, listboxProjVarCir, l3_string
+        ))
+
+    #projectVarCir = tk.StringVar(w1)
+    #projectVarCir.trace_add('write', lambda *args: updateListBox(prog_config, projectVarCir, listboxProjVarCir))
+
+    sub_f1_proj_but = tk.Frame(sub_f1)
+    sub_f1_proj_but.grid(column=0, row=2, sticky=tk.W, padx=proj_label_pad, columnspan=2)
 
     om1_proj = tk.OptionMenu(
     #om2_docker = tk.Listbox(
-        f1,
+        sub_f1_proj_but,
         projectVar,
         " ",
-        command=lambda: updateListBox(prog_config, projectVar, listboxProjVar)
+        command=lambda: updateListBox(prog_config, projectVar, listboxProjVarPrn)
         #height=1,
         #width=25
     )
-    om1_proj.grid(column=0, row=2)
+    om1_proj.grid(column=0, row=0)
     om1_proj.configure(state="disabled")
 
 
     b1_dir = tk.Button(
-            f1, 
+            sub_f1, 
             text="Projects", 
             command=lambda: callback_b1(prog_config, om1_proj, projectVar))
-    b1_dir.grid(column=0, row=1)
+    b1_dir.grid(column=0, row=1, sticky=tk.W, padx=proj_label_pad, columnspan=2)
     #b1_dir.pack(ipadx=10, ipady=10)
 
-    
+    # select button
+    b4_select = tk.Button(
+        sub_f1_proj_but,
+        text="Select",
+        command=lambda: updatePlot_variables(
+            projectVar,
+            listboxProjVarPrn.get()[lb1_proj.curselection()[0]],
+            prog_config, 
+            #fig,
+            listboxNodeVar
+        ),
+    )
+    b4_select.grid(column=1, row=0, sticky=tk.E)
 
 
     
@@ -339,10 +558,10 @@ def main():
     ######
     ## Docker buttons
     l2_docker = tk.Label(
-        f1,
-        text="Docker Image status: --------"
+        sub_f2,
+        text="Docker container status: --------"
     )
-    l2_docker.grid(column=1, row=1)
+    l2_docker.grid(column=0, row=1)
     
     docker_container_list = get_docker_containers()
     dockerVar = tk.StringVar(w1)
@@ -350,49 +569,122 @@ def main():
 
     om2_docker = tk.OptionMenu(
     #om2_docker = tk.Listbox(
-        f1, 
+        sub_f2, 
         dockerVar,
         *docker_container_list
     )
-    om2_docker.grid(column=1, row=0)
+    om2_docker.grid(column=0, row=0)
+
+    sub_f2_dock = tk.Frame(sub_f2)
+    sub_f2_dock.grid(column=0, row=2)
 
     # start container
     b2_docker_start = tk.Button(
-        f1,
+        sub_f2_dock,
         text="Start",
     )
-    b2_docker_start.grid(column=1, row=2)
+    b2_docker_start.grid(column=0, row=0)
 
     # stop container
     b2_docker_stop  = tk.Button(
-        f1,
+        sub_f2_dock,
         text="Stop",
     )
-    b2_docker_stop.grid(column=1, row=2)
+    b2_docker_stop.grid(column=1, row=0)
 
     ######
     # Figure
     fig = MPLGraph()
 
-    graph_page = GraphPage(f1)
+    graph_page = GraphPage(sub_f2)
     graph_page.add_mpl_figure(fig)
-    graph_page.grid(column=1, row=3)
+    graph_page.grid(column=0, row=3)
+    #column=1
+
+    #sub_f3_add_remove = tk.Frame(sub_f3)
+    # add button
+    #b_node_add = tk.Button(
+    #    sub_f3_add_remove,
+    #    text="add"
+    #)
+    # remove button
+    #b_node_remove = tk.Button(
+    #    sub_f3_add_remove,
+    #    text="remove"
+    #)
+    #b_node_add.grid(column=0, row=0)
+    #b_node_remove.grid(column=1, row=0)
+    #
+    #sub_f3_add_remove.grid(column=0, row=1)
 
     # plot button
     b3_plot = tk.Button(
-        f1,
+        sub_f3,
         text="Plot",
         command=lambda: updatePlot_from_list(
             projectVar,
-            listboxProjVar.get()[lb1_proj.curselection()[0]],
+            listboxProjVarPrn.get()[lb1_proj.curselection()[0]],
             prog_config, 
             #fig,
-            graph_page
+            graph_page,
+            listboxNodeVar.get()
         ),
     )
-    b3_plot.grid(column=0, row=4)
+    b3_plot.grid(column=0, row=3)
 
-    f1.pack()
+    listboxNodeVar = tk.Variable()
+
+    lb3_node= tk.Listbox(
+        sub_f3,
+        listvariable=listboxNodeVar,
+        #command=lambda: updatePlot(
+        #    projectVar,
+        #    lb1_proj.curselection(),
+        #    prog_config, 
+        #    fig),
+        height=28,
+        width=16,
+        selectmode=tk.MULTIPLE,
+        #selectmode='multiple',
+        exportselection=0
+    )
+    lb3_node.grid(column=0, row=0)
+
+    #### error frame
+
+    #debug_hide_label=tk.Label(
+    #    f_err,
+    #    text="Hide debug"
+    #)
+    
+
+    debug_label=tk.Label(
+        f_err,
+        text="Test Text",
+        justify='left',
+        anchor='nw',
+        width=130,
+        height=10,
+        bg='#A9A9A9'
+    )
+    debug_hide_label=tk.Button(
+        f_err,
+        text="Hide debug",
+        command=debug_label.grid_remove()
+    )
+
+    debug_hide_label.grid(column=0, row=0, sticky=tk.W)
+    debug_label.grid(column=0, row=1, sticky=tk.NW)
+
+    err_table = tkTable(
+        f_err, 
+        #title="Evaluation Frame",
+        height=10,
+        width=130
+        )
+    err_table.grid(column=0, row=2)
+
+    f_main.pack()
     w1.mainloop()
 
 
@@ -401,4 +693,6 @@ def main():
 
 
 if __name__ == "__main__":
+    
+    
     main()
