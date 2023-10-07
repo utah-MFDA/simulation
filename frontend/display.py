@@ -369,6 +369,7 @@ def updatePlot_variables(project, selectedFile, config, plotNodeVar):
 def updatePlot():
     pass
 
+####################################################################
 ## Button things
 
 def callback_b1():
@@ -381,10 +382,29 @@ def callback_b1(config, optionmenu, optionVar):
 
     refreshProjectOptions(config, optionmenu, optionVar)
 
+##################################
 ## Simulation buttons
 
-def callback_sim_button():
-    pass
+def check_config(proj_config):
+    return True
+
+
+def callback_sim_button(config, optionVar):
+    selectProj = optionVar.get()
+    if check_config(config['projects'][selectProj]):
+        proj_config = config['projects'][selectProj]
+        runMFDASim.runSimulation(
+            verilogFile=proj_config['netlist'],
+            workDir=proj_config['base'], 
+            libraryFile='',
+            cirConfigFile='',
+            preRouteSim=False,
+            dockerContainer=None,
+            dockerWD=None,
+            xyceFiles="spiceList",
+            convert_v=True)
+    else:
+        print("Incomplete project file")
 
 def callback_convert_verilog_button():
     pass
@@ -403,6 +423,7 @@ def main():
     w1.resizable(False, False)
     w1.title("MFDA Application")
 
+    ##################################
     # Main window frames
     f_main = tk.Frame(w1, height=400, width=800)
     f1 = tk.Frame(f_main)
@@ -420,16 +441,18 @@ def main():
     sub_f3 = tk.Frame(sub_f1) # for node list
     sub_f3.grid(column=1, row=3, rowspan=3, sticky=tk.NW)
 
+    ##################################
     # load configs
     config_file = "./frontend/config.ini"
     app_config = configparser.ConfigParser().read(config_file)
     app_config = tk.Variable(w1, app_config)
 
 
-    #### configurations impormation
+    #### configurations importation
     prog_config = {}
     prog_config['project_dir'] = tk.StringVar(w1, "project directory")
     
+    ##################################
     #### Directory selection
     l1_dir = tk.Label(
         sub_f1,
@@ -554,7 +577,7 @@ def main():
 
 
     
-
+    ##################################
     ######
     ## Docker buttons
     l2_docker = tk.Label(
@@ -592,6 +615,7 @@ def main():
     )
     b2_docker_stop.grid(column=1, row=0)
 
+    ##################################
     ######
     # Figure
     fig = MPLGraph()
@@ -650,6 +674,8 @@ def main():
     )
     lb3_node.grid(column=0, row=0)
 
+
+    ##################################
     #### error frame
 
     #debug_hide_label=tk.Label(

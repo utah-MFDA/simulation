@@ -125,7 +125,8 @@ def runSimulation(
         preRouteSim=False,
         dockerContainer=None,
         dockerWD=None,
-        xyceFiles="spiceList"):
+        xyceFiles="spiceList",
+        convert_v=True):
     
     # hard coded simulation directory in docker image
     docker_PyWD    = "/mfda_simulation/xyce_docker_server"
@@ -135,7 +136,8 @@ def runSimulation(
     
 
     # Convert to cir from v
-    arcName = convertToCir(verilogFile, workDir, libraryFile, cirConfigFile, preRouteSim)
+    if convert_v:
+        arcName = convertToCir(verilogFile, workDir, libraryFile, cirConfigFile, preRouteSim)
     # default result directory
     result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
     result_wd = workDir+"/results"
