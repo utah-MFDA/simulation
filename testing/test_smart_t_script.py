@@ -204,9 +204,11 @@ def test_pullFileFromDocker():
     
 def test_simple_channel_pullFileFromDocker():
 
+    import os
     #
-    targetDir       = "testing/DockerPullTest"
+    targetDir       = os.getcwd()+"/testing/DockerPullTest"
     dockerContainer = "vibrant_clarke"
+    #dockerTargetDir = "/mfda_simulation/local/simulations/simple_channel_xyce_0/results"
     dockerTargetDir = "/mfda_simulation/local/simulations/simple_channel_xyce_0"
 
     # 

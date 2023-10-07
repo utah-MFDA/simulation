@@ -285,7 +285,11 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
     print("send command: "+simStartComm)
     print("to directory: " + dockerContainer+":"+simDockerPyWD )
 
-    _, stream = xyceContainer.exec_run(cmd=simStartComm, workdir=simDockerPyWD, stream=True)
+    _, stream = xyceContainer.exec_run(cmd=simStartComm, 
+                                       workdir=simDockerPyWD, 
+                                       stream=True,
+                                       #stream=False,
+                                       )
     for data in stream:
         print(data.decode())
 
@@ -302,7 +306,7 @@ def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=
     else:
         pass # directory exists
     
-    targetFileAbs = targetDirectory+'/reults.tar'
+    targetFileAbs = targetDirectory+'/result.tar'
 
     try:
         f = open(targetFileAbs, 'xb')
@@ -313,7 +317,7 @@ def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=
             attempt = 0
             while True:
                 try:
-                    targetFileAbs = targetDirectory+'/reults'+attempt+'.tar'
+                    targetFileAbs = targetDirectory+'/result'+attempt+'.tar'
                     f = open(targetFileAbs, 'xb')
                     break
                 except FileExistsError:

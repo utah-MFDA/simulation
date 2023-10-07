@@ -18,7 +18,7 @@ Yserpentine_300px_0 serp6 21 24 23 26
 Yserpentine_300px_0 serp11 25 5 27 6
 
 
-.tran 0.1m 1m
+.tran 0.1 1
 .print tran V(6)
 .end
 

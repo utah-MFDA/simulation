@@ -18,7 +18,7 @@ Yserpentine_300px_0 serp6 connect4_1 connect5_0 connect4_1c connect5_0c
 Yserpentine_300px_0 serp11 connect5_1 out_ch connect5_1c out_chC 
 
 
-.tran 0.1m 1m
+.tran 0.1 1
 .print tran V(out_chC)
 .end
 
