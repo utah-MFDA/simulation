@@ -1,6 +1,7 @@
 
 import argparse
 import os
+import shutil
 
 import docker
 import tarfile
@@ -99,6 +100,16 @@ class SimulationXyce:
 
     def addDev(self, dev, node, args):
         self.dev[node] = {'dev':dev, 'args':args}
+
+# returns the date and time as a string for files
+def timeString():
+    from datetime import datetime
+    return str(datetime.now()) \
+        .replace(":","") \
+        .replace(" ","") \
+        .split(".")[0]
+
+
 """
 verilogFile
     - Verilog netlist
@@ -152,6 +163,16 @@ def runSimulation(
                   dockerContainer=dockerContainer, 
                   simDockerPyWD=dockerWD)
 
+    # move old results directory
+    if os.path.isdir(result_wd):
+        # create tar file
+        result_old_tar = result_wd+"_"+timeString()+".tar"
+        r_tar = tarfile.open(result_old_tar, 'x')
+        r_tar.add(result_wd)
+        # remove old results
+        shutil.rmtree(result_wd)
+        
+
     # load extracted data
     pullFromDocker(targetDirectory=result_wd,
                    dockerContainer=dockerContainer,
@@ -164,7 +185,7 @@ def runSimulation(
     for i, f in enumerate(rfiles):
         rfiles[i] = f+".prn"
 
-    df = load_xyce_results(result_wd, rfiles)
+    df = load_xyce_results(result_wd+"/results", rfiles)
 
     plot_xyce_results_list(df)
 

@@ -1,6 +1,6 @@
 #/bin/tcsh
 
-cd testing/smart_toilet_test/spiceFiles/
+cd .testing/projects/smart_toilet/spiceFiles/
 
 mkdir ./smart_toilet_H2O.
 hspice -i ./smart_toilet_H2O..sp -o ./smart_toilet_H2O./smart_toilet_H2O._o

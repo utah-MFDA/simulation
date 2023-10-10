@@ -4,7 +4,7 @@ simulation_container= vibrant_clarke
 
 [projectConfig]
 project_directory=    ./../testing/projects
-active_project=       simple_junction
+active_project=       simple_channel
 
 [dockerConfig]
 sim_docker_run=
