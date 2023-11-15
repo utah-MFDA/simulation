@@ -45,13 +45,24 @@ class SimulationXyce:
         def __init__(self, name, args):
             super.__init__(name, args)
 
-    class Eval(Node):
+    class Outlet(Node):
         def __init__(self, name, args):
             super.__init__(name, args)
 
+    class Eval:
+        def __init__(self, chem, node, value):
+            self.node = node
+            self.value= value
+            
+        def getNode(self):
+            return self.node
+        
+        def getValue(self):
+            return self.value
+
     # this will need some more generic definitions
     class Dev:
-        def __init__(self, type, node, args):
+        def __init__(self, node, type, args):
             self.type = type
             self.node = node
             self.args = args
@@ -64,13 +75,69 @@ class SimulationXyce:
         
         def getArgs(self):
             return self.args
+        
+        def addArgument(self, arg):
+            self.args.append(arg)
+    
+    class ChemInput:
+        def __init__(self, chem, node, in_value):
+            self.chem = chem
+            self.node = node
+            self.value=in_value
+            
+        def getInValue(self):
+            return self.chem
+        
+        def getNode(self):
+            return self.node
 
     def __init__(self):
         self.netListFiles = []
         self.inlets = {}
         self.eval   = {}
         self.dev    = {}
-
+        self.chem   = {}
+        self.times  = {}
+        
+    def parse_config_file(self, file):
+        in_conf_f = open(file)
+        for line in in_conf_f:
+            # remove comments
+            if '#' in line:
+                line = line.split('#')[0]
+            line = ' '.join(line.lstrip().split()) # removes leading and extra WS
+            
+            if len(line) == 0:
+                continue
+            
+            params = line.split(' ')
+            key = params[0]
+            
+            if key == 'input':
+                self.dev[params[1]] = self.Dev(params[1], params[2], params[3:])
+            if key == 'chem':
+                if params[2] in self.dev:
+                    self.chem[params[1]] = self.ChemInput(params[1], params[2], params[3])
+                    if params[1] in self.eval:
+                        self.eval[params[1]].append(self.Eval(params[1], params[4], params[5]))
+                    else:
+                        self.eval[params[1]] = [self.Eval(params[1], params[4], params[5])]
+                else:
+                    pass
+            
+            # key for timing
+            if key == 'transient':
+                if 'transient' in self.times:
+                    self.times['transient'].append(params)
+                else:
+                    self.times['transient'] = [params]
+            # untested method
+            # would need to use DC simulations
+            if key == 'static':
+                pass
+            
+            
+            
     def addNetlistFile(self, nFile):
         self.netListFiles.append(nFile)
 
@@ -100,6 +167,29 @@ class SimulationXyce:
 
     def addDev(self, dev, node, args):
         self.dev[node] = {'dev':dev, 'args':args}
+        
+    def getDevice(self):
+        return self.dev
+    
+    def getDevice(self, port):
+        return self.dev[port]
+    
+    def getEvaluation(self, chem):
+        eval = self.eval[chem]
+        e_out = {}
+        for e in eval:
+            e_out[e.getNode()] = e.getValue()
+        
+        return e_out
+    
+    def getInputChemList(self):
+        return self.chem
+    
+    def getInputChem(self, chem):
+        return self.chem[chem].getNode(), self.chem[chem].getValue()
+
+    
+    
 
 # returns the date and time as a string for files
 def timeString():
@@ -218,6 +308,40 @@ def parseMFDAFile(mfda_file):
         pass
 
 def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False):
+
+    # locate nessary files
+    files = getSimFiles(verilogFile, wd)
+
+    Verilog2Xyce.Verilog2Xyce(
+        inputVerilogFile=files['verilogFile'],
+        configFile=configFile,
+        solnFile=files['specFile'],
+        remoteTestPath="",
+        libraryFile=libFile,
+        devFile=files["devFile"],
+        length_file=files["lengthFile"],
+        timeFile=files["timeFile"],
+        preRouteSim=preRouteSim,
+        outputVerilogFile=None,
+        runScipt=True)
+    
+    # create archive
+    arcNameBase = files['verilogFile'][:-2]+"_xyce"
+
+    xyceTar, arcName = createXyceArchive(arcNameBase, Overwrite=overwrite)
+
+    srcDir = wd+"/spiceFiles"
+    xyceTar.add(srcDir, arcname=os.path.basename(srcDir.replace("spiceFiles",arcName.replace('.tar',''))))
+
+    xyceTar.close()
+
+    print("--------------------")
+    print("created archive: " + arcName)
+    print("--------------------")
+
+    return arcName
+
+def convertToCir_from_config(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False):
 
     # locate nessary files
     files = getSimFiles(verilogFile, wd)
@@ -423,9 +547,47 @@ if __name__ == "__main__":
         epilog=""
     )
 
-    parser.add_argument('--file', metavar='<verilog_file>', type=str, required=True)
-    parser.add_argument('--spec', metavar='<spec_file>', type=str, required=True)
+    parser.add_argument('--netlist',   metavar='<netlist_file>', type=str, required=True)
+    parser.add_argument('--sim_file',  metavar='<sim_file>', type=str, required=True)
+    parser.add_argument('--sim_dir',   metavar='<sim_dir>' , type=str, required=True)
+    parser.add_argument('--lib',       metavar='<lib>'       , type=str, required=True)
+    parser.add_argument('--cir_config',metavar='<cir_config>', type=str, required=True)
+    
+    parser.add_argument('--design', metavar='<design>', type=str)
+    parser.add_argument('--length_file', metavar='<length_file>', type=str)
 
     parser.add_argument('--docker_image', metavar='<image>', type=str)
     parser.add_argument('--docker_container', metavar='<container>', type=str)
+    parser.add_argument('--docker_wd', metavar='<docker_wd>', type=str)
+    
+    parser.add_argument('--preRoute', metavar='<preRoute>', type=str, default='False')
+    parser.add_argument('--convert_verilog', metavar='<convert_verilog>', type=str, default='True')
+    
+    args = parser.parse_args()
+    
+    runSimulation(
+        verilogFile    = args.netlist, 
+        workDir        = args.sim_dir, 
+        libraryFile    = args.lib,
+        cirConfigFile  = args.cir_config,
+        preRouteSim    = args.preRoute.lower() in ['true', '1'],
+        dockerContainer= args.docker_container,
+        dockerWD       = args.docker_wd,
+        xyceFiles      = "spiceList",
+        convert_v      = args.convert_verilog.lower() in ['true', '1'])
+    
+    """
+    runSimulation(
+        verilogFile, 
+        workDir, 
+        libraryFile,
+        cirConfigFile,
+        preRouteSim=False,
+        dockerContainer=None,
+        dockerWD=None,
+        xyceFiles="spiceList",
+        convert_v=True)
+    """
+    
+    
     

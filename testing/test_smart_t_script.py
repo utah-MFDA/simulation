@@ -55,6 +55,51 @@ def test_gen_simple_cir():
         preRouteSim=False,
         overwrite=True)
 
+def test_parse_sim_config_file():
+    
+    import runMFDASim
+    
+    simConfigFile = "./testing/smart_toilet_test_V2/simulation.config"
+    
+    # class tests
+    sim_test = runMFDASim.SimulationXyce()
+    sim_test.parse_config_file(simConfigFile)
+    
+    assert 'soln1' in sim_test.dev
+    assert 'soln2' in sim_test.dev
+    assert 'soln3' in sim_test.dev
+    
+    assert sim_test.dev['soln1'].getType() == 'pressurePump'
+    assert sim_test.dev['soln2'].getType() == 'pressurePump'
+    assert sim_test.dev['soln3'].getType() == 'pressurePump'
+    
+    assert sim_test.dev['soln1'].getArgs()[0] == 'pressure=100k'
+    #assert sim_test.dev['soln1'].getArgs()[1] == 'chemConcentration=100m'
+    
+    assert 'H2O'    in sim_test.eval
+    assert 'Tag'    in sim_test.eval
+    assert 'Sample' in sim_test.eval
+    
+    assert 'out' in sim_test.getEvaluation('H2O') 
+    assert sim_test.getEvaluation('H2O')['out'] == '89.2m'
+    
+def test_gen_simple_cir_from_config():
+    
+    import runMFDASim
+    
+    wd        = "./testing/smart_toilet_test"
+    vFile     = "smart_toilet.v"
+    libFile   ="./testing/StandardCellLibrary.csv"
+    cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+    
+    runMFDASim.convertToCir_from_config(
+        verilogFile=vFile,
+        wd=wd,
+        libFile=libFile,
+        configFile=cirConfig,
+        preRouteSim=False,
+        overwrite=True)
+
 def test_push2Docker():
 
     import runMFDASim
