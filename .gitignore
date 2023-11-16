@@ -11,5 +11,12 @@ debugLinSim
 debugLinearSim
 debugLinSim*
 components.cpython-38.pyc
-debug1*
-dev1Graph*
+debugLinearSim.svg
+debugLinearSimCh
+
+simConfig
+
+Continuous/remoteComFiles*
+./testing/*/*.tar
+./testing/*/spiceList
+test_output
