@@ -87,18 +87,21 @@ def test_gen_simple_cir_from_config():
     
     import runMFDASim
     
-    wd        = "./testing/smart_toilet_test"
+    wd        = "./testing/smart_toilet_test_config"
     vFile     = "smart_toilet.v"
-    libFile   ="./testing/StandardCellLibrary.csv"
+    libFile   = "./testing/StandardCellLibrary.csv"
     cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
     
+    simConfigFile = "./testing/smart_toilet_test_V2/simulation.config"
+    
     runMFDASim.convertToCir_from_config(
-        verilogFile=vFile,
-        wd=wd,
-        libFile=libFile,
-        configFile=cirConfig,
-        preRouteSim=False,
-        overwrite=True)
+        verilogFile =vFile,
+        sim_config  =simConfigFile,
+        wd          =wd,
+        libFile     =libFile,
+        configFile  =cirConfig,
+        preRouteSim =False,
+        overwrite   =True)
 
 def test_push2Docker():
 
@@ -270,7 +273,7 @@ def test_parse_simple_channel():
     from runMFDASim import load_xyce_results
 
     result_file = "simple_channel_H2O.cir.prn"
-    result_wd   = "./testing/DockerPullTest/simple_channel_xyce_0"
+    result_wd   = "./testing/DockerPullTest/results"
     
     load_xyce_results(result_wd+"/"+result_file)
 
@@ -280,7 +283,7 @@ def test_plot_simple_channel():
     from runMFDASim import plot_xyce_results
 
     result_file = "simple_channel_H2O.cir.prn"
-    result_wd   = "./testing/DockerPullTest/simple_channel_xyce_0"
+    result_wd   = "./testing/DockerPullTest/results"
     
     df = load_xyce_results(result_wd+"/"+result_file)
 
@@ -290,7 +293,7 @@ def test_full_simulation_simpleChannel():
     from runMFDASim import runSimulation
 
     verilogFile    ="simple_channel.v"
-    workDir        ="./testing/simpleChannelTest"
+    workDir        ="./testing/simpleChannelTest_full_config"
     libraryFile    ="./testing/StandardCellLibrary.csv"
     cirConfigFile  ="./V2Va_Parser/VMF_xyce.mfsp"
     preRouteSim    =False

@@ -17,3 +17,6 @@ debugLinearSimCh
 simConfig
 
 Continuous/remoteComFiles*
+./testing/*/*.tar
+./testing/*/spiceList
+test_output

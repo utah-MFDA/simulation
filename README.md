@@ -1,6 +1,6 @@
 ## MFDA simulation
 
-This module is designed to communicate with the docker image used for MFDA simulation. This program acts as a bridge to run simulation programs. The docker image will require that the appropriate Verilog-AMS files can been built
+This module is designed to communicate with the docker image used for MFDA simulation. This program acts as a bridge to run simulation programs. The docker image will require that the appropriate Verilog-AMS files can been built.
 
 The simulator can be interfaced from the the terminal python program in
 frontend -> mfda_sim_cmd.py

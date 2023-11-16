@@ -86,10 +86,13 @@ class SimulationXyce:
             self.value=in_value
             
         def getInValue(self):
-            return self.chem
+            return self.value
         
         def getNode(self):
             return self.node
+        
+        def getChem(self):
+            return self.chem
 
     def __init__(self):
         self.netListFiles = []
@@ -168,7 +171,7 @@ class SimulationXyce:
     def addDev(self, dev, node, args):
         self.dev[node] = {'dev':dev, 'args':args}
         
-    def getDevice(self):
+    def getDeviceList(self):
         return self.dev
     
     def getDevice(self, port):
@@ -187,6 +190,9 @@ class SimulationXyce:
     
     def getInputChem(self, chem):
         return self.chem[chem].getNode(), self.chem[chem].getValue()
+    
+    def getSimulationTimes(self):
+        return self.times
 
     
     
@@ -223,6 +229,7 @@ def runSimulation(
         workDir, 
         libraryFile,
         cirConfigFile,
+        length_file=None,
         preRouteSim=False,
         dockerContainer=None,
         dockerWD=None,
@@ -232,13 +239,30 @@ def runSimulation(
     # hard coded simulation directory in docker image
     docker_PyWD    = "/mfda_simulation/xyce_docker_server"
 
-    simRunComm = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
+    simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
-    
+    sim_config     = workDir+"/simulation.config"
 
     # Convert to cir from v
     if convert_v:
-        arcName = convertToCir(verilogFile, workDir, libraryFile, cirConfigFile, preRouteSim)
+        """
+        verilogFile,
+        sim_config,
+        wd, 
+        libFile, 
+        configFile,
+        length_file=None,
+        preRouteSim=False, 
+        overwrite=False
+        """
+        arcName = convertToCir_from_config(
+            verilogFile =verilogFile,
+            sim_config  =sim_config,
+            wd          =workDir, 
+            libFile     =libraryFile, 
+            configFile  =cirConfigFile,
+            length_file =length_file,
+            preRouteSim =preRouteSim)
     # default result directory
     result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
     result_wd = workDir+"/results"
@@ -274,6 +298,9 @@ def runSimulation(
 
     for i, f in enumerate(rfiles):
         rfiles[i] = f+".prn"
+
+    print("Result files")
+    print(rfiles)
 
     df = load_xyce_results(result_wd+"/results", rfiles)
 
@@ -312,7 +339,7 @@ def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=Fa
     # locate nessary files
     files = getSimFiles(verilogFile, wd)
 
-    Verilog2Xyce.Verilog2Xyce(
+    Verilog2Xyce.Verilog2Xyce_from_csv(
         inputVerilogFile=files['verilogFile'],
         configFile=configFile,
         solnFile=files['specFile'],
@@ -341,26 +368,47 @@ def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=Fa
 
     return arcName
 
-def convertToCir_from_config(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False):
+def convertToCir_from_config(
+        verilogFile,
+        sim_config,
+        wd, 
+        libFile, 
+        configFile,
+        length_file=None,
+        preRouteSim=False, 
+        overwrite=False):
 
     # locate nessary files
-    files = getSimFiles(verilogFile, wd)
+    #files = getSimFiles(verilogFile, wd)
+    
+    vFile = wd+"/"+verilogFile
+    
+    if length_file is None:
+        len_file = wd+"/"+verilogFile[:-2]+"_lengths.xlsx"
+    else:
+        len_file = length_file
+    
+    # create Sim class
+    _sim = SimulationXyce()
+    _sim.parse_config_file(sim_config)
+    
 
-    Verilog2Xyce.Verilog2Xyce(
-        inputVerilogFile=files['verilogFile'],
-        configFile=configFile,
-        solnFile=files['specFile'],
-        remoteTestPath="",
-        libraryFile=libFile,
-        devFile=files["devFile"],
-        length_file=files["lengthFile"],
-        timeFile=files["timeFile"],
-        preRouteSim=preRouteSim,
-        outputVerilogFile=None,
-        runScipt=True)
+    Verilog2Xyce.Verilog2Xyce_from_config(
+        inputVerilogFile  = vFile,
+        configFile        = configFile,
+        solnInputList     = _sim.getInputChemList(),
+        #simEvalList       = _sim.getEvaluation(),
+        remoteTestPath    = "",
+        libraryFile       = libFile,
+        devList           = _sim.getDeviceList(),
+        length_file       = len_file,
+        simTimesList      = _sim.getSimulationTimes(),
+        preRouteSim       = preRouteSim,
+        outputVerilogFile = None,
+        runScipt          = True)
     
     # create archive
-    arcNameBase = files['verilogFile'][:-2]+"_xyce"
+    arcNameBase = vFile[:-2]+"_xyce"
 
     xyceTar, arcName = createXyceArchive(arcNameBase, Overwrite=overwrite)
 
@@ -492,16 +540,21 @@ def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=
             os.removedirs(f1_)
 
 
-def load_xyce_results(rFile):
-    r_df = pd.read_table(rFile, skipfooter=2, index_col=0, delim_whitespace=True)
+def load_xyce_results_file(rFile):
+    r_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
     #print(str(r_df))
     return r_df
 
-def load_xyce_results(rDir, rlist):
-    r_df = []
-    for rFile in rlist:
-        r_df.append(pd.read_table(rDir+"/"+rFile, skipfooter=2, index_col=0, delim_whitespace=True))
-        #print(str(r_df))
+def load_xyce_results(rDir, rlist=None):
+    if rlist is None:
+        return load_xyce_results_file(rDir)
+    else:
+        r_df = []
+        for rFile in rlist:
+            print(rDir+"/"+rFile)
+            temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True)
+            r_df.append(temp_df)
+            #print(str(r_df))
         return r_df
 
 def plot_xyce_results_list(r_df):
@@ -554,11 +607,12 @@ if __name__ == "__main__":
     parser.add_argument('--cir_config',metavar='<cir_config>', type=str, required=True)
     
     parser.add_argument('--design', metavar='<design>', type=str)
-    parser.add_argument('--length_file', metavar='<length_file>', type=str)
+    parser.add_argument('--length_file', metavar='<length_file>', type=str, default=None)
 
     parser.add_argument('--docker_image', metavar='<image>', type=str)
     parser.add_argument('--docker_container', metavar='<container>', type=str)
-    parser.add_argument('--docker_wd', metavar='<docker_wd>', type=str)
+    parser.add_argument('--docker_wd', metavar='<docker_wd>', 
+            type=str, default="/mfda_simulation/local/simulations")
     
     parser.add_argument('--preRoute', metavar='<preRoute>', type=str, default='False')
     parser.add_argument('--convert_verilog', metavar='<convert_verilog>', type=str, default='True')
@@ -570,6 +624,7 @@ if __name__ == "__main__":
         workDir        = args.sim_dir, 
         libraryFile    = args.lib,
         cirConfigFile  = args.cir_config,
+        length_file    = args.length_file,
         preRouteSim    = args.preRoute.lower() in ['true', '1'],
         dockerContainer= args.docker_container,
         dockerWD       = args.docker_wd,
@@ -582,6 +637,7 @@ if __name__ == "__main__":
         workDir, 
         libraryFile,
         cirConfigFile,
+        length_file=None,
         preRouteSim=False,
         dockerContainer=None,
         dockerWD=None,
