@@ -206,6 +206,9 @@ def timeString():
         .split(".")[0]
 
 
+# ----------------------------------------------------
+# main exec
+# ----------------------------------------------------
 """
 verilogFile
     - Verilog netlist
@@ -234,7 +237,8 @@ def runSimulation(
         dockerContainer=None,
         dockerWD=None,
         xyceFiles="spiceList",
-        convert_v=True):
+        convert_v=True,
+        extra_args=None):
     
     # hard coded simulation directory in docker image
     docker_PyWD    = "/mfda_simulation/xyce_docker_server"
@@ -242,6 +246,18 @@ def runSimulation(
     simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
     sim_config     = workDir+"/simulation.config"
+
+    ###### extra argument handling #####
+    
+    # default definitions
+    _main_plot_results = False
+    
+    
+    if ('plot' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
+        _main_plot_results = True
+
+
+    #####
 
     # Convert to cir from v
     if convert_v:
@@ -294,7 +310,9 @@ def runSimulation(
                    OR_fileExists=True)
 
     # generate report
-    rfiles = pd.read_csv(result_wd+"/spiceList")["OutputFile"]
+    rfiles    = pd.read_csv(result_wd+"/spiceList")["OutputFile"]
+    chem_list = pd.read_csv(result_wd+"/spiceList")["Chemical"]
+
 
     for i, f in enumerate(rfiles):
         rfiles[i] = f+".prn"
@@ -302,9 +320,17 @@ def runSimulation(
     print("Result files")
     print(rfiles)
 
-    df = load_xyce_results(result_wd+"/results", rfiles)
+    df = load_xyce_results(result_wd+"/results", rfiles, chem_list)
 
-    plot_xyce_results_list(df)
+    # export to csv
+    if isinstance(df, list):
+        pass
+    elif isinstance(df, pd.DataFrame):
+        df.to_csv(result_wd+"/results/"+verilogFile[:-2]+'_chemOut.csv')
+    else:
+        throw()
+    if _main_plot_results:    
+        plot_xyce_results_list(df)
 
     pass
 
@@ -539,33 +565,44 @@ def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=
                 os.rename(f1_+"/"+f2, targetDirectory+"/"+f2)
             os.removedirs(f1_)
 
-
+# load the prn file into a dataframe
 def load_xyce_results_file(rFile):
     r_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
     #print(str(r_df))
     return r_df
 
-def load_xyce_results(rDir, rlist=None):
+def load_xyce_results(rDir, rlist=None, chem_list=None):
     if rlist is None:
         return load_xyce_results_file(rDir)
     else:
         r_df = []
-        for rFile in rlist:
+        #r_df = pd.DataFrame()
+        # we assume in list generation the indexes did not shift
+        for ind, rFile in enumerate(rlist):
             print(rDir+"/"+rFile)
             temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True)
-            r_df.append(temp_df)
+            
+            #r_df = pd.append([temp_df])
+            if not ind:
+                r_df.append(temp_df)
+            else:
+                r_df.append(temp_df.drop('TIME', axis=1))
             #print(str(r_df))
+        r_df = pd.concat(r_df, axis=1)
+        print(r_df)
         return r_df
 
+# input is the results dataframe
 def plot_xyce_results_list(r_df):
 
-    for df in r_df:
-        plot_xyce_results(df)
-
+    if isinstance(r_df, list):
+        for df in r_df:
+            plot_xyce_results(df)
+    elif isinstance(r_df, pd.DataFrame):
+        plot_xyce_results(r_df)
 
 def plot_xyce_results(r_df):
     
-
     x = r_df["TIME"]
     y = {}
 
@@ -582,6 +619,29 @@ def plot_xyce_results(r_df):
 
     ax.legend()
     plt.show()
+    
+def plot_xyce_results_2(design, results_directory):
+    
+    # generate report
+    rfiles = pd.read_csv(results_directory+"/spiceList")["OutputFile"]
+
+    for i, f in enumerate(rfiles):
+        rfiles[i] = f+".prn"
+
+    print("Result files")
+    print(rfiles)
+
+    df = load_xyce_results(results_directory+"/results", rfiles)
+
+    plot_xyce_results_list(df)
+
+    pass
+
+def export_xyce_results_to_csv(design, chem_list, result_dir):
+    pass
+
+def evaluate_results():
+    pass
 
 
 def is_docker_container_running(client, container):
@@ -604,7 +664,10 @@ if __name__ == "__main__":
     parser.add_argument('--sim_file',  metavar='<sim_file>', type=str, required=True)
     parser.add_argument('--sim_dir',   metavar='<sim_dir>' , type=str, required=True)
     parser.add_argument('--lib',       metavar='<lib>'       , type=str, required=True)
+    
+    # included with the parser
     parser.add_argument('--cir_config',metavar='<cir_config>', type=str, required=True)
+    
     
     parser.add_argument('--design', metavar='<design>', type=str)
     parser.add_argument('--length_file', metavar='<length_file>', type=str, default=None)
@@ -617,7 +680,13 @@ if __name__ == "__main__":
     parser.add_argument('--preRoute', metavar='<preRoute>', type=str, default='False')
     parser.add_argument('--convert_verilog', metavar='<convert_verilog>', type=str, default='True')
     
+    parser.add_argument('--plot', type=str, default='False')
+    
     args = parser.parse_args()
+    
+    ex_args = {
+        'plot':args.plot
+        }
     
     runSimulation(
         verilogFile    = args.netlist, 
@@ -629,7 +698,8 @@ if __name__ == "__main__":
         dockerContainer= args.docker_container,
         dockerWD       = args.docker_wd,
         xyceFiles      = "spiceList",
-        convert_v      = args.convert_verilog.lower() in ['true', '1'])
+        convert_v      = args.convert_verilog.lower() in ['true', '1'],
+        extra_args     = ex_args)
     
     """
     runSimulation(
