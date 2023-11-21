@@ -238,7 +238,7 @@ def runSimulation(
         dockerWD=None,
         xyceFiles="spiceList",
         convert_v=True,
-        extra_args=None):
+        extra_args={}):
     
     # hard coded simulation directory in docker image
     docker_PyWD    = "/mfda_simulation/xyce_docker_server"
@@ -279,6 +279,7 @@ def runSimulation(
             configFile  =cirConfigFile,
             length_file =length_file,
             preRouteSim =preRouteSim)
+    
     # default result directory
     result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
     result_wd = workDir+"/results"
@@ -296,7 +297,11 @@ def runSimulation(
     # move old results directory
     if os.path.isdir(result_wd):
         # create tar file
-        result_old_tar = result_wd+"_"+timeString()+".tar"
+        old_result_path = result_wd+"_old"
+        if not os.path.isdir(old_result_path):
+            os.makedirs(old_result_path)
+        result_old_tar = old_result_path+"/result_"+timeString()+".tar"
+        #result_old_tar = result_wd+"_old/result_"+timeString()+".tar"
         r_tar = tarfile.open(result_old_tar, 'x')
         r_tar.add(result_wd)
         # remove old results
@@ -307,6 +312,7 @@ def runSimulation(
     pullFromDocker(targetDirectory=result_wd,
                    dockerContainer=dockerContainer,
                    simDockerWD=dockerWD+'/'+os.path.basename(arcName).replace('.tar',''),
+                   # overwrite pervious tar
                    OR_fileExists=True)
 
     # generate report
@@ -589,7 +595,7 @@ def load_xyce_results(rDir, rlist=None, chem_list=None):
                 r_df.append(temp_df.drop('TIME', axis=1))
             #print(str(r_df))
         r_df = pd.concat(r_df, axis=1)
-        print(r_df)
+        
         return r_df
 
 # input is the results dataframe
