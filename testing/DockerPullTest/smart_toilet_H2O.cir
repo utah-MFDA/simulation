@@ -1,13 +1,13 @@
 
 
 YPressurePump soln1 1 2 pressure=100k chemConcentration=100m
-Ychannel soln1_channel 1 2 3 4 length=7.65m
+Ychannel soln1_channel 1 3 2 4 length=7.65m
 
 YPressurePump soln2 5 6 pressure=100k
-Ychannel soln2_channel 5 6 7 8 length=3.24m
+Ychannel soln2_channel 5 7 6 8 length=3.24m
 
 YPressurePump soln3 9 10 pressure=100k
-Ychannel soln3_channel 9 10 11 12 length=5.71m
+Ychannel soln3_channel 9 11 10 12 length=5.71m
 
 
 Ychannel output0 13 0 14 15 length=5.9m
