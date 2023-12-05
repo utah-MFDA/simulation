@@ -17,6 +17,14 @@ debugLinearSimCh
 simConfig
 
 Continuous/remoteComFiles*
-./testing/*/*.tar
+testing/*/*.tar
+testing/*/spiceFiles/*
+testing/simpleChannelTest/spiceFiles/*
+testing/simpleChannelTest/*.tar
+
+testing/simpleChannelTest_full_config/*.tar
+testing/simpleChannelTest_full_config/spiceFiles/*
+testing/simpleChannelTest_full_config/results/*
+
 ./testing/*/spiceList
 test_output

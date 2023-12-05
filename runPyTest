@@ -1,0 +1,2 @@
+ 
+PYTHONPATH=. pytest testing/test_smart_t_script.py > test_output

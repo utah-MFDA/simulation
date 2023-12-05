@@ -1,7 +1,7 @@
 * Converted from verilog for microfluidic simulation
 
 YPressurePump soln1 soln1_0 soln1_0c  pressure=100k chemConcentration=100m 
-Ychannel soln1_channel soln1_0 soln1_0c soln1_1 soln1_1c length=7.65m
+Ychannel soln1_channel soln1_0 soln1_1 soln1_0c soln1_1c length=7.65m
 
 
 Ychannel output0 out_ch 0 out_chC outc0 length=5.9m
