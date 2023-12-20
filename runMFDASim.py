@@ -339,6 +339,16 @@ def runSimulation(
         plot_xyce_results_list(df)
 
     pass
+"""
+Modifed run to use a docker blind mount to make development easier
+"""
+
+def run_with_blind_mount():
+
+
+    pass
+
+#def mount_docker_container()
 
 def parseMFDAFile(mfda_file):
     
