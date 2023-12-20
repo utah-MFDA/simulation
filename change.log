@@ -1,0 +1,5 @@
+
+dev 1.1.0
+
+This branch takes advantage of blind mounts from docker to sync the internal docker development
+with the extrenal development.
