@@ -5,12 +5,15 @@ import shutil
 
 import docker
 import tarfile
+import json
 
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # local imports
 from V2Va_Parser import Verilog2Xyce
+
+
 
 """
 Required inputs
@@ -577,6 +580,41 @@ def load_xyce_results_file(rFile):
     #print(str(r_df))
     return r_df
 
+def change_r_node_ref(df, rFile, chem):
+    
+    df_nodes = list(df)
+
+    node_dict = json.load(open(rFile.replace('.prn','.nodes')))
+
+    for node in df_nodes:
+        if node == 'TIME':
+            continue
+        else:
+            if node[0] == 'V':
+                node_num = node.replace('V(', '').replace(')', '')
+                node_key = list(node_dict.keys())[list(node_dict.values()).index(int(node_num))]
+
+                node_name = '_'.join(node_key.split('_')[:-1])
+                node_name_k = node_key.split('_')[-1]
+
+                print(node_name+' : '+node_name_k)
+
+                if node_name_k.lower()[-1] == 'c':
+                    new_node = 'C_'+str(chem)+'('+node_name+')'
+                else:
+                    new_node = 'P('+node_name+')'
+
+                print('  new node: '+new_node)
+
+            elif node[0] == 'I':
+                pass
+
+            df = df.rename(columns={node:new_node})
+
+    return df
+
+
+
 def load_xyce_results(rDir, rlist=None, chem_list=None):
     if rlist is None:
         return load_xyce_results_file(rDir)
@@ -585,9 +623,13 @@ def load_xyce_results(rDir, rlist=None, chem_list=None):
         #r_df = pd.DataFrame()
         # we assume in list generation the indexes did not shift
         for ind, rFile in enumerate(rlist):
+
             print(rDir+"/"+rFile)
             temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True)
             
+            if chem_list is not None:
+                temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
+
             #r_df = pd.append([temp_df])
             if not ind:
                 r_df.append(temp_df)
