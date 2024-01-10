@@ -132,7 +132,7 @@ class SimulationXyce:
             if key == 'input':
                 self.dev[params[1]] = self.Dev(params[1], params[2], params[3:])
             if key == 'chem':
-                if params[2] in self.dev:
+                if params[2] not in self.dev:
                     self.chem[params[1]] = self.ChemInput(params[1], params[2], params[3])
                     #if params[1] in self.eval:
                     #    self.eval[params[1]].append(self.Eval(params[1], params[4], params[5]))
@@ -764,8 +764,10 @@ def load_eval_file(ev_file, sim_obj=None):
 
     if sim_obj==None:
         sim_obj = SimulationXyce()
+    
+    sim_obj.parse_eval_file(ev_file)
 
-    return sim_obj.parse_eval_file(ev_file)
+    return sim_obj
 
 
 def export_xyce_results_to_csv(design, chem_list, result_dir):
@@ -779,40 +781,52 @@ def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None):
     ev_chem_list = sim_obj.getEvaluation()
 
     eval_df_coln = ['Chemical', 'Time', 'Node', 'Error', 'Expected Conc', 'Eval Conc']
-    eval_df = pd.DateFrame(columns=eval_df_coln)
+    eval_df = pd.DataFrame(columns=eval_df_coln)
 
     for ev_chem in ev_chem_list:
 
-        rFile = results_dir+'/'+design_name+'.cir.prn'
-        temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
+        rFile = results_dir+'/'+design_name+'_chemOut.csv'
+        #temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
+        temp_df = pd.read_csv(rFile)
 
         for eval_obj in ev_chem_list[ev_chem]:
 
-            if eval_obj.getTime() in temp_df:
+            if eval_obj.getTime() in temp_df['TIME']:
 
                 # get time coln index
-                row_time_ind = temp_df[temp_df['TIME'] == eval_obj.getTime()]
+                row_time_ind = temp_df['TIME'][temp_df['TIME'] == eval_obj.getTime()].index[0]
 
                 # get chemical value
                 chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
-                prn_val = temp_df[chem]
+                prn_val = temp_df[chem_name][row_time_ind]
 
-                exp_val = float(eval_obj.getValue())
+                exp_val = eval_obj.getValue()
                 # Calculate error
-                err_val = (float(prn_val) - exp_val)/exp_val
+                err_val = (prn_val- exp_val)/exp_val
 
                 # add to data frame
-                new_data = {
-                    'Chemical':eval_obj.getChem(),
-                    'Time':eval_obj.getTime(),
-                    'Node':eval_obj.getNode(),
-                    'Error':err_val,
-                    'Expected Conc':eval_obj.getValue(),
-                    'Eval Conc':prn_val
-                    }
+                #new_data = pd.DataFrame(list({
+                #    'Chemical':eval_obj.getChem(),
+                #    'Time':eval_obj.getTime(),
+                #    'Node':eval_obj.getNode(),
+                #    'Error':err_val,
+                #    'Expected Conc':eval_obj.getValue(),
+                #    'Eval Conc':prn_val
+                #    }.items()), columns=eval_df_coln)
+
+                new_data = pd.DataFrame([[
+                    eval_obj.getChem(),
+                    eval_obj.getTime(),
+                    eval_obj.getNode(),
+                    err_val,
+                    eval_obj.getValue(),
+                    prn_val
+                    ]], columns=eval_df_coln)
+
+                eval_df = pd.concat([eval_df, new_data])
 
             else:
-                print('Cannot evaluate time: '+eval_obj.getTime()+' for chem: '+eval_obj.getChem()+'('+eval_obj.getNode()+')')
+                print('Cannot evaluate time: '+str(eval_obj.getTime())+' for chem: '+str(eval_obj.getChem())+'('+str(eval_obj.getNode())+')')
 
     
     eval_df.to_csv(results_dir+'/Chem_Eval.csv')

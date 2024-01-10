@@ -356,24 +356,38 @@ def test_load_eval_file():
     assert x_sim.eval['H2O'][0].getNode()  == 'out'
     assert x_sim.eval['H2O'][0].getValue() == 89.2e-3
     assert x_sim.eval['H2O'][0].getChem()  == 'H2O'
-    assert x_sim.eval['H2O'][0].getTime()  == 0
+    assert x_sim.eval['H2O'][0].getTime()  == 0.0
 
     assert x_sim.eval['Tag'][0].getNode()  == 'out'
     assert x_sim.eval['Tag'][0].getValue() == 10e-3
     assert x_sim.eval['Tag'][0].getChem()  == 'Tag'
-    assert x_sim.eval['Tag'][0].getTime()  == 0
+    assert x_sim.eval['Tag'][0].getTime()  == 0.0
 
     assert x_sim.eval['Sample'][0].getNode()  == 'out'
     assert x_sim.eval['Sample'][0].getValue() == 0.8e-3
     assert x_sim.eval['Sample'][0].getChem()  == 'Sample'
-    assert x_sim.eval['Sample'][0].getTime()  == 0
+    assert x_sim.eval['Sample'][0].getTime()  == 0.0
 
 
 def test_full_simulation_evaluate():
 
-    from runMFDASim import runSimulation
+    from runMFDASim import evaluate_results
 
-    test_wd = "./testing/smart_toilet_test_config"
+    design_name= "smart_toilet"
+    test_wd    = "./testing/smart_toilet_test_config"
+
+    ev_file    = 'eval.config'
+    result_dir = test_wd+"/results/results"
+
+    #evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None)
+
+    evaluate_results(
+        ev_file    = ev_file,
+        wd         = test_wd,
+        results_dir = result_dir,
+        design_name= design_name
+    )
+
 
     
 
