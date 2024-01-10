@@ -103,7 +103,7 @@ def runSimulation(
     else:
         _local_xyce = False
 
-    if ('eval_file' in extra_args):
+    if ('eval_file' in extra_args) and (extra_args['eval_file'] is not None):
         _eval_file = True
     else:
         _eval_file = False
@@ -677,13 +677,15 @@ if __name__ == "__main__":
     parser.add_argument('--convert_verilog', metavar='<convert_verilog>', type=str, default='True')
     
     parser.add_argument('--plot', type=str, default='False')
-    parser.add_argument('--eval_file', type=str)
+    parser.add_argument('--eval_file', type=str, default=None)
     parser.add_argument('--local_xyce', type=str, default='False')
     
     args = parser.parse_args()
     
     ex_args = {
-        'plot':args.plot
+        'plot':args.plot,
+        'eval_file':args.eval_file,
+        'xyce_local':args.xyce_local,
         }
     
     runSimulation(
