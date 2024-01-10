@@ -685,7 +685,7 @@ if __name__ == "__main__":
     ex_args = {
         'plot':args.plot,
         'eval_file':args.eval_file,
-        'xyce_local':args.xyce_local,
+        'local_xyce':args.local_xyce,
         }
     
     runSimulation(
