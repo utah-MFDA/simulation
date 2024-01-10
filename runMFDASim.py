@@ -142,7 +142,7 @@ def runSimulation(
     if _local_xyce:
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
-        runLocalXyce(xyce_files = xyceFiles)
+        runLocalXyce(xyce_files = xyceFiles, workDir=workDir)
     else:
         
         docker_PyWD    = "/mfda_simulation/xyce_docker_server"
