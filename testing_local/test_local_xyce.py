@@ -25,7 +25,7 @@ def test_run_local_simple_channel():
         arg_cir_config,
         arg_length_file,
         arg_eval_file,
-        arg_local_xyce])
+        arg_local_xyce]).split()
 
     print("Running: "+cmd_w_args)
 
