@@ -27,9 +27,9 @@ def test_run_local_simple_channel():
         arg_eval_file,
         arg_local_xyce])
 
-    print("Running: "+python_cmd)
+    print("Running: "+cmd_w_args)
 
-    subprocess.run(python_cmd)
+    subprocess.run(cmd_w_args)
 
 def test_run_local_smart_toilet():
 
@@ -56,6 +56,6 @@ def test_run_local_smart_toilet():
         arg_eval_file,
         arg_local_xyce])
 
-    print("Running: "+python_cmd)
+    print("Running: "+cmd_w_args)
 
-    subprocess.run(python_cmd)
+    subprocess.run(cmd_w_args)
