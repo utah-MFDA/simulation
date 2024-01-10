@@ -27,7 +27,7 @@ def test_run_local_simple_channel():
         arg_eval_file,
         arg_local_xyce]).split()
 
-    print("Running: "+cmd_w_args)
+    print("Running: "+str(cmd_w_args))
 
     subprocess.run(cmd_w_args)
 
