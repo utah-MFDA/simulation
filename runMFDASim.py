@@ -143,7 +143,7 @@ def runSimulation(
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
         result_wd = workDir+"/spiceFiles"
 
-        ZQ(xyce_files = xyceFiles, workDir=result_wd)
+        runLocalXyce(xyce_files = xyceFiles, workDir=result_wd)
 
     else:
         
