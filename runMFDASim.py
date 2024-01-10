@@ -134,16 +134,11 @@ def runSimulation(
 
     
     
-    # default result directory
-    result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
-    result_wd = workDir+"/results"
-
-    # transfer files to docker image
-    pushCir2Docker(arcName, dockerContainer, dockerWD)
+    
 
     
 
-    # wait for simulator
+    
     if _local_xyce:
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
@@ -152,8 +147,18 @@ def runSimulation(
         
         docker_PyWD    = "/mfda_simulation/xyce_docker_server"
         simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
+        
+
+        # default result directory
+        result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
+        result_wd = workDir+"/results"
+
         simRunComm     += " --workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
 
+        # transfer files to docker image
+        pushCir2Docker(arcName, dockerContainer, dockerWD)
+
+        # wait for simulator
         runRemoteXyce(
             simStartComm=simRunComm, 
             dockerContainer=dockerContainer, 
