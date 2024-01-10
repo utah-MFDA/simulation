@@ -98,6 +98,11 @@ def runSimulation(
     else:
         _main_plot_results = False
 
+    if ('local_xyce' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
+        _local_xyce = True
+    else:
+        _local_xyce = False
+
     if ('eval_file' in extra_args):
         _eval_file = True
     else:
@@ -139,7 +144,7 @@ def runSimulation(
     
 
     # wait for simulator
-    if ('local_xyce' in extra_args) and extra_args['local_xyce']:
+    if _local_xyce:
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
         runLocalXyce(xyce_files = xyceFiles)
@@ -664,7 +669,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--plot', type=str, default='False')
     parser.add_argument('--eval_file', type=str)
-    parser.add_argument('--local_xyce', default=False, action='store_true')
+    parser.add_argument('--local_xyce', type=str, default=False)
     
     args = parser.parse_args()
     
