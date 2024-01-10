@@ -2,6 +2,7 @@
 import argparse
 import os
 import shutil
+import subprocess
 
 import docker
 import tarfile
@@ -82,9 +83,7 @@ def runSimulation(
         raise ValueError("Netlist is not a valid file, must be .v, \ninput file: "+str(verilogFile))
     
     # hard coded simulation directory in docker image
-    docker_PyWD    = "/mfda_simulation/xyce_docker_server"
 
-    simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
     sim_config     = workDir+"/simulation.config"
 
@@ -137,13 +136,24 @@ def runSimulation(
     # transfer files to docker image
     pushCir2Docker(arcName, dockerContainer, dockerWD)
 
-    simRunComm += " --workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
+    
 
     # wait for simulator
-    runRemoteXyce(simStartComm=simRunComm, 
-                  dockerContainer=dockerContainer, 
-                  simDockerPyWD=dockerWD)
+    if ('local_xyce' in extra_args) and extra_args['local_xyce']:
+        #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
+        runLocalXyce(xyce_files = xyceFiles)
+    else:
+        
+        docker_PyWD    = "/mfda_simulation/xyce_docker_server"
+        simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
+        simRunComm     += " --workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
+
+        runRemoteXyce(
+            simStartComm=simRunComm, 
+            dockerContainer=dockerContainer, 
+            simDockerPyWD=dockerWD)
+    
     # move old results directory
     if os.path.isdir(result_wd):
         # create tar file
@@ -371,6 +381,18 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
                                        )
     for data in stream:
         print(data.decode())
+
+def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run'):
+
+    simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
+        "--list "+xyceFiles+\
+        "--workdir "+workDir
+    
+    subprocess.run(simRunComm)
+
+
+    
+
 
 def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=False):
 
@@ -639,6 +661,8 @@ if __name__ == "__main__":
     parser.add_argument('--convert_verilog', metavar='<convert_verilog>', type=str, default='True')
     
     parser.add_argument('--plot', type=str, default='False')
+    parser.add_argument('--eval_file', type=str)
+    parser.add_argument('--local_xyce', default=False, action='store_true')
     
     args = parser.parse_args()
     
