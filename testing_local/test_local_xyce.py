@@ -14,7 +14,7 @@ def test_run_local_simple_channel():
     arg_length_file= '--length_file ./testing_local/simpleChannelTest_full_config/simple_channel_lengths.xlsx'
 
     arg_eval_file  = '--eval_file ./testing_local/simpleChannelTest_full_config/eval.config'
-    arg_local_xyce = '--local_xyce'
+    arg_local_xyce = '--local_xyce True'
 
     cmd_w_args = ' '.join([
         python_cmd,
@@ -43,7 +43,7 @@ def test_run_local_smart_toilet():
     arg_length_file= '--length_file ./testing_local/smart_toilet_test_config/smart_toilet_lengths.xlsx'
 
     arg_eval_file  = '--eval_file ./testing_local/smart_toilet_test_config/eval.config'
-    arg_local_xyce = '--local_xyce'
+    arg_local_xyce = '--local_xyce True'
 
     cmd_w_args = ' '.join([
         python_cmd,
