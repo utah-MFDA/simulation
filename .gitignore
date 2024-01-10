@@ -28,5 +28,10 @@ testing/simpleChannelTest_full_config/results/*
 testing/*/results/*
 testing/*/results_old/*
 
+testing_local/*/results/*
+testing_local/*/results_old/*
+testing_local/*/spiceFiles/*
+testing_local/*/*.tar
+
 ./testing/*/spiceList
 test_output
