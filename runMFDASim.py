@@ -98,7 +98,7 @@ def runSimulation(
     else:
         _main_plot_results = False
 
-    if ('local_xyce' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
+    if ('local_xyce' in extra_args) and (extra_args['local_xyce'].lower() in ['true', '1']):
         _local_xyce = True
     else:
         _local_xyce = False
@@ -678,7 +678,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--plot', type=str, default='False')
     parser.add_argument('--eval_file', type=str)
-    parser.add_argument('--local_xyce', type=str, default=False)
+    parser.add_argument('--local_xyce', type=str, default='False')
     
     args = parser.parse_args()
     
