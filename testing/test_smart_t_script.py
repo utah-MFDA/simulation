@@ -1,6 +1,7 @@
 
 
-
+#global_defs
+dock_container = "sweet_shockley"
 
 def test_file_load():
 
@@ -76,12 +77,12 @@ def test_parse_sim_config_file():
     assert sim_test.dev['soln1'].getArgs()[0] == 'pressure=100k'
     #assert sim_test.dev['soln1'].getArgs()[1] == 'chemConcentration=100m'
     
-    assert 'H2O'    in sim_test.eval
-    assert 'Tag'    in sim_test.eval
-    assert 'Sample' in sim_test.eval
+    #assert 'H2O'    in sim_test.eval
+    #assert 'Tag'    in sim_test.eval
+    #assert 'Sample' in sim_test.eval
     
-    assert 'out' in sim_test.getEvaluation('H2O') 
-    assert sim_test.getEvaluation('H2O')['out'] == '89.2m'
+    #assert 'out' in sim_test.getEvaluation('H2O') 
+    #assert sim_test.getEvaluation('H2O')['out'] == '89.2m'
     
 def test_gen_simple_cir_from_config():
     
@@ -115,7 +116,7 @@ def test_push2Docker():
     # Docker config
     runSimComm = ""
 
-    dock_container = "vibrant_clarke"
+    #dock_container = "sweet_shockley"
     dock_WD = "/mfda_simulation/local/simulations"
 
     simTar = runMFDASim.convertToCir(
@@ -175,7 +176,7 @@ def test_runXyceDocker():
     simArgs     = "--list spiceList"
     
 
-    dock_container = "vibrant_clarke"
+    #dock_container = "vibrant_clarke"
     dock_WD        = "/mfda_simulation/local/simulations"
 
     simTar = runMFDASim.convertToCir(
@@ -216,7 +217,7 @@ def test_simplechannel_runXyceDocker():
     simArgs     = "--list spiceList"
     
 
-    dock_container = "vibrant_clarke"
+    #dock_container = "vibrant_clarke"
     dock_WD        = "/mfda_simulation/local/simulations"
     
     
@@ -238,7 +239,7 @@ def test_pullFileFromDocker():
 
     #
     targetDir       = "testing/DockerPullTest"
-    dockerContainer = "vibrant_clarke"
+    #dock_container = "vibrant_clarke"
     dockerTargetDir = "/mfda_simulation/local/simulations/smart_toilet_xyce_0"
 
     # 
@@ -246,7 +247,7 @@ def test_pullFileFromDocker():
 
     # pullFromDocker(targetDirectory, dockerContainer, simDockerWD)
     pullFromDocker(targetDirectory=targetDir,
-                   dockerContainer=dockerContainer,
+                   dockerContainer=dock_container,
                    simDockerWD=dockerTargetDir,
                    OR_fileExists=True)
     
@@ -255,7 +256,7 @@ def test_simple_channel_pullFileFromDocker():
     import os
     #
     targetDir       = os.getcwd()+"/testing/DockerPullTest"
-    dockerContainer = "vibrant_clarke"
+    #dock_container = "vibrant_clarke"
     #dockerTargetDir = "/mfda_simulation/local/simulations/simple_channel_xyce_0/results"
     dockerTargetDir = "/mfda_simulation/local/simulations/simple_channel_xyce_0"
 
@@ -264,7 +265,7 @@ def test_simple_channel_pullFileFromDocker():
 
     # pullFromDocker(targetDirectory, dockerContainer, simDockerWD)
     pullFromDocker(targetDirectory=targetDir,
-                   dockerContainer=dockerContainer,
+                   dockerContainer=dock_container,
                    simDockerWD=dockerTargetDir,
                    OR_fileExists=True)
     
@@ -297,7 +298,7 @@ def test_full_simulation_simpleChannel():
     libraryFile    ="./testing/StandardCellLibrary.csv"
     cirConfigFile  ="./V2Va_Parser/VMF_xyce.mfsp"
     preRouteSim    =False
-    dockerContainer="vibrant_clarke"
+    #dock_container ="vibrant_clarke"
     dockerWD       ="/mfda_simulation/local/simulations"
     xyceFiles      ="spiceList"
 
@@ -307,9 +308,75 @@ def test_full_simulation_simpleChannel():
         libraryFile=libraryFile,
         cirConfigFile=cirConfigFile,
         preRouteSim=preRouteSim,
-        dockerContainer=dockerContainer,
+        dockerContainer=dock_container,
         dockerWD=dockerWD,
         xyceFiles=xyceFiles)
+
+def test_full_simulation_smart_toilet():
+
+    from runMFDASim import runSimulation
+
+    verilogFile    ="smart_toilet.v"
+    
+    workDir        ="./testing/smart_toilet_test_config"
+    libraryFile    ="./testing/StandardCellLibrary.csv"
+    cirConfigFile  ="./V2Va_Parser/VMF_xyce.mfsp"
+    preRouteSim    =False
+    #dock_container ="vibrant_clarke"
+    dockerWD       ="/mfda_simulation/local/simulations"
+    xyceFiles      ="spiceList"
+
+    length_file    =workDir+"/smart_toilet_lengths.xlsx"
+
+    runSimulation(
+        verilogFile=verilogFile, 
+        workDir=workDir, 
+        libraryFile=libraryFile,
+        cirConfigFile=cirConfigFile,
+        length_file=length_file,
+        preRouteSim=preRouteSim,
+        dockerContainer=dock_container,
+        dockerWD=dockerWD,
+        xyceFiles=xyceFiles)
+
+def test_load_eval_file():
+
+    from runMFDASim import SimulationXyce
+
+    wd = "./testing/smart_toilet_test_config"
+    eval_file = "eval.config"
+
+    eval_file = wd+'/'+eval_file
+
+    x_sim = SimulationXyce()
+
+    x_sim.parse_eval_file(eval_file)
+
+    #print('fPrime node: ' + str(x_sim.eval['fPrime'][0].getNode()))
+    assert x_sim.eval['H2O'][0].getNode()  == 'out'
+    assert x_sim.eval['H2O'][0].getValue() == 89.2e-3
+    assert x_sim.eval['H2O'][0].getChem()  == 'H2O'
+    assert x_sim.eval['H2O'][0].getTime()  == 0
+
+    assert x_sim.eval['Tag'][0].getNode()  == 'out'
+    assert x_sim.eval['Tag'][0].getValue() == 10e-3
+    assert x_sim.eval['Tag'][0].getChem()  == 'Tag'
+    assert x_sim.eval['Tag'][0].getTime()  == 0
+
+    assert x_sim.eval['Sample'][0].getNode()  == 'out'
+    assert x_sim.eval['Sample'][0].getValue() == 0.8e-3
+    assert x_sim.eval['Sample'][0].getChem()  == 'Sample'
+    assert x_sim.eval['Sample'][0].getTime()  == 0
+
+
+def test_full_simulation_evaluate():
+
+    from runMFDASim import runSimulation
+
+    test_wd = "./testing/smart_toilet_test_config"
+
+    
+
 
 if __name__ == "__main__":
     

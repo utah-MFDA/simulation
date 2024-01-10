@@ -53,15 +53,25 @@ class SimulationXyce:
             super.__init__(name, args)
 
     class Eval:
-        def __init__(self, chem, node, value):
+        def __init__(self, chem, node, value, time=None):
+            self.chem = chem
             self.node = node
             self.value= value
+            #if time is not None:
+            self.time = time
             
         def getNode(self):
             return self.node
         
         def getValue(self):
             return self.value
+
+        def getChem(self):
+            return self.chem
+
+        #TODO time = None
+        def getTime(self):
+            return self.time
 
     # this will need some more generic definitions
     class Dev:
@@ -124,10 +134,10 @@ class SimulationXyce:
             if key == 'chem':
                 if params[2] in self.dev:
                     self.chem[params[1]] = self.ChemInput(params[1], params[2], params[3])
-                    if params[1] in self.eval:
-                        self.eval[params[1]].append(self.Eval(params[1], params[4], params[5]))
-                    else:
-                        self.eval[params[1]] = [self.Eval(params[1], params[4], params[5])]
+                    #if params[1] in self.eval:
+                    #    self.eval[params[1]].append(self.Eval(params[1], params[4], params[5]))
+                    #else:
+                    #    self.eval[params[1]] = [self.Eval(params[1], params[4], params[5])]
                 else:
                     pass
             
@@ -141,8 +151,67 @@ class SimulationXyce:
             # would need to use DC simulations
             if key == 'static':
                 pass
+
+    def parse_eval_file(self, ev_file):
+
+        # reset eval list
+        self.eval   = {}
+
+        f = open(ev_file, 'r')
+
+        for line in f:
+            # remove comments
+            if '#' in line:
+                line = line.split('#')[0]
+            line = ' '.join(line.lstrip().split()) # removes leading and extra WS
             
+            if len(line) == 0:
+                continue
             
+            params = line.split(' ')
+            key = params[0]
+
+            if key == 'eval':
+                if params[1] in self.eval:
+                    #Eval def __init__(self, chem, node, value, time=None):
+                    self.eval[params[1]].append(self.Eval(
+                        params[1], 
+                        params[3], 
+                        self.convert_sufix_number(params[4]), 
+                        self.convert_sufix_number(params[2])
+                        ))
+                else:
+                    self.eval[params[1]] = [self.Eval(
+                        params[1], 
+                        params[3], 
+                        self.convert_sufix_number(params[4]), 
+                        self.convert_sufix_number(params[2])
+                        )]
+            else:
+                print('No valid handler for: '+key)
+            
+    def convert_sufix_number(self, in_value):
+
+        if isinstance(in_value, str):
+            if in_value[-1] == 'm':
+                out_val = float(in_value[:-1])*1e-3
+            elif in_value[-1] == 'u':
+                out_val = float(in_value[:-1])*1e-6
+            elif in_value[-1] == 'n':
+                out_val = float(in_value[:-1])*1e-9
+            elif in_value[-1] == 'p':
+                out_val = float(in_value[:-1])*1e12
+            elif in_value[-1] == 'k':
+                out_val = float(in_value[:-1])*1e3
+            elif in_value[-1] == 'M':
+                out_val = float(in_value[:-1])*1e6
+            elif in_value[-1] == 'G':
+                out_val = float(in_value[:-1])*1e9
+            else:
+                out_val = float(in_value)
+            return out_val
+        else:
+            raise ValueError("Input value not a string: "+str(in_value))
             
     def addNetlistFile(self, nFile):
         self.netListFiles.append(nFile)
@@ -180,13 +249,17 @@ class SimulationXyce:
     def getDevice(self, port):
         return self.dev[port]
     
-    def getEvaluation(self, chem):
-        eval = self.eval[chem]
-        e_out = {}
-        for e in eval:
-            e_out[e.getNode()] = e.getValue()
+    def getEvaluation(self, chem=None):
         
-        return e_out
+        if chem == None:
+            return self.eval
+        else:
+            eval = self.eval[chem]
+            e_out = {}
+            for e in eval:
+                e_out[e.getNode()] = 'C:'+e.getValue()
+            
+            return e_out
     
     def getInputChemList(self):
         return self.chem
@@ -258,6 +331,8 @@ def runSimulation(
     
     if ('plot' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
         _main_plot_results = True
+    if ('eval_file' in extra_args):
+        _eval_file = True 
 
 
     #####
@@ -282,6 +357,8 @@ def runSimulation(
             configFile  =cirConfigFile,
             length_file =length_file,
             preRouteSim =preRouteSim)
+
+    
     
     # default result directory
     result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
@@ -365,8 +442,6 @@ def parseMFDAFile(mfda_file):
         elif lineKey == "dev":
             xyceSimObj
         
-        
-
         pass
 
 def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False):
@@ -685,19 +760,75 @@ def plot_xyce_results_2(design, results_directory):
 
     pass
 
+def load_eval_file(ev_file, sim_obj=None):
+
+    if sim_obj==None:
+        sim_obj = SimulationXyce()
+
+    return sim_obj.parse_eval_file(ev_file)
+
+
 def export_xyce_results_to_csv(design, chem_list, result_dir):
     pass
 
-def evaluate_results():
-    pass
+def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None):
+
+
+    sim_obj = load_eval_file(wd+'/'+ev_file, sim_obj=sim_obj)
+
+    ev_chem_list = sim_obj.getEvaluation()
+
+    eval_df_coln = ['Chemical', 'Time', 'Node', 'Error', 'Expected Conc', 'Eval Conc']
+    eval_df = pd.DateFrame(columns=eval_df_coln)
+
+    for ev_chem in ev_chem_list:
+
+        rFile = results_dir+'/'+design_name+'.cir.prn'
+        temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
+
+        for eval_obj in ev_chem_list[ev_chem]:
+
+            if eval_obj.getTime() in temp_df:
+
+                # get time coln index
+                row_time_ind = temp_df[temp_df['TIME'] == eval_obj.getTime()]
+
+                # get chemical value
+                chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
+                prn_val = temp_df[chem]
+
+                exp_val = float(eval_obj.getValue())
+                # Calculate error
+                err_val = (float(prn_val) - exp_val)/exp_val
+
+                # add to data frame
+                new_data = {
+                    'Chemical':eval_obj.getChem(),
+                    'Time':eval_obj.getTime(),
+                    'Node':eval_obj.getNode(),
+                    'Error':err_val,
+                    'Expected Conc':eval_obj.getValue(),
+                    'Eval Conc':prn_val
+                    }
+
+            else:
+                print('Cannot evaluate time: '+eval_obj.getTime()+' for chem: '+eval_obj.getChem()+'('+eval_obj.getNode()+')')
+
+    
+    eval_df.to_csv(results_dir+'/Chem_Eval.csv')
+        
 
 
 def is_docker_container_running(client, container):
     if container not in [x.name for x in client.containers.list()]:
         #print(client.containers.list())
-        raise ValueError('Container not in list (is it running?)' + "\n"+\
+        raise ValueError('Container not in list (is it running?). Looking for ' + container + "\n"+\
                          "Running images: " + str([x.name for x in client.containers.list()]))
     return True
+
+def docker_clean_result_dir(client, container, device):
+
+    pass
 
 
 if __name__ == "__main__":

@@ -1,2 +1,2 @@
  
-PYTHONPATH=. pytest testing/test_smart_t_script.py > test_output
+PYTHONPATH=. pytest -rP testing/test_smart_t_script.py > test_output
