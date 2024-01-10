@@ -238,7 +238,7 @@ def parseMFDAFile(mfda_file):
         
         pass
 
-def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False):
+def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False, xyce_local=False):
 
     # locate nessary files
     files = getSimFiles(verilogFile, wd)
@@ -257,20 +257,24 @@ def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=Fa
         runScipt=True)
     
     # create archive
-    arcNameBase = files['verilogFile'][:-2]+"_xyce"
+    if not xyce_local:
+        arcNameBase = files['verilogFile'][:-2]+"_xyce"
 
-    xyceTar, arcName = createXyceArchive(arcNameBase, Overwrite=overwrite)
+        xyceTar, arcName = createXyceArchive(arcNameBase, Overwrite=overwrite)
 
-    srcDir = wd+"/spiceFiles"
-    xyceTar.add(srcDir, arcname=os.path.basename(srcDir.replace("spiceFiles",arcName.replace('.tar',''))))
+        srcDir = wd+"/spiceFiles"
+        xyceTar.add(srcDir, arcname=os.path.basename(srcDir.replace("spiceFiles",arcName.replace('.tar',''))))
 
-    xyceTar.close()
+        xyceTar.close()
 
-    print("--------------------")
-    print("created archive: " + arcName)
-    print("--------------------")
+        print("--------------------")
+        print("created archive: " + arcName)
+        print("--------------------")
 
-    return arcName
+        return arcName
+
+    else:
+        return None
 
 def convertToCir_from_config(
         verilogFile,
