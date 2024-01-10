@@ -399,7 +399,7 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
 def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run'):
 
     simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
-        "--list "+xyceFiles+\
+        "--list "+xyce_Files+\
         "--workdir "+workDir
 
     print('Running xyce locally as: '+simRunComm)
