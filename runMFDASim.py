@@ -387,6 +387,8 @@ def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run'):
     simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
         "--list "+xyceFiles+\
         "--workdir "+workDir
+
+    print('Running xyce locally as: '+simRunComm)
     
     subprocess.run(simRunComm)
 
