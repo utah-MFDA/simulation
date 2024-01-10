@@ -141,8 +141,10 @@ def runSimulation(
     
     if _local_xyce:
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
+        result_wd = workDir+"/spiceFiles"
 
-        runLocalXyce(xyce_files = xyceFiles, workDir=workDir)
+        ZQ(xyce_files = xyceFiles, workDir=result_wd)
+
     else:
         
         docker_PyWD    = "/mfda_simulation/xyce_docker_server"
@@ -164,26 +166,26 @@ def runSimulation(
             dockerContainer=dockerContainer, 
             simDockerPyWD=dockerWD)
     
-    # move old results directory
-    if os.path.isdir(result_wd):
-        # create tar file
-        old_result_path = result_wd+"_old"
-        if not os.path.isdir(old_result_path):
-            os.makedirs(old_result_path)
-        result_old_tar = old_result_path+"/result_"+timeString()+".tar"
-        #result_old_tar = result_wd+"_old/result_"+timeString()+".tar"
-        r_tar = tarfile.open(result_old_tar, 'x')
-        r_tar.add(result_wd)
-        # remove old results
-        shutil.rmtree(result_wd)
-        
+        # move old results directory
+        if os.path.isdir(result_wd):
+            # create tar file
+            old_result_path = result_wd+"_old"
+            if not os.path.isdir(old_result_path):
+                os.makedirs(old_result_path)
+            result_old_tar = old_result_path+"/result_"+timeString()+".tar"
+            #result_old_tar = result_wd+"_old/result_"+timeString()+".tar"
+            r_tar = tarfile.open(result_old_tar, 'x')
+            r_tar.add(result_wd)
+            # remove old results
+            shutil.rmtree(result_wd)
+            
 
-    # load extracted data
-    pullFromDocker(targetDirectory=result_wd,
-                   dockerContainer=dockerContainer,
-                   simDockerWD=dockerWD+'/'+os.path.basename(arcName).replace('.tar',''),
-                   # overwrite pervious tar
-                   OR_fileExists=True)
+        # load extracted data
+        pullFromDocker(targetDirectory=result_wd,
+                    dockerContainer=dockerContainer,
+                    simDockerWD=dockerWD+'/'+os.path.basename(arcName).replace('.tar',''),
+                    # overwrite pervious tar
+                    OR_fileExists=True)
 
     # generate report
     rfiles    = pd.read_csv(result_wd+"/spiceList")["OutputFile"]
@@ -399,12 +401,12 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
 def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run'):
 
     simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
-        "--list "+xyce_Files+\
+        "--list "+xyce_files+" "\
         "--workdir "+workDir
 
     print('Running xyce locally as: '+simRunComm)
     
-    subprocess.run(simRunComm)
+    subprocess.run(simRunComm.split())
 
 
     
