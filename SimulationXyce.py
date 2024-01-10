@@ -85,7 +85,7 @@ class SimulationXyce:
         
     def parse_config_file(self, file):
         in_conf_f = open(file)
-        for line in in_conf_f:
+        for l_num, line in enumerate(in_conf_f):
             # remove comments
             if '#' in line:
                 line = line.split('#')[0]
@@ -99,25 +99,26 @@ class SimulationXyce:
             
             if key == 'input':
                 self.dev[params[1]] = self.Dev(params[1], params[2], params[3:])
-            if key == 'chem':
-                if params[2] not in self.dev:
+            elif key == 'chem':
+                if params[2] in self.dev:
                     self.chem[params[1]] = self.ChemInput(params[1], params[2], params[3])
                     #if params[1] in self.eval:
                     #    self.eval[params[1]].append(self.Eval(params[1], params[4], params[5]))
                     #else:
                     #    self.eval[params[1]] = [self.Eval(params[1], params[4], params[5])]
                 else:
-                    pass
+                    raise ValueError("Device not created for input: "+params[2]+", line: "+str(l_num)+'\n'+\
+                        "    chem: "+params[1]+', input port: '+params[2]+', '+'Concentration: '+params[3])
             
             # key for timing
-            if key == 'transient':
+            elif key == 'transient':
                 if 'transient' in self.times:
                     self.times['transient'].append(params)
                 else:
                     self.times['transient'] = [params]
             # untested method
             # would need to use DC simulations
-            if key == 'static':
+            elif key == 'static':
                 pass
 
     def parse_eval_file(self, ev_file):

@@ -25,6 +25,8 @@ testing/simpleChannelTest/*.tar
 testing/simpleChannelTest_full_config/*.tar
 testing/simpleChannelTest_full_config/spiceFiles/*
 testing/simpleChannelTest_full_config/results/*
+testing/*/results/*
+testing/*/results_old/*
 
 ./testing/*/spiceList
 test_output

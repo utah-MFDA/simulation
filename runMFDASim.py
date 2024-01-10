@@ -75,6 +75,11 @@ def runSimulation(
         xyceFiles="spiceList",
         convert_v=True,
         extra_args={}):
+
+    if verilogFile[-2:] == '.v':
+        design_name = verilogFile[:-2]
+    else:
+        raise ValueError("Netlist is not a valid file, must be .v, \ninput file: "+str(verilogFile))
     
     # hard coded simulation directory in docker image
     docker_PyWD    = "/mfda_simulation/xyce_docker_server"
@@ -91,8 +96,13 @@ def runSimulation(
     
     if ('plot' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
         _main_plot_results = True
+    else:
+        _main_plot_results = False
+
     if ('eval_file' in extra_args):
-        _eval_file = True 
+        _eval_file = True
+    else:
+        _eval_file = False
 
 
     #####
@@ -175,6 +185,10 @@ def runSimulation(
         df.to_csv(result_wd+"/results/"+verilogFile[:-2]+'_chemOut.csv')
     else:
         throw()
+
+    if _eval_file:
+        evaluate_results(extra_args.eval_file, workDir, result_wd, )
+
     if _main_plot_results:    
         plot_xyce_results_list(df)
 
