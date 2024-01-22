@@ -132,11 +132,6 @@ def runSimulation(
             length_file =length_file,
             preRouteSim =preRouteSim)
 
-    
-    
-    
-
-    
 
     
     if _local_xyce:
@@ -144,6 +139,8 @@ def runSimulation(
         result_wd = workDir+"/spiceFiles"
 
         runLocalXyce(xyce_files = xyceFiles, workDir=result_wd)
+
+        results_prn_wd = result_wd
 
     else:
         
@@ -186,6 +183,8 @@ def runSimulation(
                     simDockerWD=dockerWD+'/'+os.path.basename(arcName).replace('.tar',''),
                     # overwrite pervious tar
                     OR_fileExists=True)
+        
+        results_prn_wd = result_wd+"/results"
 
     # generate report
     rfiles    = pd.read_csv(result_wd+"/spiceList")["OutputFile"]
@@ -198,18 +197,23 @@ def runSimulation(
     print("Result files")
     print(rfiles)
 
-    df = load_xyce_results(result_wd+"/results", rfiles, chem_list)
+    df = load_xyce_results(results_prn_wd, rfiles, chem_list)
 
     # export to csv
     if isinstance(df, list):
         pass
     elif isinstance(df, pd.DataFrame):
-        df.to_csv(result_wd+"/results/"+verilogFile[:-2]+'_chemOut.csv')
+        df.to_csv(results_prn_wd+"/"+design_name+'_chemOut.csv')
     else:
         throw()
 
     if _eval_file:
-        evaluate_results(extra_args.eval_file, workDir, result_wd, )
+        #def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None)
+        evaluate_results(
+            ev_file=extra_args['eval_file'], 
+            wd=workDir, 
+            results_dir=results_prn_wd, 
+            design_name=design_name)
 
     if _main_plot_results:    
         plot_xyce_results_list(df)
