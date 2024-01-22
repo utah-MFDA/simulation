@@ -1,33 +1,93 @@
 ## MFDA simulation
 
-This module is designed work with automation tools for microfluidic design using open-source electronic design automation (EDA) tools. This tool use the Xyce tool from Sandia to create system-level models of a set of standard components. This tool is not designed to provide the granular detail that can be obtained from much more computationally intense finite element analysis (FEA). The supported models are a set of flow control valves and various sizes of serpentine channels and arbitrary channels. It has been designed to work along side the place and routing tool (https://github.com/utah-MFDA/place_and_route). The target for the code has been developed to work with a complementary docker tool ().
+This is a microfluidic design automation (MFDA) module developed to simulate using a modified nodal analysis, based on using Xyce ciruit simulator. This module to run on a host machine with Xyce or  communicate with the docker image with Xyce for MFDA simulation. This program acts as a bridge to run simulation programs, as well as translate the verilog netlist files to the nessary format for Xyce.
 
-### Required Software
+## Getting started 
+
+You can copy the template folder to get all the nessary files for the simulator. Just change the name of the netlist file <device_name>.v and change the module name inside the netlist file to match.
+
+First you will need to make sure you have done one of the following:
+1) Install XYce on the host machine with support for external libraries, or
+
+2) For those running the simulator within a docker container, you will first need to make sure you have docker installed and the nessary docker image downloaded, bgoenner/mfda_xyce.
+
+After that edit the files in your new device directory, make sure the name of the device directory is the same as the verilog netlist file without .v and the top-most module within the verilog file.
+
+Create a running docker container with 
+```
+$ docker run -dit bgoenner/mfda_xyce
+```
+Take note of the name of the docker container by running
+```
+docker ps
+```
+
+The simulator can then simply be ran with
+```
+python3 runMFDASim.py <args>
+```
+
+There are a lot of necessary arguments to run the simulator listed here
+
+For local Xyce builds make sure to include
+```
+--netlist
+```
+   The name of the verilog netlist, without the path
+
+```
+--sim_dir
+```
+   The path to the simulation files
+
+```
+--sim_file
+```
+   Directory of the simulation config file, usually simulation.config
 
 
-For running on the host machine the first thing to do after cloning this repo is...
+```
+--design
+```
+   The name of the device, usually the verilog file without the extension
 
-1) Clone the Xyce repo and build the software as described with ADMS support to build the Verilog-AMS files. This will require additionally building the Trillinos and suitesparse libraries.
 
-2) Clone the component library repo https://github.com/utah-MFDA/component_library. The libraries will need to be built which can be done by running make from the component_library/VerilogA 
+```
+--cir_config
+```
+   configurion of the .v to .cir translation
 
-3) ...
 
-The simulator can be interfaced from the the terminal python program in
-frontend -> mfda_sim_cmd.py
+```
+--lib
+```
+   A list of valid library components in csv format
 
-It requires setting up a project directory that is organized as such
+```
+--docker_container
+```
+   (docker) The name of the docker container used for the simulator
 
--- project_folder
- |_ project_1
-    |_ project_1.v (verilog netlist)
-    |_ project_1_length.xlsx
-    |_ project_1_spec.csv
-    |_ simTime.csv
-    |_ devices.csv
- |_ project_2
-    |_ ...
-    
-Examples can be found in testing/projects
+```
+--xyce_local
+```
+   (xyce host) Set True to use Xyce from the local machine. Make sure to initialize the xyce_run submodule, can create a configuration. 
 
+```
+--eval_file
+
+```
+   (optional) file used for error calculations
+
+
+```
+--length_file
+```
+   (optional) file used for channels for connecting length
+
+
+```
+--plot
+```
+   (optional) add True after this argument to automatically plot the outputs
 

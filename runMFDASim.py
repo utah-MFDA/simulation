@@ -2,15 +2,19 @@
 import argparse
 import os
 import shutil
+import subprocess
 
 import docker
 import tarfile
+import json
 
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # local imports
 from V2Va_Parser import Verilog2Xyce
+
+from SimulationXyce import SimulationXyce
 
 """
 Required inputs
@@ -28,174 +32,7 @@ Steps
 - evaluate to spec
 
 """
-class SimulationXyce:
-        
-    class Node:    
-        def __init__(self, name, args):
-                self.name = name
-                self.args = args
-
-        def getName(self):
-            return self.name
-        
-        def getArgs(self):
-            return self.args
-    
-    class Inlet(Node):
-        def __init__(self, name, args):
-            super.__init__(name, args)
-
-    class Outlet(Node):
-        def __init__(self, name, args):
-            super.__init__(name, args)
-
-    class Eval:
-        def __init__(self, chem, node, value):
-            self.node = node
-            self.value= value
-            
-        def getNode(self):
-            return self.node
-        
-        def getValue(self):
-            return self.value
-
-    # this will need some more generic definitions
-    class Dev:
-        def __init__(self, node, type, args):
-            self.type = type
-            self.node = node
-            self.args = args
-
-        def getType(self):
-            return self.type
-
-        def getNode(self):
-            return self.node
-        
-        def getArgs(self):
-            return self.args
-        
-        def addArgument(self, arg):
-            self.args.append(arg)
-    
-    class ChemInput:
-        def __init__(self, chem, node, in_value):
-            self.chem = chem
-            self.node = node
-            self.value=in_value
-            
-        def getInValue(self):
-            return self.value
-        
-        def getNode(self):
-            return self.node
-        
-        def getChem(self):
-            return self.chem
-
-    def __init__(self):
-        self.netListFiles = []
-        self.inlets = {}
-        self.eval   = {}
-        self.dev    = {}
-        self.chem   = {}
-        self.times  = {}
-        
-    def parse_config_file(self, file):
-        in_conf_f = open(file)
-        for line in in_conf_f:
-            # remove comments
-            if '#' in line:
-                line = line.split('#')[0]
-            line = ' '.join(line.lstrip().split()) # removes leading and extra WS
-            
-            if len(line) == 0:
-                continue
-            
-            params = line.split(' ')
-            key = params[0]
-            
-            if key == 'input':
-                self.dev[params[1]] = self.Dev(params[1], params[2], params[3:])
-            if key == 'chem':
-                if params[2] in self.dev:
-                    self.chem[params[1]] = self.ChemInput(params[1], params[2], params[3])
-                    if params[1] in self.eval:
-                        self.eval[params[1]].append(self.Eval(params[1], params[4], params[5]))
-                    else:
-                        self.eval[params[1]] = [self.Eval(params[1], params[4], params[5])]
-                else:
-                    pass
-            
-            # key for timing
-            if key == 'transient':
-                if 'transient' in self.times:
-                    self.times['transient'].append(params)
-                else:
-                    self.times['transient'] = [params]
-            # untested method
-            # would need to use DC simulations
-            if key == 'static':
-                pass
-            
-            
-            
-    def addNetlistFile(self, nFile):
-        self.netListFiles.append(nFile)
-
-    def removeNelistFile(self):
-        # find file that matches key
-
-        # remove file
-        pass
-
-    def clearNetlistFile(self):
-        self.netListFiles = []
-
-    def addInlet(self, inletName, inletArgs):
-        #' '.join(str.split()) reduces multispaces to single space
-        inletArgs = ' '.join(inletArgs.split()).split(' ')
-        self.inlets[inletName] = {'args':inletArgs}
-
-    def removeInlet(self):
-        pass
-
-    def addEval(self, evalNode, evalArgs):
-        evalArgs = ' '.join(evalArgs.split()).split(' ')
-        self.eval[evalNode] = {'args':evalArgs}
-
-    def removeEval(self):
-        pass
-
-    def addDev(self, dev, node, args):
-        self.dev[node] = {'dev':dev, 'args':args}
-        
-    def getDeviceList(self):
-        return self.dev
-    
-    def getDevice(self, port):
-        return self.dev[port]
-    
-    def getEvaluation(self, chem):
-        eval = self.eval[chem]
-        e_out = {}
-        for e in eval:
-            e_out[e.getNode()] = e.getValue()
-        
-        return e_out
-    
-    def getInputChemList(self):
-        return self.chem
-    
-    def getInputChem(self, chem):
-        return self.chem[chem].getNode(), self.chem[chem].getValue()
-    
-    def getSimulationTimes(self):
-        return self.times
-
-    
-    
+   
 
 # returns the date and time as a string for files
 def timeString():
@@ -239,11 +76,14 @@ def runSimulation(
         xyceFiles="spiceList",
         convert_v=True,
         extra_args={}):
+
+    if verilogFile[-2:] == '.v':
+        design_name = verilogFile[:-2]
+    else:
+        raise ValueError("Netlist is not a valid file, must be .v, \ninput file: "+str(verilogFile))
     
     # hard coded simulation directory in docker image
-    docker_PyWD    = "/mfda_simulation/xyce_docker_server"
 
-    simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
 
     sim_config     = workDir+"/simulation.config"
 
@@ -255,6 +95,18 @@ def runSimulation(
     
     if ('plot' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
         _main_plot_results = True
+    else:
+        _main_plot_results = False
+
+    if ('local_xyce' in extra_args) and (extra_args['local_xyce'].lower() in ['true', '1']):
+        _local_xyce = True
+    else:
+        _local_xyce = False
+
+    if ('eval_file' in extra_args) and (extra_args['eval_file'] is not None):
+        _eval_file = True
+    else:
+        _eval_file = False
 
 
     #####
@@ -279,41 +131,60 @@ def runSimulation(
             configFile  =cirConfigFile,
             length_file =length_file,
             preRouteSim =preRouteSim)
+
+
     
-    # default result directory
-    result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
-    result_wd = workDir+"/results"
+    if _local_xyce:
+        #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
+        result_wd = workDir+"/spiceFiles"
 
-    # transfer files to docker image
-    pushCir2Docker(arcName, dockerContainer, dockerWD)
+        runLocalXyce(xyce_files = xyceFiles, workDir=result_wd)
 
-    simRunComm += " --workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
+        results_prn_wd = result_wd
 
-    # wait for simulator
-    runRemoteXyce(simStartComm=simRunComm, 
-                  dockerContainer=dockerContainer, 
-                  simDockerPyWD=dockerWD)
-
-    # move old results directory
-    if os.path.isdir(result_wd):
-        # create tar file
-        old_result_path = result_wd+"_old"
-        if not os.path.isdir(old_result_path):
-            os.makedirs(old_result_path)
-        result_old_tar = old_result_path+"/result_"+timeString()+".tar"
-        #result_old_tar = result_wd+"_old/result_"+timeString()+".tar"
-        r_tar = tarfile.open(result_old_tar, 'x')
-        r_tar.add(result_wd)
-        # remove old results
-        shutil.rmtree(result_wd)
+    else:
+        
+        docker_PyWD    = "/mfda_simulation/xyce_docker_server"
+        simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
         
 
-    # load extracted data
-    pullFromDocker(targetDirectory=result_wd,
-                   dockerContainer=dockerContainer,
-                   simDockerWD=dockerWD+'/'+os.path.basename(arcName).replace('.tar',''),
-                   # overwrite pervious tar
-                   OR_fileExists=True)
+        # default result directory
+        result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
+        result_wd = workDir+"/results"
+
+        simRunComm     += " --workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
+
+        # transfer files to docker image
+        pushCir2Docker(arcName, dockerContainer, dockerWD)
+
+        # wait for simulator
+        runRemoteXyce(
+            simStartComm=simRunComm, 
+            dockerContainer=dockerContainer, 
+            simDockerPyWD=dockerWD)
+    
+        # move old results directory
+        if os.path.isdir(result_wd):
+            # create tar file
+            old_result_path = result_wd+"_old"
+            if not os.path.isdir(old_result_path):
+                os.makedirs(old_result_path)
+            result_old_tar = old_result_path+"/result_"+timeString()+".tar"
+            #result_old_tar = result_wd+"_old/result_"+timeString()+".tar"
+            r_tar = tarfile.open(result_old_tar, 'x')
+            r_tar.add(result_wd)
+            # remove old results
+            shutil.rmtree(result_wd)
+            
+
+        # load extracted data
+        pullFromDocker(targetDirectory=result_wd,
+                    dockerContainer=dockerContainer,
+                    simDockerWD=dockerWD+'/'+os.path.basename(arcName).replace('.tar',''),
+                    # overwrite pervious tar
+                    OR_fileExists=True)
+        
+        results_prn_wd = result_wd+"/results"
 
     # generate report
     rfiles    = pd.read_csv(result_wd+"/spiceList")["OutputFile"]
@@ -326,15 +197,24 @@ def runSimulation(
     print("Result files")
     print(rfiles)
 
-    df = load_xyce_results(result_wd+"/results", rfiles, chem_list)
+    df = load_xyce_results(results_prn_wd, rfiles, chem_list)
 
     # export to csv
     if isinstance(df, list):
         pass
     elif isinstance(df, pd.DataFrame):
-        df.to_csv(result_wd+"/results/"+verilogFile[:-2]+'_chemOut.csv')
+        df.to_csv(results_prn_wd+"/"+design_name+'_chemOut.csv')
     else:
         throw()
+
+    if _eval_file:
+        #def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None)
+        evaluate_results(
+            ev_file=extra_args['eval_file'], 
+            wd=workDir, 
+            results_dir=results_prn_wd, 
+            design_name=design_name)
+
     if _main_plot_results:    
         plot_xyce_results_list(df)
 
@@ -362,11 +242,9 @@ def parseMFDAFile(mfda_file):
         elif lineKey == "dev":
             xyceSimObj
         
-        
-
         pass
 
-def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False):
+def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=False, xyce_local=False):
 
     # locate nessary files
     files = getSimFiles(verilogFile, wd)
@@ -385,20 +263,24 @@ def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=Fa
         runScipt=True)
     
     # create archive
-    arcNameBase = files['verilogFile'][:-2]+"_xyce"
+    if not xyce_local:
+        arcNameBase = files['verilogFile'][:-2]+"_xyce"
 
-    xyceTar, arcName = createXyceArchive(arcNameBase, Overwrite=overwrite)
+        xyceTar, arcName = createXyceArchive(arcNameBase, Overwrite=overwrite)
 
-    srcDir = wd+"/spiceFiles"
-    xyceTar.add(srcDir, arcname=os.path.basename(srcDir.replace("spiceFiles",arcName.replace('.tar',''))))
+        srcDir = wd+"/spiceFiles"
+        xyceTar.add(srcDir, arcname=os.path.basename(srcDir.replace("spiceFiles",arcName.replace('.tar',''))))
 
-    xyceTar.close()
+        xyceTar.close()
 
-    print("--------------------")
-    print("created archive: " + arcName)
-    print("--------------------")
+        print("--------------------")
+        print("created archive: " + arcName)
+        print("--------------------")
 
-    return arcName
+        return arcName
+
+    else:
+        return None
 
 def convertToCir_from_config(
         verilogFile,
@@ -520,6 +402,20 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
     for data in stream:
         print(data.decode())
 
+def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run'):
+
+    simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
+        "--list "+xyce_files+" "\
+        "--workdir "+workDir
+
+    print('Running xyce locally as: '+simRunComm)
+    
+    subprocess.run(simRunComm.split())
+
+
+    
+
+
 def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=False):
 
     client = docker.from_env()
@@ -577,6 +473,41 @@ def load_xyce_results_file(rFile):
     #print(str(r_df))
     return r_df
 
+def change_r_node_ref(df, rFile, chem):
+    
+    df_nodes = list(df)
+
+    node_dict = json.load(open(rFile.replace('.prn','.nodes')))
+
+    for node in df_nodes:
+        if node == 'TIME':
+            continue
+        else:
+            if node[0] == 'V':
+                node_num = node.replace('V(', '').replace(')', '')
+                node_key = list(node_dict.keys())[list(node_dict.values()).index(int(node_num))]
+
+                node_name = '_'.join(node_key.split('_')[:-1])
+                node_name_k = node_key.split('_')[-1]
+
+                print(node_name+' : '+node_name_k)
+
+                if node_name_k.lower()[-1] == 'c':
+                    new_node = 'C_'+str(chem)+'('+node_name+')'
+                else:
+                    new_node = 'P('+node_name+')'
+
+                print('  new node: '+new_node)
+
+            elif node[0] == 'I':
+                pass
+
+            df = df.rename(columns={node:new_node})
+
+    return df
+
+
+
 def load_xyce_results(rDir, rlist=None, chem_list=None):
     if rlist is None:
         return load_xyce_results_file(rDir)
@@ -585,9 +516,13 @@ def load_xyce_results(rDir, rlist=None, chem_list=None):
         #r_df = pd.DataFrame()
         # we assume in list generation the indexes did not shift
         for ind, rFile in enumerate(rlist):
+
             print(rDir+"/"+rFile)
             temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True)
             
+            if chem_list is not None:
+                temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
+
             #r_df = pd.append([temp_df])
             if not ind:
                 r_df.append(temp_df)
@@ -643,19 +578,80 @@ def plot_xyce_results_2(design, results_directory):
 
     pass
 
+def load_eval_file(ev_file, sim_obj=None):
+
+    if sim_obj==None:
+        sim_obj = SimulationXyce()
+    
+    sim_obj.parse_eval_file(ev_file)
+
+    return sim_obj
+
+
 def export_xyce_results_to_csv(design, chem_list, result_dir):
     pass
 
-def evaluate_results():
-    pass
+def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None):
+
+
+    sim_obj = load_eval_file(wd+'/'+ev_file, sim_obj=sim_obj)
+
+    ev_chem_list = sim_obj.getEvaluation()
+
+    eval_df_coln = ['Chemical', 'Time', 'Node', 'Error', 'Expected Conc', 'Eval Conc']
+    eval_df = pd.DataFrame(columns=eval_df_coln)
+
+    for ev_chem in ev_chem_list:
+
+        rFile = results_dir+'/'+design_name+'_chemOut.csv'
+        #temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
+        temp_df = pd.read_csv(rFile)
+
+        for eval_obj in ev_chem_list[ev_chem]:
+
+            if eval_obj.getTime() in temp_df['TIME']:
+
+                # get time coln index
+                row_time_ind = temp_df['TIME'][temp_df['TIME'] == eval_obj.getTime()].index[0]
+
+                # get chemical value
+                chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
+                prn_val = temp_df[chem_name][row_time_ind]
+
+                exp_val = eval_obj.getValue()
+                # Calculate error
+                err_val = (prn_val- exp_val)/exp_val
+
+                # add to data frame
+                new_data = pd.DataFrame([[
+                    eval_obj.getChem(),
+                    eval_obj.getTime(),
+                    eval_obj.getNode(),
+                    err_val,
+                    eval_obj.getValue(),
+                    prn_val
+                    ]], columns=eval_df_coln)
+
+                eval_df = pd.concat([eval_df, new_data])
+
+            else:
+                print('Cannot evaluate time: '+str(eval_obj.getTime())+' for chem: '+str(eval_obj.getChem())+'('+str(eval_obj.getNode())+')')
+
+    
+    eval_df.to_csv(results_dir+'/Chem_Eval.csv')
+        
 
 
 def is_docker_container_running(client, container):
     if container not in [x.name for x in client.containers.list()]:
         #print(client.containers.list())
-        raise ValueError('Container not in list (is it running?)' + "\n"+\
+        raise ValueError('Container not in list (is it running?). Looking for ' + container + "\n"+\
                          "Running images: " + str([x.name for x in client.containers.list()]))
     return True
+
+def docker_clean_result_dir(client, container, device):
+
+    pass
 
 
 if __name__ == "__main__":
@@ -687,11 +683,15 @@ if __name__ == "__main__":
     parser.add_argument('--convert_verilog', metavar='<convert_verilog>', type=str, default='True')
     
     parser.add_argument('--plot', type=str, default='False')
+    parser.add_argument('--eval_file', type=str, default=None)
+    parser.add_argument('--local_xyce', type=str, default='False')
     
     args = parser.parse_args()
     
     ex_args = {
-        'plot':args.plot
+        'plot':args.plot,
+        'eval_file':args.eval_file,
+        'local_xyce':args.local_xyce,
         }
     
     runSimulation(
