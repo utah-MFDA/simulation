@@ -30,64 +30,37 @@ python3 runMFDASim.py <args>
 There are a lot of necessary arguments to run the simulator listed here
 
 For local Xyce builds make sure to include
-```
---netlist
-```
+
+--netlist <verilog_file.v>\
    The name of the verilog netlist, without the path
 
-```
---sim_dir
-```
+--sim_dir <path_to_simluation_files>\
    The path to the simulation files
 
-```
---sim_file
-```
-   Directory of the simulation config file, usually simulation.config
+--sim_file <path_to_simulation_simluation.config>\
+   Directory of the simulation config file, usually simulation.config. Omit simluation.config from the argument.
 
-
-```
---design
-```
+--design <device_name>\
    The name of the device, usually the verilog file without the extension
 
+--cir_config <path/cir_file.mfsp>\
+   configurion of the .v to .cir translation. Usually "./V2Va_Parser/VMF_xyce.mfsp" is fine
 
-```
---cir_config
-```
-   configurion of the .v to .cir translation
+--lib <path_to_lib/lib_name.csv>\
+   A list of valid library components in csv format.
 
+--docker_container <docker_container_name>\
+   (docker) The name of the docker container used for the simulator. You can find this out if it is running with ```$ docker ps``` or if it not running ```$ docker ps -a``` will list all containers. Then start it with ```$ docker start <container name```. If issues persist ```docker run -dit /bgoenner/mfda_xyce``` will create a new running container. Old containers can be removed with ```docker rm <container_name```  
 
-```
---lib
-```
-   A list of valid library components in csv format
+--xyce_local <True/False>\
+   (xyce host) Set True to use Xyce from the local machine. Make sure to initialize the xyce_run submodule, and create/edit the configuration file configuration. Default is False.
 
-```
---docker_container
-```
-   (docker) The name of the docker container used for the simulator
-
-```
---xyce_local
-```
-   (xyce host) Set True to use Xyce from the local machine. Make sure to initialize the xyce_run submodule, can create a configuration. 
-
-```
---eval_file
-
-```
+--eval_file <path_to_eval_file/eval.config>\
    (optional) file used for error calculations
 
+--length_file <length_file>\
+   (optional) file used to add additional channel for channels for connecting components. It must be called <design_name>_lengths.xlxs
 
-```
---length_file
-```
-   (optional) file used for channels for connecting length
-
-
-```
---plot
-```
+--plot <True/False>\
    (optional) add True after this argument to automatically plot the outputs
 
