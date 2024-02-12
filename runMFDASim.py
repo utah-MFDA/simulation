@@ -187,8 +187,8 @@ def runSimulation(
         results_prn_wd = result_wd+"/results"
 
     # generate report
-    rfiles    = pd.read_csv(result_wd+"/spiceList")["OutputFile"]
-    chem_list = pd.read_csv(result_wd+"/spiceList")["Chemical"]
+    rfiles    = pd.read_csv(workDir+"/spiceFiles/spiceList")["OutputFile"]
+    chem_list = pd.read_csv(workDir+"/spiceFiles/spiceList")["Chemical"]
 
 
     for i, f in enumerate(rfiles):
@@ -196,6 +196,9 @@ def runSimulation(
 
     print("Result files")
     print(rfiles)
+
+    print("CHemical list")
+    print(chem_list)
 
     df = load_xyce_results(results_prn_wd, rfiles, chem_list)
 
@@ -469,7 +472,7 @@ def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=
 
 # load the prn file into a dataframe
 def load_xyce_results_file(rFile):
-    r_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
+    r_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
     #print(str(r_df))
     return r_df
 
@@ -480,6 +483,7 @@ def change_r_node_ref(df, rFile, chem):
     node_dict = json.load(open(rFile.replace('.prn','.nodes')))
 
     for node in df_nodes:
+        print("---"+node+"---")
         if node == 'TIME':
             continue
         else:
@@ -488,21 +492,29 @@ def change_r_node_ref(df, rFile, chem):
                 node_key = list(node_dict.keys())[list(node_dict.values()).index(int(node_num))]
 
                 node_name = '_'.join(node_key.split('_')[:-1])
-                node_name_k = node_key.split('_')[-1]
+                if '_' in node_name_k: 
+                    node_name_k = node_key.split('_')[-1]
+                else:
+                    node_name_k = node_key
 
                 print(node_name+' : '+node_name_k)
 
                 if node_name_k.lower()[-1] == 'c':
+                    new_node = 'C_'+str(chem)+'('+node_name+')'
+                elif node_name_k[-2:] == 'c0':
                     new_node = 'C_'+str(chem)+'('+node_name+')'
                 else:
                     new_node = 'P('+node_name+')'
 
                 print('  new node: '+new_node)
 
+                df = df.rename(columns={node:new_node})
+
             elif node[0] == 'I':
+                print('Current node : '+ node)
                 pass
 
-            df = df.rename(columns={node:new_node})
+            #df = df.rename(columns={node:new_node})
 
     return df
 
@@ -518,7 +530,7 @@ def load_xyce_results(rDir, rlist=None, chem_list=None):
         for ind, rFile in enumerate(rlist):
 
             print(rDir+"/"+rFile)
-            temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True)
+            temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
             
             if chem_list is not None:
                 temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
@@ -615,12 +627,13 @@ def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None):
                 row_time_ind = temp_df['TIME'][temp_df['TIME'] == eval_obj.getTime()].index[0]
 
                 # get chemical value
-                chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
+                #chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
+                chem_name = eval_obj.getChem()+'('+eval_obj.getNode()+')'
                 prn_val = temp_df[chem_name][row_time_ind]
 
                 exp_val = eval_obj.getValue()
                 # Calculate error
-                err_val = (prn_val- exp_val)/exp_val
+                err_val = abs((prn_val- exp_val)/exp_val)
 
                 # add to data frame
                 new_data = pd.DataFrame([[
