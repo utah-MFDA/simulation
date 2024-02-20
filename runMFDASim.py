@@ -103,11 +103,16 @@ def runSimulation(
     else:
         _local_xyce = False
 
-    if ('eval_file' in extra_args) and (extra_args['eval_file'] is not None):
+    if (('eval_file' in extra_args) and (extra_args['eval_file'] is not None)) or \
+        (('eval_result' in extra_args) and (extra_args['eval_result'].lower() in ['true', '1'])):
         _eval_file = True
     else:
         _eval_file = False
 
+    #if ('eval_result' in extra_args) and (extra_args['eval_result'].lower() in ['true', '1']):
+    #    _eval_file = True
+    #else:
+    #    _eval_file = False
 
     #####
 
@@ -197,7 +202,7 @@ def runSimulation(
     print("Result files")
     print(rfiles)
 
-    print("CHemical list")
+    print("Chemical list")
     print(chem_list)
 
     df = load_xyce_results(results_prn_wd, rfiles, chem_list)
@@ -213,7 +218,8 @@ def runSimulation(
     if _eval_file:
         #def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None)
         evaluate_results(
-            ev_file=extra_args['eval_file'], 
+            #ev_file=extra_args['eval_file'], 
+            sim_file=sim_config,
             wd=workDir, 
             results_dir=results_prn_wd, 
             design_name=design_name)
@@ -320,6 +326,7 @@ def convertToCir_from_config(
         devList           = _sim.getDeviceList(),
         length_file       = len_file,
         simTimesList      = _sim.getSimulationTimes(),
+        simProbeList      = _sim.getProbeList(),
         preRouteSim       = preRouteSim,
         outputVerilogFile = None,
         runScipt          = True)
@@ -603,10 +610,13 @@ def load_eval_file(ev_file, sim_obj=None):
 def export_xyce_results_to_csv(design, chem_list, result_dir):
     pass
 
-def evaluate_results(ev_file, wd, results_dir, design_name, sim_obj=None):
+def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, sim_file=None):
 
-
-    sim_obj = load_eval_file(wd+'/'+ev_file, sim_obj=sim_obj)
+    if ev_file is not None:
+        sim_obj = load_eval_file(wd+'/'+ev_file, sim_obj=sim_obj)
+    elif sim_file is not None:
+        sim_obj = SimulationXyce()
+        sim_obj.parse_config_file(sim_file)
 
     ev_chem_list = sim_obj.getEvaluation()
 

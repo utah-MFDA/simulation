@@ -21,7 +21,7 @@ class SimulationXyce:
             super.__init__(name, args)
 
     class Eval:
-        def __init__(self, chem, node, value, time=None):
+        def __init__(self, chem, node, value=None, time=None):
             self.chem = chem
             self.node = node
             self.value= value
@@ -75,6 +75,19 @@ class SimulationXyce:
         def getChem(self):
             return self.chem
 
+    class Probe:
+        def __init__(self, probe_type, node, device=None):
+            self.probe_type = probe_type
+            self.node = node
+            self.device = device
+
+        def getNode(self):
+            return self.node
+
+        def getProbeType(self):
+            return self.probe_type
+            
+
     def __init__(self):
         self.netListFiles = []
         self.inlets = {}
@@ -82,7 +95,11 @@ class SimulationXyce:
         self.dev    = {}
         self.chem   = {}
         self.times  = {}
-        
+        self.probes = {}
+        self.probes['pressure'] = []
+        self.probes['flow'] = []
+        self.probes['concentration'] = []
+
     def parse_config_file(self, file):
         in_conf_f = open(file)
         for l_num, line in enumerate(in_conf_f):
@@ -121,6 +138,39 @@ class SimulationXyce:
             elif key == 'static':
                 pass
 
+            elif key == 'probe':
+                if params[1] == 'pressure':
+                    self.probes['pressure'].append(self.Probe(
+                        'pressure', 
+                        node=params[2]))
+                elif params[1] == 'flow':
+                    self.probes['flow'].append(self.Probe(
+                        'flow', 
+                        node=params[3], 
+                        device=params[2]))
+                elif params[1] in [x.getChem() for ch in self.chem]:
+                    self.probes['concentration'].append(self.Probe(
+                        'concentration', 
+                        node=params[2]))
+
+            elif key == 'eval':
+                if params[1] in self.eval:
+                    #Eval def __init__(self, chem, node, value, time=None):
+                    self.eval[params[1]].append(self.Eval(
+                        params[1], 
+                        params[3], 
+                        self.convert_sufix_number(params[4]), 
+                        self.convert_sufix_number(params[2])
+                        ))
+                else:
+                    self.eval[params[1]] = [self.Eval(
+                        params[1], 
+                        params[3], 
+                        self.convert_sufix_number(params[4]), 
+                        self.convert_sufix_number(params[2])
+                        )]
+                self.probes['concentration'].append(self.Probe('concentration', params[3]))
+
     def parse_eval_file(self, ev_file):
 
         # reset eval list
@@ -141,6 +191,21 @@ class SimulationXyce:
             key = params[0]
 
             if key == 'eval':
+                if params[1] == 'pressure':
+                    self.eval['pressure'].append(self.Eval(
+                        params[1],
+                        params[3],
+                        self.convert_sufix_number(params[4]), 
+                        self.convert_sufix_number(params[2])
+                    ))
+                if params[1] == 'flow':
+                    self.eval['flow'].append(self.Eval(
+                        params[1],
+                        params[3],
+                        self.convert_sufix_number(params[4]), 
+                        self.convert_sufix_number(params[2])
+                    ))
+                
                 if params[1] in self.eval:
                     #Eval def __init__(self, chem, node, value, time=None):
                     self.eval[params[1]].append(self.Eval(
@@ -238,3 +303,6 @@ class SimulationXyce:
     
     def getSimulationTimes(self):
         return self.times
+
+    def getProbeList(self):
+        return self.probes
