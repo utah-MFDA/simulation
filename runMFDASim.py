@@ -68,7 +68,7 @@ def runSimulation(
         verilogFile, 
         workDir, 
         libraryFile,
-        cirConfigFile,
+        cirConfigFile=None,
         length_file=None,
         preRouteSim=False,
         dockerContainer=None,
@@ -296,7 +296,7 @@ def convertToCir_from_config(
         sim_config,
         wd, 
         libFile, 
-        configFile,
+        configFile=None,
         length_file=None,
         preRouteSim=False, 
         overwrite=False):
@@ -686,7 +686,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('--netlist',   metavar='<netlist_file>', type=str, required=True)
-    parser.add_argument('--sim_file',  metavar='<sim_file>', type=str, required=True)
+    #parser.add_argument('--sim_file',  metavar='<sim_file>', type=str)
     parser.add_argument('--sim_dir',   metavar='<sim_dir>' , type=str, required=True)
     parser.add_argument('--lib',       metavar='<lib>'       , type=str, required=True)
     
@@ -716,6 +716,9 @@ if __name__ == "__main__":
         'eval_file':args.eval_file,
         'local_xyce':args.local_xyce,
         }
+
+    
+
     
     runSimulation(
         verilogFile    = args.netlist, 
