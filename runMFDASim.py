@@ -686,7 +686,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('--netlist',   metavar='<netlist_file>', type=str, required=True)
-    #parser.add_argument('--sim_file',  metavar='<sim_file>', type=str)
     parser.add_argument('--sim_dir',   metavar='<sim_dir>' , type=str, required=True)
     parser.add_argument('--lib',       metavar='<lib>'       , type=str, required=True)
     

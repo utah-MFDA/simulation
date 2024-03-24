@@ -1,17 +1,6 @@
 ## MFDA simulation
 
-This module is designed work with automation tools for microfluidic design using open-source electronic design automation (EDA) tools. This tool use the Xyce tool from Sandia to create system-level models of a set of standard components. This tool is not designed to provide the granular detail that can be obtained from much more computationally intense finite element analysis (FEA). The supported models are a set of flow control valves and various sizes of serpentine channels and arbitrary channels. It has been designed to work along side the place and routing tool (https://github.com/utah-MFDA/place_and_route). The target for the code has been developed to work with a complementary docker tool ().
-
-### Required Software
-
-
-For running on the host machine the first thing to do after cloning this repo is...
-
-1) Clone the Xyce repo and build the software as described with ADMS support to build the Verilog-AMS files. This will require additionally building the Trillinos and suitesparse libraries.
-
-2) Clone the component library repo https://github.com/utah-MFDA/component_library. The libraries will need to be built which can be done by running make from the component_library/VerilogA 
-
-3) ...
+This is a microfluidic design automation (MFDA) module developed to simulate using a modified nodal analysis, based on using Xyce ciruit simulator. This module to run on a host machine with Xyce or  communicate with the docker image with Xyce for MFDA simulation. This program acts as a bridge to run simulation programs, as well as translate the verilog netlist files to the nessary format for Xyce.
 
 ## Getting started 
 
