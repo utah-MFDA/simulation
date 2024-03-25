@@ -68,6 +68,7 @@ def runSimulation(
         verilogFile, 
         workDir, 
         libraryFile,
+        isLocalXyce,
         cirConfigFile=None,
         length_file=None,
         preRouteSim=False,
@@ -97,22 +98,29 @@ def runSimulation(
         _main_plot_results = True
     else:
         _main_plot_results = False
-
-    if ('local_xyce' in extra_args) and (extra_args['local_xyce'].lower() in ['true', '1']):
+    
+    # Checks local_xyce value
+    if (isLocalXyce.lower() in ['true', '1']):
         _local_xyce = True
-    else:
+        if 'xyce_run_config' in extra_args:
+            _xyce_run_config=extra_args['xyce_run_config']
+        else:
+            _xyce_run_config=None
+    elif (isLocalXyce.lower() in ['false', '0']):
         _local_xyce = False
+    else:
+        raise InputError("--local_xyce much be false or true (0 or 1)")
 
-    if (('eval_file' in extra_args) and (extra_args['eval_file'] is not None)) or \
-        (('eval_result' in extra_args) and (extra_args['eval_result'].lower() in ['true', '1'])):
+    #if (('eval_file' in extra_args) and (extra_args['eval_file'] is not None)) or \
+        #(('eval_result' in extra_args) and (extra_args['eval_result'].lower() in ['true', '1'])):
+        #_eval_file = True
+    #else:
+        #_eval_file = False
+
+    if ('eval_result' in extra_args) and (extra_args['eval_result'].lower() in ['true', '1']):
         _eval_file = True
     else:
         _eval_file = False
-
-    #if ('eval_result' in extra_args) and (extra_args['eval_result'].lower() in ['true', '1']):
-    #    _eval_file = True
-    #else:
-    #    _eval_file = False
 
     #####
 
@@ -143,13 +151,14 @@ def runSimulation(
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
         result_wd = workDir+"/spiceFiles"
 
-        runLocalXyce(xyce_files = xyceFiles, workDir=result_wd)
+        runLocalXyce(xyce_files = xyceFiles, workDir=result_wd, config_file=_xyce_run_config)
 
-        results_prn_wd = result_wd
+        results_prn_wd = result_wd+'/results'
 
     else:
         
         docker_PyWD    = "/mfda_simulation/xyce_docker_server"
+        #docker_PyWD    = "xyce_run"
         simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
         
 
@@ -211,7 +220,9 @@ def runSimulation(
     if isinstance(df, list):
         pass
     elif isinstance(df, pd.DataFrame):
-        df.to_csv(results_prn_wd+"/"+design_name+'_chemOut.csv')
+        csv_out = results_prn_wd+"/"+design_name+'_chemOut.csv'
+        print("Writing results to "+csv_out)
+        df.to_csv(csv_out)
     else:
         throw()
 
@@ -412,11 +423,14 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
     for data in stream:
         print(data.decode())
 
-def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run'):
+def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run', config_file=None):
 
     simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
         "--list "+xyce_files+" "\
-        "--workdir "+workDir
+        "--workdir "+workDir+" "
+        #"--no_result_dir"
+    if config_file is not None:
+        simRunComm += " --config "+config_file
 
     print('Running xyce locally as: '+simRunComm)
     
@@ -707,13 +721,15 @@ if __name__ == "__main__":
     parser.add_argument('--plot', type=str, default='False')
     parser.add_argument('--eval_file', type=str, default=None)
     parser.add_argument('--local_xyce', type=str, default='False')
+
+    parser.add_argument('--xyce_run_config', type=str, default=None)
     
     args = parser.parse_args()
     
     ex_args = {
         'plot':args.plot,
-        'eval_file':args.eval_file,
-        'local_xyce':args.local_xyce,
+        #'eval_file':args.eval_file,
+        'xyce_run_config':args.xyce_run_config
         }
 
     
@@ -723,6 +739,7 @@ if __name__ == "__main__":
         verilogFile    = args.netlist, 
         workDir        = args.sim_dir, 
         libraryFile    = args.lib,
+        isLocalXyce    = args.local_xyce,
         cirConfigFile  = args.cir_config,
         length_file    = args.length_file,
         preRouteSim    = args.preRoute.lower() in ['true', '1'],

@@ -7,7 +7,7 @@ def test_run_local_simple_channel():
     python_cmd = 'python3 ./runMFDASim.py'
 
     arg_netlsit    = '--netlist simple_channel.v'
-    arg_sim_file   = '--sim_file ./testing_local/simpleChannelTest_full_config/simulation.config'
+    #arg_sim_file   = '--sim_file ./testing_local/simpleChannelTest_full_config/simulation.config'
     arg_sim_dir    = '--sim_dir ./testing_local/simpleChannelTest_full_config'
     arg_lib        = '--lib ./testing/StandardCellLibrary.csv'
     arg_cir_config = '--cir_config ./V2Va_Parser/VMF_xyce.mfsp'
@@ -19,7 +19,7 @@ def test_run_local_simple_channel():
     cmd_w_args = ' '.join([
         python_cmd,
         arg_netlsit,
-        arg_sim_file, 
+        #arg_sim_file, 
         arg_sim_dir,
         arg_lib,
         arg_cir_config,
@@ -36,7 +36,7 @@ def test_run_local_smart_toilet():
     python_cmd = 'python3 ./runMFDASim.py'
 
     arg_netlsit    = '--netlist smart_toilet.v'
-    arg_sim_file   = '--sim_file ./testing_local/smart_toilet_test_config/simulation.config'
+    #arg_sim_file   = '--sim_file ./testing_local/smart_toilet_test_config/simulation.config'
     arg_sim_dir    = '--sim_dir ./testing_local/smart_toilet_test_config'
     arg_lib        = '--lib ./testing/StandardCellLibrary.csv'
     arg_cir_config = '--cir_config ./V2Va_Parser/VMF_xyce.mfsp'
@@ -48,7 +48,7 @@ def test_run_local_smart_toilet():
     cmd_w_args = ' '.join([
         python_cmd,
         arg_netlsit,
-        arg_sim_file, 
+        #arg_sim_file, 
         arg_sim_dir,
         arg_lib,
         arg_cir_config,

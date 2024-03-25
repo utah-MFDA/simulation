@@ -35,3 +35,5 @@ testing_local/*/*.tar
 
 ./testing/*/spiceList
 test_output
+test_output_docker
+test_output_local
