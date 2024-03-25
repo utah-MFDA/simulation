@@ -76,8 +76,9 @@ def runSimulation(
         dockerWD=None,
         verilog_2_xyce_extras_loc="spiceFiles",
         verilog_2_xyce_relative=True,
-        xyceFiles="spiceList",
+        #xyceFiles="spiceList",
         convert_v=True,
+        output_dir=None,
         extra_args={}):
 
     if verilogFile[-2:] == '.v':
@@ -94,7 +95,7 @@ def runSimulation(
     
     # default definitions
     _main_plot_results = False
-    
+    xyceFiles = 'spiceList' 
     
     if ('plot' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
         _main_plot_results = True
@@ -104,12 +105,14 @@ def runSimulation(
     # Checks local_xyce value
     if (isLocalXyce.lower() in ['true', '1']):
         _local_xyce = True
+        _noarchive = True # no docker archive created
         if 'xyce_run_config' in extra_args:
             _xyce_run_config=extra_args['xyce_run_config']
         else:
             _xyce_run_config=None
     elif (isLocalXyce.lower() in ['false', '0']):
         _local_xyce = False
+        _noarchive = False
     else:
         raise InputError("--local_xyce much be false or true (0 or 1)")
 
@@ -145,7 +148,9 @@ def runSimulation(
             libFile     =libraryFile, 
             configFile  =cirConfigFile,
             length_file =length_file,
-            preRouteSim =preRouteSim)
+            preRouteSim =preRouteSim,
+            noarchive   =_noarchive,
+            )
 
 
     
@@ -243,7 +248,10 @@ def runSimulation(
     if _main_plot_results:    
         plot_xyce_results_list(df)
 
-    pass
+    if output_dir is not None:
+        print("moving results to "+output_dir)
+        os.makedirs(output_dir,exist_ok=True)
+        shutil.move(csv_out, output_dir+'/'+os.path.basename(csv_out))
 
 def parseMFDAFile(mfda_file):
     
@@ -315,7 +323,8 @@ def convertToCir_from_config(
         configFile=None,
         length_file=None,
         preRouteSim=False, 
-        overwrite=False):
+        overwrite=False,
+        noarchive=False):
 
     # locate nessary files
     #files = getSimFiles(verilogFile, wd)
@@ -347,6 +356,9 @@ def convertToCir_from_config(
         outputVerilogFile = None,
         runScipt          = True)
     
+    if noarchive:
+        return None
+
     # create archive
     arcNameBase = vFile[:-2]+"_xyce"
 
@@ -711,6 +723,7 @@ if __name__ == "__main__":
     # included with the parser
     parser.add_argument('--cir_config',metavar='<cir_config>', type=str, required=True)
     
+    parser.add_argument('--output_dir',metavar='<output_dir>', type=str, default=None)
     
     parser.add_argument('--design', metavar='<design>', type=str)
     parser.add_argument('--length_file', metavar='<length_file>', type=str, default=None)
@@ -750,8 +763,9 @@ if __name__ == "__main__":
         preRouteSim    = args.preRoute.lower() in ['true', '1'],
         dockerContainer= args.docker_container,
         dockerWD       = args.docker_wd,
-        xyceFiles      = "spiceList",
+        #xyceFiles      = "spiceList",
         convert_v      = args.convert_verilog.lower() in ['true', '1'],
+        output_dir     = args.output_dir,
         extra_args     = ex_args)
     
     """

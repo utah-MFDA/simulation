@@ -37,3 +37,5 @@ testing_local/*/*.tar
 test_output
 test_output_docker
 test_output_local
+
+designs/mfda_30px/*/spiceFiles
