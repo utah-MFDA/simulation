@@ -1,6 +1,7 @@
 
 import subprocess
-
+import os, sys
+import shutil
 
 def test_run_local_simple_channel():
 
@@ -15,6 +16,9 @@ def test_run_local_simple_channel():
 
     arg_eval_file  = '--eval_file ./testing_local/simpleChannelTest_full_config/eval.config'
     arg_local_xyce = '--local_xyce True'
+
+    spice_output_dir_simpleChan = "testing_local/simpleChannelTest_full_config/spiceFiles"
+    shutil.rmtree(spice_output_dir_simpleChan)
 
     cmd_w_args = ' '.join([
         python_cmd,
@@ -44,6 +48,10 @@ def test_run_local_smart_toilet():
 
     arg_eval_file  = '--eval_file ./testing_local/smart_toilet_test_config/eval.config'
     arg_local_xyce = '--local_xyce True'
+
+    # Clean output directory
+    spice_output_dir = "testing_local/smart_toilet_test_config/spiceFiles"
+    shutil.rmtree(spice_output_dir)
 
     cmd_w_args = ' '.join([
         python_cmd,

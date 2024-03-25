@@ -74,6 +74,8 @@ def runSimulation(
         preRouteSim=False,
         dockerContainer=None,
         dockerWD=None,
+        verilog_2_xyce_extras_loc="spiceFiles",
+        verilog_2_xyce_relative=True,
         xyceFiles="spiceList",
         convert_v=True,
         extra_args={}):
@@ -149,7 +151,10 @@ def runSimulation(
     
     if _local_xyce:
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
-        result_wd = workDir+"/spiceFiles"
+        if verilog_2_xyce_relative:
+            result_wd = f"{workDir}/{verilog_2_xyce_extras_loc}"
+        else:
+            result_wd = verilog_2_xyce_extras_loc
 
         runLocalXyce(xyce_files = xyceFiles, workDir=result_wd, config_file=_xyce_run_config)
 
