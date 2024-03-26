@@ -230,7 +230,7 @@ def runSimulation(
     if isinstance(df, list):
         pass
     elif isinstance(df, pd.DataFrame):
-        csv_out = results_prn_wd+"/"+design_name+'_chemOut.csv'
+        csv_out = results_prn_wd+"/"+design_name+'_xyceOut.csv'
         print("Writing results to "+csv_out)
         df.to_csv(csv_out)
     else:
@@ -244,12 +244,15 @@ def runSimulation(
             wd=workDir, 
             results_dir=results_prn_wd, 
             design_name=design_name)
+        if output_dir is not None:
+            print("Moving eval to "+output_dir)
+            shutil.move(results_prn_wd+'/Chem_Eval.csv', f'{output_dir}/Chem_Eval.csv')
 
     if _main_plot_results:    
         plot_xyce_results_list(df)
 
     if output_dir is not None:
-        print("moving results to "+output_dir)
+        print("Moving results to "+output_dir)
         os.makedirs(output_dir,exist_ok=True)
         shutil.move(csv_out, output_dir+'/'+os.path.basename(csv_out))
 
@@ -656,7 +659,7 @@ def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, s
 
     for ev_chem in ev_chem_list:
 
-        rFile = results_dir+'/'+design_name+'_chemOut.csv'
+        rFile = results_dir+'/'+design_name+'_xyceOut.csv'
         #temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
         temp_df = pd.read_csv(rFile)
 
@@ -737,7 +740,8 @@ if __name__ == "__main__":
     parser.add_argument('--convert_verilog', metavar='<convert_verilog>', type=str, default='True')
     
     parser.add_argument('--plot', type=str, default='False')
-    parser.add_argument('--eval_file', type=str, default=None)
+    #parser.add_argument('--eval_file', type=str, default=None)
+    parser.add_argument('--eval_result', type=str, default='False')
     parser.add_argument('--local_xyce', type=str, default='False')
 
     parser.add_argument('--xyce_run_config', type=str, default=None)
@@ -747,6 +751,7 @@ if __name__ == "__main__":
     ex_args = {
         'plot':args.plot,
         #'eval_file':args.eval_file,
+        'eval_result':args.eval_result,
         'xyce_run_config':args.xyce_run_config
         }
 
