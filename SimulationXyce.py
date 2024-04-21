@@ -103,6 +103,7 @@ class SimulationXyce:
         self.times  = {}
         self.probes = {}
         self.probes['pressure'] = []
+        sefl.probes['pressureNode'] = []
         self.probes['flow'] = []
         self.probes['concentration'] = []
 
@@ -158,6 +159,12 @@ class SimulationXyce:
                     self.probes['concentration'].append(self.Probe(
                         'concentration', 
                         node=params[2]))
+                elif params[1] == "pressureNode":
+                    self.probes['pressureNode'].append(self.Probe(
+                        'pressureNode',
+                        node=params[3],
+                        device=params[2]
+                    ))
 
             elif key == 'eval':
                 if params[1] in self.eval:
