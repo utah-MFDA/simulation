@@ -43,9 +43,10 @@ class SimulationXyce:
 
     # this will need some more generic definitions
     class Dev:
-        def __init__(self, node, dev_type, args):
+        def __init__(self, node, dev_type, args, is_grounded=True):
             self.type = dev_type
             self.node = node
+            self.is_grounded = is_grounded
             self.args = args
 
         def getType(self):
@@ -86,6 +87,11 @@ class SimulationXyce:
 
         def getProbeType(self):
             return self.probe_type
+
+        def getDevice(self):
+            if device is None:
+                raise ValueError("No device in probe")
+            return self.device
             
 
     def __init__(self):
