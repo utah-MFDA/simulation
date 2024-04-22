@@ -566,6 +566,7 @@ def change_r_node_ref(df, rFile, node_file, chem):
                 print(node_name+' : '+node_name_k)
 
                 if len(node_name_k) >= 4 and node_name_k.lower() == 'chem':
+                    node_name = '_'.join(node_name.split('_')[:-1])
                     new_node = 'C_'+str(chem)+'('+node_name+')'
                 elif node_name_k[-2:] == 'c0':
                     new_node = 'C_'+str(chem)+'('+node_name+')'
@@ -604,10 +605,16 @@ def load_xyce_results(rDir, rlist=None, chem_list=None):
                 temp_df = change_r_node_ref(temp_df, rFile, rFile.replace('.prn', '.str.nodes'), chem_list[ind])
 
             #r_df = pd.append([temp_df])
+            # remove duplicate columns
+            if ind > 0:
+                for t_col in temp_df.columns.tolist():
+                    if t_col in r_df[0].columns.tolist():
+                        temp_df = temp_df.drop(t_col, axis=1) 
             if not ind:
                 r_df.append(temp_df)
             else:
-                r_df.append(temp_df.drop('TIME', axis=1))
+                #r_df.append(temp_df.drop('TIME', axis=1))
+                r_df.append(temp_df)
             #print(str(r_df))
         r_df = pd.concat(r_df, axis=1)
         
@@ -699,9 +706,9 @@ def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, s
 
                 # get chemical value
                 chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
-                print(chem_name)
+                print("eval: "+chem_name)
                 #chem_name = eval_obj.getChem()+'('+eval_obj.getNode()+')'
-                print(temp_df.columns.tolist())
+                #print(temp_df.columns.tolist())
                 prn_val = temp_df[chem_name][row_time_ind]
 
                 exp_val = eval_obj.getValue()
