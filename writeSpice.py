@@ -146,7 +146,9 @@ def generate_time_lines(spice_config_class):
 def write_time_lines(spice_config_class):
     pass
 
-def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None, sim_type=None, length_list=None, chem_list=None, out_file=None, add_prn_to_list=False):
+def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None, 
+    sim_type=None, length_list=None, chem_list=None, out_file=None, 
+    add_prn_to_list=False, basename_only=False):
     
     dev = "dev"
 
@@ -175,12 +177,20 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
         
         chem_out_file = f'{out_file}_{chem}.cir.str'
 
-        output_file_entry = {
+        if basename_only:
+            output_file_entry = {
             'Chemical':chem,
             'spice_str_file':chem_out_file,
-            'spice_file':chem_out_file[:-4]}
-        if add_prn_to_list:
-            output_file_entry['OutputFile'] = chem_out_file[:-4]+'.prn'
+            'spice_file':os.path.basename(chem_out_file)[:-4]}
+            if add_prn_to_list:
+                output_file_entry['OutputFile'] = os.path.basename(chem_out_file)[:-4]+'.prn'
+        else:
+            output_file_entry = {
+                'Chemical':chem,
+                'spice_str_file':chem_out_file,
+                'spice_file':chem_out_file[:-4]}
+            if add_prn_to_list:
+                output_file_entry['OutputFile'] = chem_out_file[:-4]+'.prn'
 
 
         output_file_list.append(output_file_entry)
@@ -498,7 +508,8 @@ def visualize_netlist(in_cir):
 
             params = regex.finditer()
             
-def generate_cir_main(design, verilog_file, config_file, length_file, out_file):
+def generate_cir_main(design, verilog_file, config_file, length_file, out_file,
+    basename_only=False):
 
     import sys, os
     
@@ -513,6 +524,7 @@ def generate_cir_main(design, verilog_file, config_file, length_file, out_file):
     Xcl = SimulationXyce()
     Xcl.parse_config_file(config_file)
 
+    print(net_graph.keys())
     out_probes, netlist_graph_out = add_probes_to_device(Xcl.probes, net_graph[design]['netlist'])
 
     dev_lines, chem_args = generate_source_list(Xcl, has_chem=True)
@@ -529,7 +541,8 @@ def generate_cir_main(design, verilog_file, config_file, length_file, out_file):
         sims_time_lines=sim_lines,
         sim_type="transient",
         out_file=out_file,
-        add_prn_to_list=True)
+        add_prn_to_list=True,
+        basename_only=basename_only)
 
     for spf in sp_files.iterrows():
         convert_nodes_2_numbers_xyce(spf[1]['spice_str_file'], cir_out=True)
