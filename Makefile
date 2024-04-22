@@ -33,7 +33,8 @@ simulate_old:
 
 simulate:
 	$(PYTHON_CMD) --netlist $(VERILOG_F) \
-		--sim_config ./designs/$(PLATFORM)/$(DESIGN)\sim_config \
+		--design $(DESIGN) \
+		--sim_config ./designs/$(PLATFORM)/$(DESIGN)/simulation.config \
 		--sim_dir ./designs/$(PLATFORM)/$(DESIGN) \
 		--lib ./stdCellLib/StandardCellLibrary.csv \
 		--cir_config ./V2Va_Parser/VMF_xyce.mfsp \
