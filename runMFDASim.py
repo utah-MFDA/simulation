@@ -168,7 +168,7 @@ def runSimulation(
 
         runLocalXyce(xyce_files = xyceFiles, workDir=result_wd, config_file=_xyce_run_config)
 
-        results_prn_wd = result_wd+'/results'
+        results_prn_wd = result_wd#+'/results'
 
     else:
         
