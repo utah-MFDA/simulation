@@ -82,12 +82,14 @@ def add_probes_to_device(probes, netlist_graph):
 
     # concentration probes are assumed (<connect_name>_chem)
     if 'concentration' in probes:
-        for p in probes['pressure']:
+        for p in probes['concentration']:
             print(p)
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-                probe_list.append(f'V({p.getNode()}_0_chem)')
+                if f'V({p.getNode()}_0_chem)' not in probe_list:
+                    probe_list.append(f'V({p.getNode()}_0_chem)')
             else:
-                probe_list.append(f'V({p[node]}_0_chem)')
+                if f'V({p[node]}_0_chem)' not in probe_list:
+                    probe_list.append(f'V({p[node]}_0_chem)')
 
     
     return probe_list, netlist_graph
@@ -514,6 +516,8 @@ def generate_cir_main(design, verilog_file, config_file, length_file, out_file):
     out_probes, netlist_graph_out = add_probes_to_device(Xcl.probes, net_graph[design]['netlist'])
 
     dev_lines, chem_args = generate_source_list(Xcl, has_chem=True)
+
+    print(out_probes)
 
     sim_lines = generate_time_lines(Xcl)
 
