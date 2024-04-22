@@ -98,7 +98,8 @@ def runSimulation(
     
     # default definitions
     _main_plot_results = False
-    xyceFiles = 'spiceList' 
+    #xyceFiles = 'spiceList' 
+    xyceFiles = 'spice_files.csv' 
     
     if ('plot' in extra_args) and (extra_args['plot'].lower() in ['true', '1']):
         _main_plot_results = True
@@ -168,6 +169,7 @@ def runSimulation(
 
         runLocalXyce(xyce_files = xyceFiles, workDir=result_wd, config_file=_xyce_run_config)
 
+        #results_prn_wd = result_wd+'/results'
         results_prn_wd = result_wd#+'/results'
 
     else:
@@ -224,7 +226,7 @@ def runSimulation(
 
 
     for i, f in enumerate(rfiles):
-        rfiles[i] = f+".prn"
+        rfiles[i] = f#+".prn"
 
     print("Result files")
     print(rfiles)
@@ -343,8 +345,8 @@ def convertToCir_from_config(
     
     generate_cir_main(
         design=design,
-        verilogFile=verilogFile,
-        configFile=sim_config,
+        verilog_file=f'{wd}/{verilogFile}',
+        config_file=sim_config,
         length_file=length_file,
         out_file=f"{wd}/{design}"
     )
@@ -465,8 +467,9 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
 def runLocalXyce(xyce_files, workDir, xyce_run_location='./xyce_run', config_file=None):
 
     simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
-        "--list "+xyce_files+" "\
-        "--workdir "+workDir+" "
+        "--list "+f'{workDir}/{xyce_files}'+" "\
+        "--workdir "+'./'+" "
+        #"--workdir "+workDir+" "
         #"--no_result_dir"
     if config_file is not None:
         simRunComm += " --config "+config_file
@@ -536,11 +539,12 @@ def load_xyce_results_file(rFile):
     #print(str(r_df))
     return r_df
 
-def change_r_node_ref(df, rFile, chem):
+def change_r_node_ref(df, rFile, node_file, chem):
     
     df_nodes = list(df)
 
-    node_dict = json.load(open(rFile.replace('.prn','.nodes')))
+    #node_dict = json.load(open(rFile.replace('.prn','.nodes')))
+    node_dict = json.load(open(node_file))
 
     for node in df_nodes:
         print("---"+node+"---")
@@ -552,14 +556,16 @@ def change_r_node_ref(df, rFile, chem):
                 node_key = list(node_dict.keys())[list(node_dict.values()).index(int(node_num))]
 
                 node_name = '_'.join(node_key.split('_')[:-1])
-                if '_' in node_name_k: 
+                #if '_' in node_name_k: 
+                    #node_name_k = node_key.split('_')[-1]
+                if '_' in node_name: 
                     node_name_k = node_key.split('_')[-1]
                 else:
                     node_name_k = node_key
 
                 print(node_name+' : '+node_name_k)
 
-                if node_name_k.lower()[-1] == 'c':
+                if len(node_name_k) >= 4 and node_name_k.lower() == 'chem':
                     new_node = 'C_'+str(chem)+'('+node_name+')'
                 elif node_name_k[-2:] == 'c0':
                     new_node = 'C_'+str(chem)+'('+node_name+')'
@@ -590,10 +596,12 @@ def load_xyce_results(rDir, rlist=None, chem_list=None):
         for ind, rFile in enumerate(rlist):
 
             print(rDir+"/"+rFile)
-            temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
+            #temp_df = pd.read_table(rDir+"/"+rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
+            temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
             
             if chem_list is not None:
-                temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
+                #temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
+                temp_df = change_r_node_ref(temp_df, rFile, rFile.replace('.prn', '.str.nodes'), chem_list[ind])
 
             #r_df = pd.append([temp_df])
             if not ind:
@@ -690,8 +698,10 @@ def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, s
                 row_time_ind = temp_df['TIME'][temp_df['TIME'] == eval_obj.getTime()].index[0]
 
                 # get chemical value
-                #chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
-                chem_name = eval_obj.getChem()+'('+eval_obj.getNode()+')'
+                chem_name = 'C_'+eval_obj.getChem()+'('+eval_obj.getNode()+')'
+                print(chem_name)
+                #chem_name = eval_obj.getChem()+'('+eval_obj.getNode()+')'
+                print(temp_df.columns.tolist())
                 prn_val = temp_df[chem_name][row_time_ind]
 
                 exp_val = eval_obj.getValue()
@@ -748,7 +758,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--output_dir',metavar='<output_dir>', type=str, default=None)
     
-    parser.add_argument('--design', metavar='<design>', type=str)
+    parser.add_argument('--design', metavar='<design>', type=str, required=True)
     parser.add_argument('--length_file', metavar='<length_file>', type=str, default=None)
 
     parser.add_argument('--docker_image', metavar='<image>', type=str)
@@ -779,6 +789,7 @@ if __name__ == "__main__":
 
     
     runSimulation(
+        design         = args.design,
         verilogFile    = args.netlist,
         sim_config     = args.sim_config,
         workDir        = args.sim_dir, 
