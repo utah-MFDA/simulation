@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 # local imports
 from V2Va_Parser import Verilog2Xyce
 
+
 from SimulationXyce import SimulationXyce
 
 """
@@ -65,7 +66,9 @@ xyceFiles
     - location for xyce files to be generated
 """
 def runSimulation(
-        verilogFile, 
+        design,
+        verilogFile,
+        sim_config, 
         workDir, 
         libraryFile,
         isLocalXyce,
@@ -89,7 +92,7 @@ def runSimulation(
     # hard coded simulation directory in docker image
 
 
-    sim_config     = workDir+"/simulation.config"
+    #sim_config     = workDir+"/simulation.config"
 
     ###### extra argument handling #####
     
@@ -142,6 +145,7 @@ def runSimulation(
         overwrite=False
         """
         arcName = convertToCir_from_config(
+            design      =design,
             verilogFile =verilogFile,
             sim_config  =sim_config,
             wd          =workDir, 
@@ -157,7 +161,8 @@ def runSimulation(
     if _local_xyce:
         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
         if verilog_2_xyce_relative:
-            result_wd = f"{workDir}/{verilog_2_xyce_extras_loc}"
+            result_wd = workDir
+            #result_wd = f"{workDir}/{verilog_2_xyce_extras_loc}"
         else:
             result_wd = verilog_2_xyce_extras_loc
 
@@ -211,8 +216,11 @@ def runSimulation(
         results_prn_wd = result_wd+"/results"
 
     # generate report
-    rfiles    = pd.read_csv(workDir+"/spiceFiles/spiceList")["OutputFile"]
-    chem_list = pd.read_csv(workDir+"/spiceFiles/spiceList")["Chemical"]
+    #rfiles    = pd.read_csv(workDir+"/spiceFiles/spiceList")["OutputFile"]
+    #chem_list = pd.read_csv(workDir+"/spiceFiles/spiceList")["Chemical"]
+
+    rfiles    = pd.read_csv(workDir+"/spice_files.csv")["OutputFile"]
+    chem_list = pd.read_csv(workDir+"/spice_files.csv")["Chemical"]
 
 
     for i, f in enumerate(rfiles):
@@ -319,6 +327,7 @@ def convertToCir(verilogFile, wd, libFile, configFile, preRouteSim, overwrite=Fa
         return None
 
 def convertToCir_from_config(
+        design,
         verilogFile,
         sim_config,
         wd, 
@@ -329,6 +338,16 @@ def convertToCir_from_config(
         overwrite=False,
         noarchive=False):
 
+
+    from writeSpice import generate_cir_main
+    
+    generate_cir_main(
+        design=design,
+        verilogFile=verilogFile,
+        configFile=sim_config,
+        length_file=length_file,
+        out_file=f"{wd}/{design}"
+    )
     # locate nessary files
     #files = getSimFiles(verilogFile, wd)
     
@@ -344,20 +363,20 @@ def convertToCir_from_config(
     _sim.parse_config_file(sim_config)
     
 
-    Verilog2Xyce.Verilog2Xyce_from_config(
-        inputVerilogFile  = vFile,
-        configFile        = configFile,
-        solnInputList     = _sim.getInputChemList(),
-        #simEvalList       = _sim.getEvaluation(),
-        remoteTestPath    = "",
-        libraryFile       = libFile,
-        devList           = _sim.getDeviceList(),
-        length_file       = len_file,
-        simTimesList      = _sim.getSimulationTimes(),
-        simProbeList      = _sim.getProbeList(),
-        preRouteSim       = preRouteSim,
-        outputVerilogFile = None,
-        runScipt          = True)
+    #Verilog2Xyce.Verilog2Xyce_from_config(
+    #    inputVerilogFile  = vFile,
+    #    configFile        = configFile,
+    #    solnInputList     = _sim.getInputChemList(),
+    #    #simEvalList       = _sim.getEvaluation(),
+    #    remoteTestPath    = "",
+    #    libraryFile       = libFile,
+    #    devList           = _sim.getDeviceList(),
+    #    length_file       = len_file,
+    #    simTimesList      = _sim.getSimulationTimes(),
+    #    simProbeList      = _sim.getProbeList(),
+    #    preRouteSim       = preRouteSim,
+    #    outputVerilogFile = None,
+    #    runScipt          = True)
     
     if noarchive:
         return None
@@ -720,8 +739,9 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('--netlist',   metavar='<netlist_file>', type=str, required=True)
-    parser.add_argument('--sim_dir',   metavar='<sim_dir>' , type=str, required=True)
-    parser.add_argument('--lib',       metavar='<lib>'       , type=str, required=True)
+    parser.add_argument('--sim_config',metavar='<sim_config>' , type=str, required=True)
+    parser.add_argument('--sim_dir',   metavar='<sim_dir>'    , type=str, required=True)
+    parser.add_argument('--lib',       metavar='<lib>'        , type=str, required=True)
     
     # included with the parser
     parser.add_argument('--cir_config',metavar='<cir_config>', type=str, required=True)
@@ -759,7 +779,8 @@ if __name__ == "__main__":
 
     
     runSimulation(
-        verilogFile    = args.netlist, 
+        verilogFile    = args.netlist,
+        sim_config     = args.sim_config,
         workDir        = args.sim_dir, 
         libraryFile    = args.lib,
         isLocalXyce    = args.local_xyce,
