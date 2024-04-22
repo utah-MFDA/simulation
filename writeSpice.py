@@ -9,6 +9,7 @@ import os
 import json
 import regex
 import mmap
+import copy
 
 def add_probes_to_device(probes, netlist_graph):
 
@@ -143,7 +144,7 @@ def generate_time_lines(spice_config_class):
 def write_time_lines(spice_config_class):
     pass
 
-def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None, sim_type=None, length_list=None, chem_list=None, out_file=None):
+def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None, sim_type=None, length_list=None, chem_list=None, out_file=None, add_prn_to_list=False):
     
     dev = "dev"
 
@@ -166,21 +167,33 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
         no_lengths = False
         len_df = get_length_list(length_list)
 
+    output_file_list = []
+
     for chem, chem_node_dict in chem_list.items():
         
         chem_out_file = f'{out_file}_{chem}.cir.str'
+
+        output_file_entry = {
+            'Chemical':chem,
+            'spice_str_file':chem_out_file,
+            'spice_file':chem_out_file[:-4]}
+        if add_prn_to_list:
+            output_file_entry['OutputFile'] = chem_out_file[:-4]+'.prn'
+
+
+        output_file_list.append(output_file_entry)
 
         c_of = open(chem_out_file, 'w+')
 
         c_of.write(f"* Simulation of device {dev}; chem: {chem}\n")
         
+        chem_source_list = copy.deepcopy(source_lines)
         if isinstance(chem_node_dict, dict):
             for node, val in chem_node_dict.items():
-                chem_source_list = source_lines
                 chem_source_list[node].append(f'chemConcentration={val}')
 
         # write inputs and connections
-        for node, line in source_lines.items():
+        for node, line in chem_source_list.items():
             line[0] = "Y"+line[0]
             new_line = line+['\n']
             #if not no_lengths:
@@ -333,6 +346,13 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                     raise ValueError("sim_type must be transient or static")
         c_of.write('\n.end')
         
+    o_csv_col = ['Chemical', 'spice_str_file', 'spice_file']
+    if add_prn_to_list:
+        o_csv_col.append('OutputFile')
+    o_csv = pd.DataFrame(output_file_list, columns=o_csv_col)
+    #for of in output_file_list:
+    #    o_csv = o_csv.concat([o_csv, of, ignore_index=True)
+    return o_csv
 
         
 
@@ -346,7 +366,7 @@ def get_length_list(len_file):
 
     return len_df
     
-def convert_nodes_2_numbers_xyce(SPfile):
+def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
     if os.path.isfile(SPfile) and (SPfile[-4:]==".cir" or SPfile[-8:]==".cir.str"):
         SPfile = [SPfile]
     else:
@@ -358,7 +378,13 @@ def convert_nodes_2_numbers_xyce(SPfile):
     for f in SPfile:
         SPfile_o = open(f, 'r')
 
-        new_file = f+'.num'
+        if cir_out:
+            if len(f) > 8 and f[-8:] == '.cir.str':
+                new_file = f[:-8]+'.cir'
+            elif f[-4:] != '.cir':
+                new_file = f+'.cir'
+        else:
+            new_file = f+'.num'
         SPfile_n = open(new_file, 'w')
 
         nodeList = {}
@@ -470,3 +496,38 @@ def visualize_netlist(in_cir):
 
             params = regex.finditer()
             
+def generate_cir_main(design, verilog_file, config_file, length_file, out_file):
+
+    import sys, os
+    
+    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/verilog_2_NX/')
+    from Verilog2NX import get_modules, visual_graph
+    
+    net_dict, net_graph = get_modules(in_v=verilog_file, visual=False)
+
+    #out_probes, netlist_graph_out = add_probes_to_device(probes, netlist_graph['smart_toilet']['netlist'])
+
+    from SimulationXyce import SimulationXyce
+    Xcl = SimulationXyce()
+    Xcl.parse_config_file(config_file)
+
+    out_probes, netlist_graph_out = add_probes_to_device(Xcl.probes, net_graph[design]['netlist'])
+
+    dev_lines, chem_args = generate_source_list(Xcl, has_chem=True)
+
+    sim_lines = generate_time_lines(Xcl)
+
+    sp_files = write_spice_file(net_graph[design]['netlist'],
+        probes_list=out_probes,
+        source_lines=dev_lines,
+        length_list=length_file,
+        chem_list=chem_args,
+        sims_time_lines=sim_lines,
+        sim_type="transient",
+        out_file=out_file,
+        add_prn_to_list=True)
+
+    for spf in sp_files.iterrows():
+        convert_nodes_2_numbers_xyce(spf[1]['spice_str_file'], cir_out=True)
+
+    sp_files.to_csv(os.path.dirname(out_file)+'/spice_files.csv')

@@ -103,7 +103,7 @@ class SimulationXyce:
         self.times  = {}
         self.probes = {}
         self.probes['pressure'] = []
-        sefl.probes['pressureNode'] = []
+        self.probes['pressureNode'] = []
         self.probes['flow'] = []
         self.probes['concentration'] = []
 

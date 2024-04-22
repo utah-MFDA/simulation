@@ -41,3 +41,5 @@ test_output_local
 designs/mfda_30px/*/spiceFiles
 test_output_sp-gen
 out_spice*
+spiceFiles
+spice_files.csv
