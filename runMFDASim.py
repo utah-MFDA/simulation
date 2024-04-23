@@ -12,7 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # local imports
-from V2Va_Parser import Verilog2Xyce
+#from V2Va_Parser import Verilog2Xyce
 
 
 from SimulationXyce import SimulationXyce

@@ -43,3 +43,5 @@ test_output_sp-gen
 out_spice*
 spiceFiles
 spice_files.csv
+
+designs/*/*/*.cir*
