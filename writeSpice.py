@@ -157,7 +157,7 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
     if out_file.split('.')[-1] == 'cir':
         out_file = '.'.join(out_file.split('.')[:-1])
     
-    if chem_list == None:
+    if chem_list == None or len(chem_list)==0:
         chem_list = {'':''}
         no_chems  = True
     else:
@@ -364,7 +364,15 @@ def get_length_list(len_file):
     if len_file.split('.')[-1] == "csv":
         len_df = pd.read_csv(len_file, index_col=0)
     elif len_file.split('.')[-1] == 'xlsx':
-        len_df = pd.read_excel(len_file, index_col=0)
+        len_df = pd.read_excel(len_file, index_col=0) 
+        #if len_df.columns.toList()[0].strip() == "":
+        #    len_df = pd.read_execl(len_file, index_col=1)
+    if len_df.shape[0] == 1:
+        len_df = len_df.T
+
+
+    print(len_df.shape[0])
+    print(len_df)
 
     return len_df
     
