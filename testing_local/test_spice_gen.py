@@ -257,3 +257,20 @@ def test_write_spice_main():
         config_file=config_file,
         length_file=length_file,
         out_file='results/testing/out_spice_main_1')
+
+def test_write_spice_main_pcell():
+    
+    from writeSpice import generate_cir_main
+    
+    verilog_file ='testing_local/smart_toilet_test_config_pcell/smart_toilet.v'
+    config_file = "testing_local/smart_toilet_test_config_pcell/simulation.config"
+    length_file = "testing_local/smart_toilet_test_config_pcell/smart_toilet_lengths.xlsx"
+    pcell_file  = "testing_local/smart_toilet_test_config_pcell/pcell_out_xyce"
+
+    generate_cir_main(
+        design="smart_toilet",
+        verilog_file=verilog_file,
+        config_file=config_file,
+        length_file=length_file,
+        out_file='results/testing/out_spice_main_1p',
+        pcell_file=pcell_file)

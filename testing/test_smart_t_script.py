@@ -88,21 +88,27 @@ def test_gen_simple_cir_from_config():
     
     import runMFDASim
     
+    design    = "smart_toilet"
     wd        = "./testing/smart_toilet_test_config"
     vFile     = "smart_toilet.v"
     libFile   = "./testing/StandardCellLibrary.csv"
     cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
     
     simConfigFile = "./testing/smart_toilet_test_V2/simulation.config"
+
+    len_f = "./testing/smart_toilet_test_V2/smart_toilet_lengths.xlsx"
     
     runMFDASim.convertToCir_from_config(
+        design      =design,
         verilogFile =vFile,
         sim_config  =simConfigFile,
         wd          =wd,
         libFile     =libFile,
         configFile  =cirConfig,
+        length_file =len_f,
         preRouteSim =False,
-        overwrite   =True)
+        overwrite   =True,
+        gen_output_dir="spiceFiles")
 
 def test_push2Docker():
 
@@ -294,6 +300,7 @@ def test_full_simulation_simpleChannel():
     from runMFDASim import runSimulation
 
     verilogFile    ="simple_channel.v"
+    sim_config     ="./testing/simpleChannelTest_full_config/simulation.config"
     workDir        ="./testing/simpleChannelTest_full_config"
     libraryFile    ="./testing/StandardCellLibrary.csv"
     cirConfigFile  ="./V2Va_Parser/VMF_xyce.mfsp"
@@ -302,15 +309,23 @@ def test_full_simulation_simpleChannel():
     dockerWD       ="/mfda_simulation/local/simulations"
     xyceFiles      ="spiceList"
 
+    len_f = "./testing/simpleChannelTest_full_config/simple_channel_lengths.xlsx"
+
     runSimulation(
-        verilogFile=verilogFile, 
+        design="simple_channel",
+        verilogFile=verilogFile,
+        sim_config=sim_config,
         workDir=workDir, 
         libraryFile=libraryFile,
         cirConfigFile=cirConfigFile,
+        length_file=len_f,
         preRouteSim=preRouteSim,
         dockerContainer=dock_container,
         dockerWD=dockerWD,
-        xyceFiles=xyceFiles)
+        isLocalXyce="False",
+        verilog_2_xyce_extras_loc="spiceFiles"
+        #xyceFiles=xyceFiles
+        )
 
 def test_full_simulation_smart_toilet():
 
@@ -318,6 +333,7 @@ def test_full_simulation_smart_toilet():
 
     verilogFile    ="smart_toilet.v"
     
+    sim_config     ="./testing/smart_toilet_test_config/simulation.config"
     workDir        ="./testing/smart_toilet_test_config"
     libraryFile    ="./testing/StandardCellLibrary.csv"
     cirConfigFile  ="./V2Va_Parser/VMF_xyce.mfsp"
@@ -329,15 +345,20 @@ def test_full_simulation_smart_toilet():
     length_file    =workDir+"/smart_toilet_lengths.xlsx"
 
     runSimulation(
-        verilogFile=verilogFile, 
-        workDir=workDir, 
+        design="smart_toilet",
+        verilogFile=verilogFile,
+        sim_config=sim_config, 
+        workDir=workDir,
         libraryFile=libraryFile,
         cirConfigFile=cirConfigFile,
         length_file=length_file,
         preRouteSim=preRouteSim,
         dockerContainer=dock_container,
         dockerWD=dockerWD,
-        xyceFiles=xyceFiles)
+        isLocalXyce="False",
+        verilog_2_xyce_extras_loc="spiceFiles",
+        #xyceFiles=xyceFiles
+        )
 
 def test_load_eval_file():
 
