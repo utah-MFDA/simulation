@@ -148,7 +148,7 @@ def write_time_lines(spice_config_class):
 
 def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None, 
     sim_type=None, length_list=None, chem_list=None, out_file=None, 
-    add_prn_to_list=False, basename_only=False):
+    add_prn_to_list=False, basename_only=False, pcell_file=None):
     
     dev = "dev"
 
@@ -170,6 +170,20 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
     else:
         no_lengths = False
         len_df = get_length_list(length_list)
+
+    pc_dict = {}
+    if isinstance(pcell_file, str):
+        has_pcells = True
+        with open(pcell_file, 'r+') as pc_if:
+            import csv
+            pc_reader = csv.reader(pc_if)
+            for i, row in enumerate(pc_reader):
+                if i == 0:
+                    continue
+                else:
+                    pc_dict[row[0]] = {'pcell':row[1], 'params':row[2]}
+    else:
+        has_pcells = False
 
     output_file_list = []
 
@@ -259,6 +273,15 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                 comp_type = in_netlist.nodes[node]['node_type']
                 print(in_netlist[node])
                 if comp_type != "flow_probe" and comp_type != "pressure_probe":
+                    # changes to pcell definition
+                    # later appends params
+                    if has_pcells:
+                        is_pcell = False
+                        pcell_params = ''
+                        if comp_type in pc_dict:
+                            pcell_params = ' '+pc_dict[comp_type]['params']
+                            comp_type = pc_dict[comp_type]['pcell']
+                            is_pcell = True
                     comp_line = f"Y{comp_type} {node} "
                     chem_line = ''
                 else:
@@ -329,6 +352,8 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                     
                 if (comp_type != "flow_probe") and (comp_type != "pressure_probe"):
                     comp_line += ' '+chem_line
+                    if has_pcells and is_pcell:
+                        comp_line += ' '+pcell_params
                 elif comp_type == "flow_probe" or comp_type == "pressure_probe":
                     comp_line += " 0V"
                 c_of.write(comp_line+'\n')
@@ -509,7 +534,7 @@ def visualize_netlist(in_cir):
             params = regex.finditer()
             
 def generate_cir_main(design, verilog_file, config_file, length_file, out_file,
-    basename_only=False):
+    basename_only=False, pcell_file=None):
 
     import sys, os
     
@@ -542,7 +567,8 @@ def generate_cir_main(design, verilog_file, config_file, length_file, out_file,
         sim_type="transient",
         out_file=out_file,
         add_prn_to_list=True,
-        basename_only=basename_only)
+        basename_only=basename_only,
+        pcell_file=pcell_file)
 
     for spf in sp_files.iterrows():
         convert_nodes_2_numbers_xyce(spf[1]['spice_str_file'], cir_out=True)

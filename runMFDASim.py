@@ -83,6 +83,7 @@ def runSimulation(
         #xyceFiles="spiceList",
         convert_v=True,
         output_dir=None,
+        pcell_file=None,
         extra_args={}):
 
     if verilogFile[-2:] == '.v':
@@ -160,6 +161,7 @@ def runSimulation(
             noarchive   =_noarchive,
             gen_output_dir=verilog_2_xyce_extras_loc,
             basename_only=convert_basename,
+            pcell_file  =pcell_file,
             )
 
 
@@ -354,7 +356,8 @@ def convertToCir_from_config(
         overwrite=False,
         noarchive=False,
         gen_output_dir=None,
-        basename_only=False):
+        basename_only=False,
+        pcell_file=None):
 
 
     from writeSpice import generate_cir_main
@@ -371,7 +374,8 @@ def convertToCir_from_config(
         config_file=sim_config,
         length_file=length_file,
         out_file=of,
-        basename_only=basename_only
+        basename_only=basename_only,
+        pcell_file=None,
     )
     # locate nessary files
     #files = getSimFiles(verilogFile, wd)
@@ -781,7 +785,8 @@ if __name__ == "__main__":
     parser.add_argument('--cir_config',metavar='<cir_config>', type=str, required=True)
     
     parser.add_argument('--output_dir',metavar='<output_dir>', type=str, default=None)
-    
+    parser.add_argument('--pcell_file',metavar='<pcell_file>', type=str, default=None)
+
     parser.add_argument('--design', metavar='<design>', type=str, required=True)
     parser.add_argument('--length_file', metavar='<length_file>', type=str, default=None)
 
@@ -827,6 +832,7 @@ if __name__ == "__main__":
         #xyceFiles      = "spiceList",
         convert_v      = args.convert_verilog.lower() in ['true', '1'],
         output_dir     = args.output_dir,
+        pcell_file     = args.pcell_file,
         extra_args     = ex_args)
     
     """
