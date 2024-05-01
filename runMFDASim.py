@@ -700,6 +700,8 @@ def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, s
         rFile = results_dir+'/'+design_name+'_xyceOut.csv'
         #temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True)
         temp_df = pd.read_csv(rFile)
+        if len(ev_chem_list[ev_chem]) == 0:
+            continue
 
         for eval_obj in ev_chem_list[ev_chem]:
 
