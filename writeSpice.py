@@ -91,10 +91,12 @@ def add_probes_to_device(probes, netlist_graph):
             print(p)
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
                 if f'V({p.getNode()}_0_chem)' not in probe_list:
-                    probe_list.append(f'V({p.getNode()}_0_chem)')
+                    dev_node = list(netlist_graph[p.getNode()].keys())[0]
+                    probe_list.append(f'V({p.getNode()}_{dev_node}_chem)')
             else:
                 if f'V({p[node]}_0_chem)' not in probe_list:
-                    probe_list.append(f'V({p[node]}_0_chem)')
+                    dev_node = list(netlist_graph[p[node]].keys())[0]
+                    probe_list.append(f'V({p[node]}_{dev_node}_chem)')
 
     if 'concentrationNode' in probes:
         for p in probes['concentrationNode']:
