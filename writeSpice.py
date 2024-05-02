@@ -440,7 +440,7 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                             n == in_netlist.nodes[node]["chem_connection"]["oth_node"]:
                             chem_line +=f"{in_netlist.nodes[node]['chem_connection']['node']} "
                         else:
-                            chem_line += f"{node}_{n}_chem "
+                            chem_line += f"{n}_{node}_chem "
 
 
                 print(comp_type)
