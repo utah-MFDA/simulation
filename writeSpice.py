@@ -289,6 +289,7 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
             
             elif in_netlist.nodes[node]['node_type'] == 'output':
                 # TODO check if output as dev
+                print(len_df)
                 wl = len_df.loc[node]["length (mm)"]
                 chem_nodes=''
                 fluid_nodes=''
@@ -504,7 +505,8 @@ def get_length_list(len_file):
         #    len_df = pd.read_execl(len_file, index_col=1)
     if len_df.shape[0] == 1:
         len_df = len_df.T
-
+    elif len_df.shape[1] == 2:
+        len_df = pd.read_csv(len_file, index_col=1)
 
     print(len_df.shape[0])
     print(len_df)
