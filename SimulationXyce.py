@@ -165,6 +165,14 @@ class SimulationXyce:
                         node=params[3],
                         device=params[2]
                     ))
+                elif params[1] == "concentrationNode":
+                    self.probes['concentrationNode'].append(self.Probe(
+                        'concentrationNode',
+                        node=params[3],
+                        device=params[2]
+                    ))
+                else:
+                    raise ValueError(f'{params[1]} is not a valid node, use "pressure", "flow", "pressureNode", "concentrationNode" or declare the input chemical before this line.')
 
             elif key == 'eval':
                 if params[1] in self.eval:
