@@ -823,6 +823,7 @@ if __name__ == "__main__":
     parser.add_argument('--local_xyce', type=str, default='False')
 
     parser.add_argument('--xyce_run_config', type=str, default=None)
+    parser.add_argument('--xyce_write_loc', type=str, default=None)
     
     args = parser.parse_args()
     
@@ -852,6 +853,7 @@ if __name__ == "__main__":
         convert_v      = args.convert_verilog.lower() in ['true', '1'],
         output_dir     = args.output_dir,
         pcell_file     = args.pcell_file,
+        verilog_2_xyce_extras_loc = args.xyce_write_loc,
         extra_args     = ex_args)
     
     """
