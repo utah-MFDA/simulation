@@ -28,33 +28,64 @@ def test_file_load():
 def test_gen_cir():
     import runMFDASim
 
-    wd = "./testing/smart_toilet_test"
     vFile = "smart_toilet.v"
+    design= "smart_toilet"
+    wd = "./testing/smart_toilet_test"
+    sim_config = f"{wd}/simulation.config"    
     libFile="./testing/StandardCellLibrary.csv"
     cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+    length_file="testing/smart_toilet_test/smart_toilet_lengths.xlsx"
+    preRouteSim=False
+    gen_output_dir= "spiceFiles"
+    basename_only = True
+    pcell_file    = None
 
-    runMFDASim.convertToCir(
+    runMFDASim.convertToCir_from_config(
+        design=design,
         verilogFile=vFile,
+        sim_config=sim_config,
         wd=wd,
         libFile=libFile,
         configFile=cirConfig,
-        preRouteSim=False)
+        length_file=length_file,
+        preRouteSim=preRouteSim,
+        noarchive=False,
+        gen_output_dir=gen_output_dir,
+        basename_only=basename_only,
+        pcell_file=pcell_file,
+        )
     
 def test_gen_simple_cir():
     import runMFDASim
 
-    wd = "./testing/simpleChannelTest"
     vFile = "simple_channel.v"
+    design= "simple_channel"
+    wd = "./testing/simpleChannelTest"
+    sim_config = f"{wd}/simulation.config"
+    
     libFile="./testing/StandardCellLibrary.csv"
     cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+    length_file=f"{wd}/simple_channel_lengths.xlsx"
+    preRouteSim=False
+    gen_output_dir= "spiceFiles"
+    basename_only = True
+    pcell_file    = None
 
-    runMFDASim.convertToCir(
+
+    runMFDASim.convertToCir_from_config(
+        design=design,
         verilogFile=vFile,
+        sim_config=sim_config,
         wd=wd,
         libFile=libFile,
         configFile=cirConfig,
-        preRouteSim=False,
-        overwrite=True)
+        length_file=length_file,
+        preRouteSim=preRouteSim,
+        noarchive=False,
+        gen_output_dir=gen_output_dir,
+        basename_only=basename_only,
+        pcell_file=pcell_file,
+        )
 
 def test_parse_sim_config_file():
     
@@ -114,43 +145,67 @@ def test_push2Docker():
 
     import runMFDASim
 
-    wd = "./testing/smart_toilet_test"
     vFile = "smart_toilet.v"
+    design= "smart_toilet"
+
+    wd = "./testing/smart_toilet_test"
+    sim_config = f"{wd}/simulation.config"
+    
     libFile="./testing/StandardCellLibrary.csv"
     cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+    length_file="testing/smart_toilet_test/smart_toilet_lengths.xlsx"
+    preRouteSim=False
+    gen_output_dir= "spiceFiles"
+    basename_only = True
+    pcell_file    = None
 
-    # Docker config
-    runSimComm = ""
-
-    #dock_container = "sweet_shockley"
     dock_WD = "/mfda_simulation/local/simulations"
 
-    simTar = runMFDASim.convertToCir(
+    simTar = runMFDASim.convertToCir_from_config(
+            design=design,
         verilogFile=vFile,
+        sim_config=sim_config,
         wd=wd,
         libFile=libFile,
         configFile=cirConfig,
-        preRouteSim=False,
-        overwrite=True)
+        length_file=length_file,
+        preRouteSim=preRouteSim,
+        noarchive=False,
+        gen_output_dir=gen_output_dir,
+        basename_only=basename_only,
+        pcell_file=pcell_file,
+        )
 
     runMFDASim.pushCir2Docker(
         simArchive=simTar,  
         dockerContainer=dock_container, 
         dockerWD=dock_WD)
 
-def runXyceDocker(verilogFile, wd, libFile, configFile, prerouteSim, overwrite, 
-                  docker_container, docker_WD, 
-                  simRunTime, simDir, simStartFile, simArgs):
+def runXyceDocker(design, verilogFile, sim_config, wd, libFile, cirConfig, length_file, 
+                preRouteSim, overwrite, 
+                docker_container, docker_WD, 
+                simRunTime, simDir, simStartFile, simArgs):
     import runMFDASim
     import os
 
-    simTar = runMFDASim.convertToCir(
+    gen_output_dir= "spiceFiles"
+    basename_only = True
+    pcell_file = None
+
+    simTar = runMFDASim.convertToCir_from_config(
+        design=design,
         verilogFile=verilogFile,
+        sim_config=sim_config,
         wd=wd,
         libFile=libFile,
-        configFile=configFile,
-        preRouteSim=prerouteSim,
-        overwrite=overwrite)
+        configFile=cirConfig,
+        length_file=length_file,
+        preRouteSim=preRouteSim,
+        noarchive=False,
+        gen_output_dir=gen_output_dir,
+        basename_only=basename_only,
+        pcell_file=pcell_file,
+        )
 
     runMFDASim.pushCir2Docker(
         simArchive=simTar,  
@@ -170,10 +225,20 @@ def test_runXyceDocker():
 
     import os
 
-    wd = "./testing/smart_toilet_test"
     vFile = "smart_toilet.v"
+    design= "smart_toilet"
+
+    wd = "./testing/smart_toilet_test"
+    sim_config = f"{wd}/simulation.config"
+    length_file=f"{wd}/simple_channel_lengths.xlsx"
+    
     libFile="./testing/StandardCellLibrary.csv"
     cirConfig = "./V2Va_Parser/VMF_xyce.mfsp"
+    length_file="testing/smart_toilet_test/smart_toilet_lengths.xlsx"
+    preRouteSim=False
+    gen_output_dir= "spiceFiles"
+    basename_only = True
+    pcell_file    = None
 
     # Docker config
     simDir      = "/mfda_simulation/xyce_docker_server"
@@ -185,13 +250,20 @@ def test_runXyceDocker():
     #dock_container = "vibrant_clarke"
     dock_WD        = "/mfda_simulation/local/simulations"
 
-    simTar = runMFDASim.convertToCir(
+    simTar = runMFDASim.convertToCir_from_config(
+        design=design,
         verilogFile=vFile,
+        sim_config=sim_config,
         wd=wd,
         libFile=libFile,
         configFile=cirConfig,
-        preRouteSim=False,
-        overwrite=True)
+        length_file=length_file,
+        preRouteSim=preRouteSim,
+        noarchive=False,
+        gen_output_dir=gen_output_dir,
+        basename_only=basename_only,
+        pcell_file=pcell_file,
+        )
 
     runMFDASim.pushCir2Docker(
         simArchive=simTar,  
@@ -211,10 +283,14 @@ def test_simplechannel_runXyceDocker():
 
     import os
 
-    wd        ="./testing/simpleChannelTest"
     vFile     ="simple_channel.v"
+    design    ="simple_channel"
+    wd        ="./testing/simpleChannelTest"
+    sim_config = f"{wd}/simulation.config"
+    
     libFile   ="./testing/StandardCellLibrary.csv"
     cirConfig ="./V2Va_Parser/VMF_xyce.mfsp"
+    length_file=f"{wd}/simple_channel_lengths.xlsx"
 
     # Docker config
     simDir      = "/mfda_simulation/xyce_docker_server"
@@ -227,19 +303,22 @@ def test_simplechannel_runXyceDocker():
     dock_WD        = "/mfda_simulation/local/simulations"
     
     
-
-    runXyceDocker(verilogFile=vFile, 
-                  wd=wd, 
-                  libFile=libFile, 
-                  configFile=cirConfig, 
-                  prerouteSim=False, 
-                  overwrite=True,  
-                  docker_container=dock_container, 
-                  docker_WD=dock_WD, 
-                  simRunTime=simRunTime, 
-                  simDir=simDir, 
-                  simStartFile=simStartFile, 
-                  simArgs=simArgs)
+    # local function
+    runXyceDocker(design=design, 
+                verilogFile=vFile, 
+                wd=wd,
+                sim_config=sim_config, 
+                libFile=libFile, 
+                cirConfig=cirConfig,
+                length_file=length_file,
+                preRouteSim=False, 
+                overwrite=True,  
+                docker_container=dock_container, 
+                docker_WD=dock_WD, 
+                simRunTime=simRunTime, 
+                simDir=simDir, 
+                simStartFile=simStartFile, 
+                simArgs=simArgs)
     
 def test_pullFileFromDocker():
 
@@ -281,8 +360,9 @@ def test_parse_simple_channel():
 
     result_file = "simple_channel_H2O.cir.prn"
     result_wd   = "./testing/DockerPullTest/results"
+    node_dir    = "./testing/DockerPullTest/"
     
-    load_xyce_results(result_wd+"/"+result_file)
+    load_xyce_results(result_wd, node_dir, result_file)
 
 def test_plot_simple_channel():
 
