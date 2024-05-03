@@ -30,7 +30,8 @@ Yserpentine_300px_0 serp11 41 13 43 14
 
 
 .tran 0.1m 1m
-.print tran V(14)
+
+
 .end
 
 

@@ -239,9 +239,55 @@ def test_write_spice_str_3():
         sim_type="transient",
         out_file="out_spice_3.cir")
 
-    #out_spice = "out_spice_3_.cir.str"
+    out_spice = "out_spice_3_H2O.cir.str"
 
-    #convert_nodes_2_numbers_xyce(out_spice)
+    convert_nodes_2_numbers_xyce(out_spice)
+
+
+def test_write_spice_str_4():
+    import sys, os
+    from writeSpice import add_probes_to_device, generate_source_list, write_spice_file, convert_nodes_2_numbers_xyce, generate_time_lines
+    from SimulationXyce import SimulationXyce
+
+    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/../verilog_2_NX/')
+    from Verilog2NX import get_modules, visual_graph
+
+    verilog_file = 'testing_local/smart_toilet_test_config/smart_toilet.v'
+    config_file = "testing_local/smart_toilet_test_config/simulation.config"
+    length_file = "testing_local/smart_toilet_test_config/smart_toilet_lengths.xlsx"
+
+    probes = {}
+    #probes['pressure'] = [{'node':'connect1'}]
+    #probes['flow'] = [{'node':'connect1', 'device':'serp1'}]
+    probes['concentrationNode'] = [{'node':'connect1', 'device':'serp1'}]
+
+    netlist_dict, netlist_graph = get_modules(in_v=verilog_file, visual=False)
+
+    out_probes, netlist_graph_out = add_probes_to_device(probes, netlist_graph['smart_toilet']['netlist'])
+
+    Xcl = SimulationXyce()
+    Xcl.parse_config_file(config_file)
+
+    dev_lines, chem_args = generate_source_list(Xcl, has_chem=True)
+
+    print("chem lines:")
+    print(chem_args)
+    print(dev_lines)
+
+    sim_lines = generate_time_lines(Xcl)
+
+    write_spice_file(netlist_graph['smart_toilet']['netlist'],
+        probes_list=out_probes,
+        source_lines=dev_lines,
+        length_list=length_file,
+        chem_list=chem_args,
+        sims_time_lines=sim_lines,
+        sim_type="transient",
+        out_file="out_spice_4.cir")
+    
+    out_spice = "out_spice_4_H2O.cir.str"
+
+    convert_nodes_2_numbers_xyce(out_spice)
 
 def test_write_spice_main():
     
@@ -257,3 +303,20 @@ def test_write_spice_main():
         config_file=config_file,
         length_file=length_file,
         out_file='results/testing/out_spice_main_1')
+
+def test_write_spice_main_pcell():
+    
+    from writeSpice import generate_cir_main
+    
+    verilog_file ='testing_local/smart_toilet_test_config_pcell/smart_toilet.v'
+    config_file = "testing_local/smart_toilet_test_config_pcell/simulation.config"
+    length_file = "testing_local/smart_toilet_test_config_pcell/smart_toilet_lengths.xlsx"
+    pcell_file  = "testing_local/smart_toilet_test_config_pcell/pcell_out_xyce"
+
+    generate_cir_main(
+        design="smart_toilet",
+        verilog_file=verilog_file,
+        config_file=config_file,
+        length_file=length_file,
+        out_file='results/testing/out_spice_main_1p',
+        pcell_file=pcell_file)
