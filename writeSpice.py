@@ -135,7 +135,7 @@ def add_probes_to_device(probes, netlist_graph):
                 #netlist_graph.add_edges_from(new_es)
                 # same as if in list
                 if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-                    probe_list.append(f'V(vchpr_{p.getNode}_chem)')
+                    probe_list.append(f'V(vchpr_{p.getNode()}_chem)')
                 else:
                     probe_list.append(f'V(vchpr_{p[node]}_chem)')
     
