@@ -90,29 +90,42 @@ def add_probes_to_device(probes, netlist_graph):
         for p in probes['concentration']:
             print(p)
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-                if f'V({p.getNode()}_0_chem)' not in probe_list:
+                dev_node = list(netlist_graph[p.getNode()].keys())[0]
+                if f'V({p.getNode()}_{dev_node}_chem)' not in probe_list:
                     dev_node = list(netlist_graph[p.getNode()].keys())[0]
                     probe_list.append(f'V({p.getNode()}_{dev_node}_chem)')
             else:
-                if f'V({p[node]}_0_chem)' not in probe_list:
+                dev_node = list(netlist_graph[p[node]].keys())[0]
+                if f'V({p[node]}_{dev_node}_chem)' not in probe_list:
                     dev_node = list(netlist_graph[p[node]].keys())[0]
                     probe_list.append(f'V({p[node]}_{dev_node}_chem)')
 
     if 'concentrationNode' in probes:
         for p in probes['concentrationNode']:
                 # explicit chem node dev
-                netlist_graph.nodes[p[dev]]["chem_connection"] ={"node":f"vchpr_{p[node]}_chem","oth_node":p[node]}
-
-                netlist_graph.nodes[p[node]]["chem_connection"]={"node":f"vchpr_{p[node]}_conn_chem","oth_node":p[dev]}
-                # explicit chem node wire
-                new_probe_node = [
-                    (f"vchpr_{p[node]}_{p[dev]}_pr", {
+                if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+                    netlist_graph.nodes[p.getDevice()]["chem_connection"] ={"node":f"vchpr_{p.getNode()}_chem","oth_node":p.getNode()}
+                    netlist_graph.nodes[p.getNode()]["chem_connection"]={"node":f"vchpr_{p.getNode()}_conn_chem","oth_node":p.getDevice()}
+                    new_probe_node = [
+                        (f"vchpr_{p.getNode()}_{p.getDevice()}_pr", {
                         'node_type':'concentration_probe',
                         'chem_pr_wires':[
-                            f"vchpr_{p[node]}_chem",
-                            f"vchpr_{p[node]}_conn_chem"] 
+                            f"vchpr_{p.getNode()}_chem",
+                            f"vchpr_{p.getNode()}_conn_chem"] 
                             }),
-                ]
+                    ]
+                else:
+                    netlist_graph.nodes[p[dev]]["chem_connection"] ={"node":f"vchpr_{p[node]}_chem","oth_node":p[node]}
+                    netlist_graph.nodes[p[node]]["chem_connection"]={"node":f"vchpr_{p[node]}_conn_chem","oth_node":p[dev]}
+                # explicit chem node wire
+                    new_probe_node = [
+                        (f"vchpr_{p[node]}_{p[dev]}_pr", {
+                            'node_type':'concentration_probe',
+                            'chem_pr_wires':[
+                                f"vchpr_{p[node]}_chem",
+                                f"vchpr_{p[node]}_conn_chem"] 
+                                }),
+                    ]
                 #new_es = []
                 #new_es.append((new_probe_nodes[0][0], p[dev]))
                 #new_es.append((new_probe_nodes[0][0], new_probe_nodes[1][0]))
@@ -122,7 +135,7 @@ def add_probes_to_device(probes, netlist_graph):
                 #netlist_graph.add_edges_from(new_es)
                 # same as if in list
                 if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-                    probe_list.append(f'V(vchpr_{p[node]}_chem)')
+                    probe_list.append(f'V(vchpr_{p.getNode}_chem)')
                 else:
                     probe_list.append(f'V(vchpr_{p[node]}_chem)')
     
