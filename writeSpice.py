@@ -331,21 +331,21 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                 chem_nodes=f'{node}_in_chem '
                 fluid_nodes=f'{node}_in '
                 # TODO is this for loop necessary
-                for ind, conn_node in enumerate(in_netlist[node]):
-                    if len(in_netlist[node]) == 1:
-                        if "chem_connection" in in_netlist.nodes[node]:
-                            chem_nodes +=f"{in_netlist.nodes[node]['chem_connection']} "
-                        else:
-                            chem_nodes += f"{node}_{conn_node}_chem "
+                #for ind, conn_node in enumerate(in_netlist[node]):
+                conn_node = list(in_netlist[node])[0]
+                if len(in_netlist[node]) == 1:
+                    if "chem_connection" in in_netlist.nodes[node]:
+                        chem_nodes +=f"{in_netlist.nodes[node]['chem_connection']} "
                     else:
-                        if ind == 0:
-                            chem_nodes += f"{node}_channel_out_chem "
+                        chem_nodes += f"{node}_{conn_node}_chem "
+                else:
+                    chem_nodes += f"{node}_channel_out_chem "
 
-                    if in_netlist.nodes[conn_node]["node_type"] == "wire" and \
-                        len(in_netlist[node]) > 1:
-                        fluid_nodes += f"{conn_node}_channel_out "
-                    else:    
-                        fluid_nodes += f"{node}_{conn_node} "
+                if in_netlist.nodes[conn_node]["node_type"] == "wire" or \
+                    len(in_netlist[node]) > 1:
+                    fluid_nodes += f"{conn_node}_channel_out "
+                else:    
+                    fluid_nodes += f"{node}_{conn_node} "
 
 
                 input_line = f"{conn_channel} {node} {fluid_nodes} {chem_nodes}length={wl}m"

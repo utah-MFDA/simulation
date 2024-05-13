@@ -11,6 +11,7 @@ output  out;
 wire    connect1,  connect2,  connect3,  connect4,  connect6,  connect7;
 
 serpentine_50px_0   serp1   (.in_fluid(soln2), .out_fluid(connect1));
+serpentine_50px_0   serp12  (.in_fluid(soln2), .out_fluid(connect2));
 serpentine_150px_0  serp2   (.in_fluid(connect1), .out_fluid(connect2));
 
 diffmix_25px_0      mix0    (.a_fluid(soln1), .b_fluid(connect2), .out_fluid(connect3));
