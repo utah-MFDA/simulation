@@ -1,4 +1,4 @@
-Index,TIME,P(connect2),P(connect6),C_H2O(out),C_H2O(connect2),C_H2O(connect6),C_H2O(connect5),C_Tag(out),C_Tag(connect2),C_Tag(connect6),C_Tag(connect5),C_Sample(out),C_Sample(connect2),C_Sample(connect6),C_Sample(connect5)
+Index,TIME,P(connect1),P(connect5),C_H2O(out),C_H2O(connect1),C_H2O(connect5),C_H2O(connect4),C_Tag(out),C_Tag(connect1),C_Tag(connect5),C_Tag(connect4),C_Sample(out),C_Sample(connect1),C_Sample(connect5),C_Sample(connect4)
 0,0.0,90431.7032,84826.2636,0.0616332379,0.0,0.0,0.0,0.0322381701,0.1,0.0,0.0,0.00612859202,0.0,0.1,0.1
 1,5e-07,90431.7032,84826.2636,0.0616332379,0.0,0.0,0.0,0.0322381701,0.1,0.0,0.0,0.00612859202,0.0,0.1,0.1
 2,1.5e-06,90431.7032,84826.2636,0.0616332379,0.0,0.0,0.0,0.0322381701,0.1,0.0,0.0,0.00612859202,0.0,0.1,0.1
