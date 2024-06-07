@@ -1,4 +1,4 @@
-module smart_toilet (
+module simple_channel (
     soln1,
     //soln2,
     //soln3,
