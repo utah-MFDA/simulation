@@ -4,7 +4,6 @@ import os
 import shutil
 import subprocess
 
-import docker
 import tarfile
 import json
 
@@ -121,6 +120,7 @@ def runSimulation(
         _local_xyce = False
         _noarchive = False
         convert_basename = True
+        import docker
     else:
         raise InputError("--local_xyce much be false or true (0 or 1)")
 
@@ -179,7 +179,7 @@ def runSimulation(
         #results_prn_wd = result_wd+'/results'
         results_prn_wd = result_wd#+'/results'
         load_wd   = ''
-        nodes_dir = ''
+        nodes_dir = result_wd
 
     else:
         
@@ -256,7 +256,7 @@ def runSimulation(
     if isinstance(df, list):
         pass
     elif isinstance(df, pd.DataFrame):
-        csv_out = results_prn_wd+"/"+design_name+'_xyceOut.csv'
+        csv_out = results_prn_wd+"/xyceOut.csv"
         print("Writing results to "+csv_out)
         df.to_csv(csv_out)
     else:
@@ -370,7 +370,7 @@ def convertToCir_from_config(
 
     generate_cir_main(
         design=design,
-        verilog_file=f'{wd}/{verilogFile}',
+        verilog_file=verilogFile,
         config_file=sim_config,
         length_file=length_file,
         out_file=of,
@@ -499,8 +499,7 @@ def runLocalXyce(xyce_files, workDir, xyce_run_location=f'{local_file_path}/xyce
 
     simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
         "--list "+f'{workDir}/{xyce_files}'+" "\
-        "--workdir "+'./'+" "
-        #"--workdir "+workDir+" "
+        "--workdir "+workDir+" "
         #"--no_result_dir"
     if config_file is not None:
         simRunComm += " --config "+config_file
@@ -633,13 +632,15 @@ def load_xyce_results(rDir, nodes_dir, rlist=None, chem_list=None):
         # we assume in list generation the indexes did not shift
         for ind, rFile in enumerate(rlist):
 
-            print(rDir+"/"+rFile)
-            temp_df = pd.read_table(rDir+rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
+            print(rFile)
+            temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
             #temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
             
             if chem_list is not None:
                 #temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
-                temp_df = change_r_node_ref(temp_df,  rDir+rFile, nodes_dir+rFile.replace('.prn', '.str.nodes'), chem_list[ind])
+
+                node_f = os.path.basename(rFile).replace('.prn', '.str.nodes')
+                temp_df = change_r_node_ref(temp_df,  rDir+rFile, nodes_dir+node_f, chem_list[ind])
                 #temp_df = change_r_node_ref(temp_df, rFile, rFile.replace('.prn', '.str.nodes'), chem_list[ind])
 
             #r_df = pd.append([temp_df])

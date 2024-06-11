@@ -1,4 +1,4 @@
-import networkx as nx 
+import networkx as nx
 import numpy as np
 import pandas as pd
 
@@ -112,12 +112,12 @@ def add_probes_to_device(probes, netlist_graph):
                         chan_node = f"{p.getNode()}_channel_out_chem "
                     elif netlist_graph.nodes[p.getNode()]["node_type"] == "output" and \
                         len(netlist_graph[p.getNode()]) > 1:
-                        chan_node = f"{p.getNode()}_channel_in_chem "
+                        chan_node = f"{p.getNode()}_in_chem "
                     elif netlist_graph.nodes[p.getNode()]["node_type"] == "wire" and \
                         len(netlist_graph[p.getNode()]) > 2:
                         # which port
                         if netlist_graph.edges[p.getDevice(), p.getNode()]["port"] == "out_fluid":
-                            chan_node = f"{p.getNode()}_channel_in "
+                            chan_node = f"{p.getNode()}_in "
                         else:
                             chan_node = f"{p.getNode()}_channel_out "
                     elif "chem_connection" in netlist_graph.nodes[p.getNode()]:
@@ -143,12 +143,12 @@ def add_probes_to_device(probes, netlist_graph):
                         chan_node = f"{p[node]}_channel_out_chem "
                     elif netlist_graph.nodes[p[node]]["node_type"] == "output" and \
                         len(netlist_graph[p[node]]) > 1:
-                        chan_node = f"{p[node]}_channel_in_chem "
+                        chan_node = f"{p[node]}_in_chem "
                     elif netlist_graph.nodes[p[node]]["node_type"] == "wire" and \
                         len(netlist_graph[p[node]]) > 2:
                         # which port
                         if netlist_graph.edges[p.getDevice(), p[node]]["port"] == "out_fluid":
-                            chan_node = f"{p[node]}_channel_in "
+                            chan_node = f"{p[node]}_in "
                         else:
                             chan_node = f"{p[node]}_channel_out "
                     elif "chem_connection" in netlist_graph.nodes[p[node]]:
@@ -290,7 +290,8 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                 'spice_str_file':chem_out_file,
                 'spice_file':chem_out_file[:-4]}
             if add_prn_to_list:
-                output_file_entry['OutputFile'] = chem_out_file[:-4]+'.prn'
+                a, b = os.path.split(chem_out_file)
+                output_file_entry['OutputFile'] = a + "/results/" + b[:-4]+'.prn'
 
 
         output_file_list.append(output_file_entry)
@@ -366,14 +367,14 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                         else:
                             chem_nodes += f"{node}_{conn_node}_chem "
                     elif ind == 0:
-                        chem_nodes += f"{node}_channel_in_chem "
+                        chem_nodes += f"{node}_in_chem "
                     else:
                         pass
-                        
+
                     if len(in_netlist[node]) > 1 and \
                         ind == 0:
-                        fluid_nodes += f"{node}_channel_in "
-                    elif ind == 0:    
+                        fluid_nodes += f"{node}_in "
+                    elif ind == 0:
                         fluid_nodes += f"{node}_{conn_node} "
                 chem_nodes += f'{node}_out_chem '
                 output_line = f"{conn_channel} {node} {fluid_nodes} 0 {chem_nodes}length={wl}m"
@@ -381,7 +382,11 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
 
             elif in_netlist.nodes[node]['node_type'] == 'wire':
                 # and (not no_lengths):
-                wl = len_df.loc[node]["length (mm)"]
+                if no_lengths:
+                    wl = 0.01
+                else:
+                    wl = len_df.loc[node]["length (mm)"]
+
                 chem_nodes=''
                 fluid_nodes=''
                 if len(in_netlist[node]) == 2:
@@ -402,8 +407,8 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                         else:
                             fluid_nodes += f"{node}_{conn_node} "
                 else:
-                    fluid_nodes = f'{node}_channel_in {node}_channel_out '
-                    chem_nodes  = f'{node}_channel_in_chem {node}_channel_out_chem '
+                    fluid_nodes = f'{node}_in {node}_out '
+                    chem_nodes  = f'{node}_in_chem {node}_out_chem '
 
                 wire_line = f"{conn_channel} {node} {fluid_nodes} {chem_nodes}length={wl}m"
                 c_of.write(wire_line+'\n')
@@ -445,13 +450,13 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                         if wire_edges == 1:
                             comp_line += f"{n}_{node} "
                         else:
-                            comp_line += f"{n}_channel_in "
+                            comp_line += f"{n}_in "
                         #chem_line += f"{n}_{node}_chem "
                     elif in_netlist.nodes[n]["node_type"] == 'output':
                         if wire_edges == 1:
                             comp_line += f"{n}_{node} "
                         else:
-                            comp_line += f"{n}_channel_out "
+                            comp_line += f"{n}_out "
                         #chem_line += f"{n}_{node}_chem "
                     elif in_netlist.nodes[n]["node_type"] == 'wire':
                         #print(node)
@@ -468,9 +473,9 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                         else:
                             # for components
                             if in_netlist.edges[node, n]["port"] == "out_fluid":
-                                comp_line += f"{n}_channel_in "
+                                comp_line += f"{n}_in "
                             else:
-                                comp_line += f"{n}_channel_out "
+                                comp_line += f"{n}_out "
                             #chem_line += f"{n}_{node}_chem "
                         #elif no_wire or zero_wire:
                         #    wire_connections[n] = 1
@@ -540,9 +545,9 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
                                 chem_line += f"{n}_{node}_chem "
                             else:
                                 if in_netlist.edges[node, n]["port"] == "out_fluid":
-                                    chem_line += f"{n}_channel_in_chem "
+                                    chem_line += f"{n}_in_chem "
                                 else:
-                                    chem_line += f"{n}_channel_out_chem "
+                                    chem_line += f"{n}_out_chem "
                             #chem_line += f"{n}_{node}_chem "
 
 
