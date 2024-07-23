@@ -9,14 +9,18 @@ SHELL      	= /bin/bash
 
 PYTHON_CMD = python3 ./runMFDASim.py
 
-DESIGN    ?=  demo
-PLATFORM  ?=  mfda_30px
+#DESIGN    ?=  demo
+#PLATFORM  ?=  mfda_30px
+
+DESIGN      ?=  smart_toilet
+PLATFORM    ?=  mfda_30px
+LENGTH_FILE ?= ./designs/mfda_30px/smart_toilet_lengths.xlsx
 
 VERILOG_F = $(DESIGN).v
 
-LIB        = ./testing/StandardCellLibrary.csv
-CIR_CONFIG = ./V2Va_Parser/VMF_xyce.mfsp
-LENGTH_FILE= ./testing_local/smart_toilet_test_config/smart_toilet_lengths.xlsx
+LIB         ?= ./testing/StandardCellLibrary.csv
+CIR_CONFIG  ?= ./V2Va_Parser/VMF_xyce.mfsp
+LENGTH_FILE ?= ./testing_local/smart_toilet_test_config/smart_toilet_lengths.xlsx
 
 OUTPUT_DIR = ./results/${PLATFORM}/${DESIGN}'
 
