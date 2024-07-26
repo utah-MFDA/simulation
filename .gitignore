@@ -5,6 +5,7 @@ ValveArray/__pycache__/**
 */__pycache__/**
 *.pyc
 *.cpython-38.pyc
+.flake8
 vectorDebug
 matrixDebug
 debugLinSim
