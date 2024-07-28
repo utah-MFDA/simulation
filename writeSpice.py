@@ -2,7 +2,9 @@
 import networkx as nx
 import numpy as np
 import pandas as pd
-
+import re
+import csv
+import ast
 
 import SimulationXyce
 
@@ -230,12 +232,82 @@ def generate_time_lines(spice_config_class):
 
     return out_lines
 
+
+def merge_wl_net(in_g, wl_g, node, wl_file=None, 
+    debug_node = False, debug_edge = False, debug_draw=False):
+
+    mapping = {}
+    print("Node:", node)
+    print(wl_file)
+    for common_node in [n for n in wl_g.nodes if n in in_g.nodes]:
+        for prop in in_g.nodes[common_node].items():
+            wl_g.nodes[common_node][prop[0]] = in_g.nodes[common_node][prop[0]]
+
+    if wl_file is not None:
+        node_wl_dict = wl_file[node]
+    for n in list(wl_g.nodes):
+        if re.match(r'br_\d_\d', str(n)) is not None:
+            br_pt = True
+            mapping[n] = f"{node}_{n}"
+            wl_g.nodes[n]['virt_node'] = ''
+        else:
+            br_pt = False
+        if len(str(n)) > 0 and \
+        (str(n)[0] in [str(i) for i in range(0,10)] and not br_pt):
+            wl_g.nodes[n]['route'] = None
+            wl_g.nodes[n]['node_type'] = 'wire'
+            wl_g.nodes[n]['chan_len'] = node_wl_dict[n]
+            for con_n in wl_g[n]:
+                #if re.match(r'br_\d_\d', str(n)) is not None:
+                wl_g.edges[(n, con_n)]['fl_net'] = {
+                    f"{node}_{con_n}"
+                }
+                wl_g.edges[(n, con_n)]['ch_net'] = {
+                    f"{node}_{con_n}_chem"
+                }
+            mapping[n] = f"{node}_{n}"
+    wl_g = nx.relabel_nodes(wl_g, mapping)
+
+    in_g.remove_node(node)
+    in_g = nx.compose(in_g, wl_g)
+    
+    # write nodes and edges to terminal
+    debug_node = True
+    if debug_node:
+        print("Wirelength nodes: ")
+        for n in wl_g.nodes:
+            print(n)
+            print(wl_g.nodes[n])
+        print("Result nodes: ")
+        for n in in_g.nodes:
+            print(n)
+            print(in_g.nodes[n])
+    if debug_edge:
+        print("Wirelength edges: ")
+        for e in wl_g.edges:
+            print(e)
+            print(wl_g.get_edge_data(e[0], e[1]))
+        print("Result edges: ")
+        #for e in in_g.edges:
+        #    print(e)
+        #    print(in_g.nodes[n])
+    if debug_draw:
+        import matplotlib.pyplot as plt
+        nx.draw_spring(wl_g, with_labels=True)
+        plt.show()
+        nx.draw_spring(in_g, with_labels=True)
+        plt.show()
+
+    return in_g
+
+
 def generate_spice_nets(in_netlist, 
                         # probes_list, 
                         # source_lines, 
                         length_list=None, 
                         add_prn_to_list=False, 
-                        pcell_file=None
+                        pcell_file=None,
+                        wl_graph=None
                         ):
 
     if length_list is None:
@@ -243,6 +315,24 @@ def generate_spice_nets(in_netlist,
     else:
         no_lengths = False
         len_df = get_length_list(length_list)
+    
+    if 'XYCE_WL_GRAPH' in os.environ:
+        from networkx.readwrite import json_graph
+        if wl_graph is None:
+            wl_graph_f = length_list.replace('_length.csv', '_route_nets.json')
+            wl_graph = {}
+            print("Reading: ", wl_graph_f)
+            with open(wl_graph_f, 'r') as f:
+                json_f = json.load(f)
+                for r in json_f.items():
+                    new_graph = json_graph.node_link_graph(r[1])
+                    if len(new_graph.nodes) > 1:
+                        wl_graph[r[0]] = new_graph
+                #for wl_n in wl_graph.items():
+                #    merge_wl_net(in_netlist, wl_n[1], wl[0])
+
+
+    
 
     def add_fl_net_2_edge(g, edge, net_name):
         if 'fl_net' in g.edges[edge]:
@@ -262,16 +352,18 @@ def generate_spice_nets(in_netlist,
         else:
             g.edges[edge]['ch_net'] = net_name
 
-    for node in in_netlist.nodes:
+    for node in list(in_netlist.nodes):
 
-        ########### IF INPUT #############
+        ############# IF INPUT #############
 
         if in_netlist.nodes[node]['node_type'] == 'input':
             # and (not no_lengths):
             if no_lengths:
                 wl = 0.01 
-            else:
+            elif isinstance(len_df, pd.DataFrame):
                 wl = len_df.loc[node]["length (mm)"]
+            elif isinstance(len_df, dict):
+                wl = len_df[node] #["length (mm)"]
             
             if isinstance(wl, float):
                 in_netlist.nodes[node]['chan_len'] = wl
@@ -287,18 +379,22 @@ def generate_spice_nets(in_netlist,
                     # in_netlist.edges[node_edges[0]]['ch_net'] = input_chem_net
                 else:
                     raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
+            elif isinstance(wl, dict):
+                in_netlist = merge_wl_net(in_netlist, wl_graph[node], node, wl_file=len_df)
             else:
                 pass
                 
-        ########### IF OUTPUT #############
+        ############# IF OUTPUT #############
         
         elif in_netlist.nodes[node]['node_type'] == 'output':
             # TODO check if output as dev
             #print(len_df)
             if no_lengths:
                 wl = 0.01 
-            else:
+            elif isinstance(len_df, pd.DataFrame):
                 wl = len_df.loc[node]["length (mm)"]
+            elif isinstance(len_df, dict):
+                wl = len_df[node] #["length (mm)"]
             
             if isinstance(wl, float):
                 in_netlist.nodes[node]['chan_len'] = wl
@@ -314,17 +410,21 @@ def generate_spice_nets(in_netlist,
                     # in_netlist.edges[node_edges[0]]['ch_net'] = output_chem_net
                 else:
                     raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
+            elif isinstance(wl, dict):
+                in_netlist = merge_wl_net(in_netlist, wl_graph[node], node, wl_file=len_df)
             else:
                 pass
 
-        ########### IF WIRE #############
+        ############# IF WIRE #############
 
         elif in_netlist.nodes[node]['node_type'] == 'wire':
             # and (not no_lengths):
             if no_lengths:
                 wl = 0.01
-            else:
+            elif isinstance(len_df, pd.DataFrame):
                 wl = len_df.loc[node]["length (mm)"]
+            elif isinstance(len_df, dict):
+                wl = len_df[node] #["length (mm)"]
 
             if isinstance(wl, float):
                 in_netlist.nodes[node]['chan_len'] = wl
@@ -332,13 +432,17 @@ def generate_spice_nets(in_netlist,
                 
                 if len(node_edges) == 2:
                     for comp_node in in_netlist[node]:
-                        print("comp node :", comp_node)
+                        print("comp node :", comp_node, "wire node: ", node)
                         chan_fluid_net = f"{node}_{comp_node}"
                         chan_chem_net  = f"{node}_{comp_node}_chem"
-                        in_netlist.edges[(node, comp_node)]['fl_net'] = chan_fluid_net
-                        in_netlist.edges[(node, comp_node)]['ch_net'] = chan_chem_net
+                        add_fl_net_2_edge(in_netlist, (comp_node, node), chan_fluid_net)
+                        add_ch_net_2_edge(in_netlist, (comp_node, node), chan_chem_net)
+                        # in_netlist.edges[(node, comp_node)]['fl_net'] = chan_fluid_net
+                        # in_netlist.edges[(node, comp_node)]['ch_net'] = chan_chem_net
                 else:
                     raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
+            elif isinstance(wl, dict):
+                in_netlist = merge_wl_net(in_netlist, wl_graph[node], node, wl_file=len_df)
             else:
                 pass
 
@@ -402,7 +506,8 @@ def write_components_from_graph(in_g, of):
         of.write(f"{in_g.nodes[oth_n]['node_type']} {oth_n} {fl_wr} {ch_wr}\n")
 
     of.write('\n\n')
-        
+
+
             
 
 def write_time_lines(spice_config_class):
@@ -410,7 +515,7 @@ def write_time_lines(spice_config_class):
 
 def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None, 
     sim_type=None, length_list=None, chem_list=None, out_file=None, 
-    add_prn_to_list=False, basename_only=False, pcell_file=None):
+    add_prn_to_list=False, basename_only=False, pcell_file=None, wl_graph=None):
     
     dev = "dev"
 
@@ -427,6 +532,9 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
     else:
         no_chems = False
 
+    if 'XYCE_WL_GRAPH' in os.environ:
+        if wl_graph is None:
+            wl_graph = length_list.replace('_length.csv', '_route_nets.json')
     # if length_list == None:
     #     no_lengths = True
     # else:
@@ -862,8 +970,22 @@ def get_length_list(len_file):
         len_df = len_df.T
     elif len_df.shape[1] == 2:
         len_df = pd.read_csv(len_file, index_col=1)
+        len_df = {}
+        reader = csv.DictReader(open(len_file, 'r'))
+        for r in reader:
+            r['length (mm)'] = ast.literal_eval(r['length (mm)'])
+            print(r)
+            print(len(r))
+            if len(r['length (mm)']) > 1:
+                # possibly unsafe 
+                len_df[r['wire']] =r['length (mm)']
+            else:
+                len_df[r['wire']] = r['length (mm)']['']
+    elif len_df.shape[1] == 3:
+        len_df = pd.read_csv(len_file, index_col=2)
 
-    print(len_df.shape[0])
+    if isinstance(len_df, pd.DataFrame):
+        print(len_df.shape[0], len_df.shape[1])
     print(len_df)
 
     return len_df
