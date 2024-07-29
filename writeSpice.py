@@ -97,92 +97,109 @@ def add_probes_to_device(probes, netlist_graph):
             print(p)
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
                 dev_node = list(netlist_graph[p.getNode()].keys())[0]
-                if f'V({p.getNode()}_{dev_node}_chem)' not in probe_list:
-                    dev_node = list(netlist_graph[p.getNode()].keys())[0]
-                    probe_list.append(f'V({p.getNode()}_{dev_node}_chem)')
+                pr_node  = p.getNode()
             else:
                 dev_node = list(netlist_graph[p[node]].keys())[0]
-                if f'V({p[node]}_{dev_node}_chem)' not in probe_list:
-                    dev_node = list(netlist_graph[p[node]].keys())[0]
-                    probe_list.append(f'V({p[node]}_{dev_node}_chem)')
+                pr_node  = p[node]
+
+            # check for existing probes                
+            if f'V({pr_node}_{dev_node}_chem)' not in probe_list:
+                dev_node = list(netlist_graph[pr_node].keys())[0]
+                probe_list.append(f'V({pr_node}_{dev_node}_chem)')
 
     if 'concentrationNode' in probes:
         for p in probes['concentrationNode']:
                 # explicit chem node dev
                 if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-                                        
-                    netlist_graph.nodes[p.getDevice()]["chem_connection"] ={"node":f"vchpr_{p.getNode()}_{p.getDevice()}_chem","oth_node":p.getNode()}
-                    #netlist_graph.nodes[p.getNode()]["chem_connection"]={"node":f"vchpr_{p.getNode()}_conn_chem","oth_node":p.getDevice()}
-                    if netlist_graph.nodes[p.getNode()]["node_type"] in "input" and \
-                        len(netlist_graph[p.getNode()]) > 1:
-                        chan_node = f"{p.getNode()}_channel_out_chem "
-                    elif netlist_graph.nodes[p.getNode()]["node_type"] == "output" and \
-                        len(netlist_graph[p.getNode()]) > 1:
-                        chan_node = f"{p.getNode()}_in_chem "
-                    elif netlist_graph.nodes[p.getNode()]["node_type"] == "wire" and \
-                        len(netlist_graph[p.getNode()]) > 2:
-                        # which port
-                        if netlist_graph.edges[p.getDevice(), p.getNode()]["port"] == "out_fluid":
-                            chan_node = f"{p.getNode()}_in "
-                        else:
-                            chan_node = f"{p.getNode()}_channel_out "
-                    elif "chem_connection" in netlist_graph.nodes[p.getNode()]:
-                        chan_node = f"vchpr_{p.getNode()}_conn_chem"
-                        netlist_graph.nodes[p.getNode()]["chem_connection"]={"node":chan_node,"oth_node":p.getDevice()}
-                    else:
-                        chan_node = f"vchpr_{p.getNode()}_conn_chem"
-
-                    new_probe_node = [
-                        (f"vchpr_{p.getNode()}_{p.getDevice()}_pr", {
-                        'node_type':'concentration_probe',
-                        'chem_pr_wires':[
-                            f"vchpr_{p.getNode()}_{p.getDevice()}_chem",
-                            chan_node] 
-                            }),
-                    ]
+                    pr_node  = p.getNode()
+                    dev_node = p.getDevice()
                 else:
-                    netlist_graph.nodes[p[dev]]["chem_connection"] ={"node":f"vchpr_{p[node]}_{p[dev]}_chem","oth_node":p[node]}
-                    #netlist_graph.nodes[p[node]]["chem_connection"]={"node":f"vchpr_{p[node]}_conn_chem","oth_node":p[dev]}
-                    print(netlist_graph.nodes[p[node]])
-                    if netlist_graph.nodes[p[node]]["node_type"] in "input" and \
-                        len(netlist_graph[p[node]]) > 1:
-                        chan_node = f"{p[node]}_channel_out_chem "
-                    elif netlist_graph.nodes[p[node]]["node_type"] == "output" and \
-                        len(netlist_graph[p[node]]) > 1:
-                        chan_node = f"{p[node]}_in_chem "
-                    elif netlist_graph.nodes[p[node]]["node_type"] == "wire" and \
-                        len(netlist_graph[p[node]]) > 2:
-                        # which port
-                        if netlist_graph.edges[p.getDevice(), p[node]]["port"] == "out_fluid":
-                            chan_node = f"{p[node]}_in "
-                        else:
-                            chan_node = f"{p[node]}_channel_out "
-                    elif "chem_connection" in netlist_graph.nodes[p[node]]:
-                        chan_node = f"vchpr_{p[node]}_conn_chem"
-                        netlist_graph.nodes[p[node]]["chem_connection"]={"node":chan_node,"oth_node":p.getDevice()}
-                    else:
-                        chan_node = f"vchpr_{p[node]}_conn_chem"
+                    pr_node = p[node]
+                    dev_node = p[dev]
+
+                if "chem_probe" not in netlist_graph.nodes[dev_node]:
+                    netlist_graph.nodes[dev_node]["chem_probe"] = []
+                # handled by downstream instructions
+                netlist_graph.nodes[dev_node]["chem_probe"].append([pr_node]) 
+                #netlist_graph.nodes[dev_node]["chem_connection"] ={"node":f"vchpr_{pr_node}_{dev_node}_chem","oth_node":pr_node}
+                ##netlist_graph.nodes[p.getNode()]["chem_connection"]={"node":f"vchpr_{p.getNode()}_conn_chem","oth_node":p.getDevice()}
+                #if netlist_graph.nodes[pr_node]["node_type"] in "input" and \
+                #    len(netlist_graph[pr_node]) > 1:
+                #    chan_node = f"{pr_node}_channel_out_chem "
+                #elif netlist_graph.nodes[pr_node]["node_type"] == "output" and \
+                #    len(netlist_graph[pr_node]) > 1:
+                #    chan_node = f"{pr_node}_in_chem "
+                #elif netlist_graph.nodes[pr_node]["node_type"] == "wire" and \
+                #    len(netlist_graph[pr_node]) > 2:
+                #    # which port
+                #    if netlist_graph.edges[dev_node, pr_node]["port"] == "out_fluid":
+                #        chan_node = f"{pr_node}_in "
+                #    else:
+                #        chan_node = f"{pr_node}_channel_out "
+                #elif "chem_connection" in netlist_graph.nodes[pr_node]:
+                #    chan_node = f"vchpr_{pr_node}_conn_chem"
+                #    netlist_graph.nodes[pr_node]["chem_connection"]={"node":chan_node,"oth_node":dev_node}
+                #else:
+                #    chan_node = f"vchpr_{pr_node}_conn_chem"
+
+                #new_probe_node = [
+                #    (f"vchpr_{pr_node}_{dev_node}_pr", {
+                #    'node_type':'concentration_probe',
+                #    'chem_pr_wires':[
+                #        f"vchpr_{pr_node}_{dev_node}_chem",
+                #        chan_node] 
+                #        }),
+                #]
+
+
+                #else:
+                #    netlist_graph.nodes[p[dev]]["chem_connection"] ={"node":f"vchpr_{p[node]}_{p[dev]}_chem","oth_node":p[node]}
+                #    #netlist_graph.nodes[p[node]]["chem_connection"]={"node":f"vchpr_{p[node]}_conn_chem","oth_node":p[dev]}
+                #    print(netlist_graph.nodes[p[node]])
+                #    if netlist_graph.nodes[p[node]]["node_type"] in "input" and \
+                #        len(netlist_graph[p[node]]) > 1:
+                #        chan_node = f"{p[node]}_channel_out_chem "
+                #    elif netlist_graph.nodes[p[node]]["node_type"] == "output" and \
+                #        len(netlist_graph[p[node]]) > 1:
+                #        chan_node = f"{p[node]}_in_chem "
+                #    elif netlist_graph.nodes[p[node]]["node_type"] == "wire" and \
+                #        len(netlist_graph[p[node]]) > 2:
+                #        # which port
+                #        if netlist_graph.edges[p.getDevice(), p[node]]["port"] == "out_fluid":
+                #            chan_node = f"{p[node]}_in "
+                #        else:
+                #            chan_node = f"{p[node]}_channel_out "
+                #    elif "chem_connection" in netlist_graph.nodes[p[node]]:
+                #        chan_node = f"vchpr_{p[node]}_conn_chem"
+                #        netlist_graph.nodes[p[node]]["chem_connection"]={"node":chan_node,"oth_node":p.getDevice()}
+                #    else:
+                #        chan_node = f"vchpr_{p[node]}_conn_chem"
                 # explicit chem node wire
-                    new_probe_node = [
-                        (f"vchpr_{p[node]}_{p[dev]}_pr", {
-                            'node_type':'concentration_probe',
-                            'chem_pr_wires':[
-                                f"vchpr_{p[node]}_{p[dev]}_chem",
-                                chan_node] 
-                                }),
-                    ]
+                #    new_probe_node = [
+                #        (f"vchpr_{p[node]}_{p[dev]}_pr", {
+                #            'node_type':'concentration_probe',
+                #            'chem_pr_wires':[
+                #                f"vchpr_{p[node]}_{p[dev]}_chem",
+                #                chan_node] 
+                #                }),
+                #    ]
                 #new_es = []
                 #new_es.append((new_probe_nodes[0][0], p[dev]))
                 #new_es.append((new_probe_nodes[0][0], new_probe_nodes[1][0]))
                 #new_es.append((new_probe_nodes[1][0], p[node]))
 
-                netlist_graph.add_nodes_from(new_probe_node)
+                # needed with above uncommented
+                #netlist_graph.add_nodes_from(new_probe_node)
+                
+                
                 #netlist_graph.add_edges_from(new_es)
                 # same as if in list
                 if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-                    probe_list.append(f'V(vchpr_{p.getNode()}_{p.getDevice()}_chem)')
+                    #probe_list.append(f'V(vchpr_{p.getNode()}_{p.getDevice()}_chem)')
+                    probe_list.append(f'V({p.getNode()}_{p.getDevice()}_chem_pr)')
                 else:
-                    probe_list.append(f'V(vchpr_{p[node]}_{p[dev]}_chem)')
+                    #probe_list.append(f'V(vchpr_{p[node]}_{p[dev]}_chem)')
+                    probe_list.append(f'V({p[node]}_{p[dev]}_chem_pr)')
     
     return probe_list, netlist_graph
 
@@ -488,7 +505,10 @@ def write_components_from_graph(in_g, of):
     out_nodes = []
     wire_nodes = []
     oth_nodes = []
-    
+
+    new_probes = []
+    probe_2_write = []
+
     chan_comp = 'Ychannel'
 
     for n in in_g.nodes:
@@ -556,7 +576,7 @@ def write_components_from_graph(in_g, of):
         if isinstance(e_fl, set):
             e_fl = list(e_fl)[0]
         if isinstance(e_ch, set):
-            e_ch = list(e_ch)[0]
+            e_ch = list(e_ch)[0] 
         wl = in_g.nodes[o_n]['chan_len']
         of.write(f"{chan_comp} {o_n} {e_fl} 0 {e_ch} {o_n}_out_chem length={wl}\n")
 
@@ -576,15 +596,38 @@ def write_components_from_graph(in_g, of):
                 fl_wr[ind] = list(l_i)[0]
         for ind, l_i in enumerate(ch_wr):
             if isinstance(l_i, set):
-                ch_wr[ind] = list(l_i)[0]
+                ch_wr[ind] = list(l_i)[0]      
+                #wire_reg = w + r"_\d_\d"
         #print(fl_wr)
         #print(ch_wr)
         fl_wr = ' '.join(fl_wr)
-        ch_wr = ' '.join(ch_wr)
+        ch_wr = ' '.join(ch_wr) + ' '
+
+        # directly replace the string
+        if "chem_probe" in in_g.nodes[oth_n]:
+            for w in in_g.nodes[oth_n]["chem_probe"]:
+                #print(w, oth_n)
+                ch_wire_reg = ' '+w[0] + "_" + oth_n + "_chem"+' '
+                re_ch_wire_reg = ' '+w[0] + "_" + oth_n + "_chem_pr "
+                probe_2_write.append([
+                    'vch_'+w[0]+'_'+oth_n,
+                    ch_wire_reg,
+                    re_ch_wire_reg,
+                    'V0'
+                ])
+                #new_probes.append("V("+re_ch_wire_reg.strip()+')')
+                ch_wr = ch_wr.replace(ch_wire_reg,re_ch_wire_reg)
+                print(ch_wr)
         
         of.write(f"{in_g.nodes[oth_n]['node_type']} {oth_n} {fl_wr} {ch_wr}\n")
 
     of.write('\n\n')
+    for pr in probe_2_write:
+        of.write(' '.join(pr)+'\n')
+
+    of.write('\n\n')
+
+    return new_probes
 
 
             
@@ -692,7 +735,7 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
 
         in_netlist = generate_spice_nets(in_netlist, length_list)
 
-        write_components_from_graph(in_netlist, c_of)
+        new_probes = write_components_from_graph(in_netlist, c_of)
 
         # for node in in_netlist.nodes:
         #     chem_nodes = ''
@@ -1017,10 +1060,10 @@ def write_spice_file(in_netlist, probes_list, source_lines, sims_time_lines=None
 
             for st in sim_type:
                 if st == "transient":
-                    nl = '.print tran '+' '.join(probes_list)
+                    nl = '.print tran '+' '.join(probes_list)+' '.join(new_probes)
                     c_of.write(nl+'\n')
                 elif st == "static":
-                    nl = '.print dc '+' '.join(probes_list)
+                    nl = '.print dc '+' '.join(probes_list)+' '.join(new_probes)
                     c_of.write(nl+'\n')
                 else:
                     raise ValueError("sim_type must be transient or static")

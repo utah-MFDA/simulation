@@ -352,7 +352,7 @@ def test_write_spice_grad3_chem():
     sim_lines = generate_time_lines(Xcl)
 
     probes = {}
-    probes["concentration"] = [{"node": "connect1"}] #, {"node": "connect2"}]
+    probes["concentrationNode"] = [{"node": "out", "device": "serp6"}] #, {"node": "connect2"}]
     out_probes, netlist_graph_out = add_probes_to_device(
         probes, in_netlist
     )
@@ -372,7 +372,7 @@ def test_write_spice_grad3_chem():
         wl_graph=wl_graph_f,
         sims_time_lines=sim_lines,
         sim_type="transient",
-        out_file=".test_out/out_spice_grad3_write_chem.cir",
+        out_file=".test_out/out_spice_grad3_write_chemN.cir",
     )
 
 def test_write_spice_str_0():
