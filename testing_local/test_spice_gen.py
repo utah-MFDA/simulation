@@ -137,8 +137,8 @@ def test_merge_with_wirelength_graph():
     )
     from SimulationXyce import SimulationXyce
 
-    #draw = False
-    draw = True
+    draw = False
+    #draw = True
 
     sys.path.insert(
         0, os.path.dirname(os.path.realpath(__file__)) + "/../verilog_2_NX/"
@@ -205,7 +205,8 @@ def test_with_grad_3():
         generate_time_lines,
         generate_spice_nets,
         merge_wl_net,
-        get_length_list
+        get_length_list,
+        write_components_from_graph
     )
     from SimulationXyce import SimulationXyce
 
@@ -222,6 +223,8 @@ def test_with_grad_3():
     length_file = "testing_local/grad_test/test_3_length.csv"
     wl_graph_f = "testing_local/grad_test/test_3_route_nets.json"
 
+    out_file = ".test_out/out_spice_grad3.cir.str"
+
     from Verilog2NX import get_modules, visual_graph
 
     netlist_dict, netlist_graph = get_modules(in_v=verilog_file, visual=False)
@@ -230,11 +233,147 @@ def test_with_grad_3():
 
     #wl_f = get_length_list(length_file)
 
-    generate_spice_nets(
+    in_netlist = generate_spice_nets(
         in_netlist, length_list=length_file
     )
+    # fmt:off
+    print("Netlist nodes:")
+    for n in in_netlist.nodes:
+        print(n)
+        print(in_netlist.nodes[n])
+    print("Netlist edges:")
+    for e in in_netlist.edges:
+        print(e)
+        print(in_netlist.get_edge_data(e[0], e[1]))
+    # fmt:on
+
+    write_components_from_graph(in_netlist, out_file)
 
 
+def test_write_spice_grad3():
+    import sys, os
+    import json
+    from networkx.readwrite import json_graph
+    import networkx as nx
+    import matplotlib.pyplot as plt
+    from writeSpice import (
+        add_probes_to_device,
+        generate_source_list,
+        write_spice_file,
+        convert_nodes_2_numbers_xyce,
+        generate_time_lines,
+        generate_spice_nets,
+        merge_wl_net,
+        get_length_list,
+        write_components_from_graph
+    )
+    from SimulationXyce import SimulationXyce
+
+
+    os.environ['XYCE_WL_GRAPH'] = ''
+    #draw = True
+
+    sys.path.insert(
+        0, os.path.dirname(os.path.realpath(__file__)) + "/../verilog_2_NX/"
+    )
+
+    verilog_file = "testing_local/grad_test/grad_gen_3.v"
+    config_file = "testing_local/grad_test/simulation.config"
+    length_file = "testing_local/grad_test/test_3_length.csv"
+    wl_graph_f = "testing_local/grad_test/test_3_route_nets.json"
+
+    out_file = ".test_out/out_spice_grad3.cir.str"
+
+    from Verilog2NX import get_modules, visual_graph
+
+    netlist_dict, netlist_graph = get_modules(in_v=verilog_file, visual=False)
+
+    in_netlist = netlist_graph["grad_gen_3"]["netlist"]
+
+    Xcl = SimulationXyce()
+    Xcl.parse_config_file(config_file)
+    dev_lines, chem_args = generate_source_list(Xcl, has_chem=True)
+    sim_lines = generate_time_lines(Xcl)
+
+    write_spice_file(
+        in_netlist,
+        probes_list={},
+        source_lines=dev_lines,
+        length_list=length_file,
+        wl_graph=wl_graph_f,
+        sims_time_lines=sim_lines,
+        sim_type="transient",
+        out_file=".test_out/out_spice_grad3_write.cir",
+    )
+
+def test_write_spice_grad3_chem():
+    import sys, os
+    import json
+    from networkx.readwrite import json_graph
+    import networkx as nx
+    import matplotlib.pyplot as plt
+    from writeSpice import (
+        add_probes_to_device,
+        generate_source_list,
+        write_spice_file,
+        convert_nodes_2_numbers_xyce,
+        generate_time_lines,
+        generate_spice_nets,
+        merge_wl_net,
+        get_length_list,
+        write_components_from_graph
+    )
+    from SimulationXyce import SimulationXyce
+
+
+    os.environ['XYCE_WL_GRAPH'] = ''
+    #draw = True
+
+    sys.path.insert(
+        0, os.path.dirname(os.path.realpath(__file__)) + "/../verilog_2_NX/"
+    )
+
+    verilog_file = "testing_local/grad_test/grad_gen_3.v"
+    config_file = "testing_local/grad_test/simulation_chem.config"
+    length_file = "testing_local/grad_test/test_3_length.csv"
+    wl_graph_f = "testing_local/grad_test/test_3_route_nets.json"
+
+    out_file = ".test_out/out_spice_grad3.cir.str"
+
+    from Verilog2NX import get_modules, visual_graph
+
+    netlist_dict, netlist_graph = get_modules(in_v=verilog_file, visual=False)
+
+    in_netlist = netlist_graph["grad_gen_3"]["netlist"]
+
+    Xcl = SimulationXyce()
+    Xcl.parse_config_file(config_file)
+    dev_lines, chem_args = generate_source_list(Xcl, has_chem=True)
+    sim_lines = generate_time_lines(Xcl)
+
+    probes = {}
+    probes["concentration"] = [{"node": "connect1"}] #, {"node": "connect2"}]
+    out_probes, netlist_graph_out = add_probes_to_device(
+        probes, in_netlist
+    )
+
+    draw = False
+    #draw = True
+
+    if draw:
+        nx.draw_spring(in_netlist, with_labels=True)
+        plt.show()
+
+    write_spice_file(
+        in_netlist,
+        probes_list=out_probes,
+        source_lines=dev_lines,
+        length_list=length_file,
+        wl_graph=wl_graph_f,
+        sims_time_lines=sim_lines,
+        sim_type="transient",
+        out_file=".test_out/out_spice_grad3_write_chem.cir",
+    )
 
 def test_write_spice_str_0():
     import sys, os
@@ -293,6 +432,8 @@ def test_write_spice_str_0():
 
 def test_write_spice_str_1():
     import sys, os
+    import networkx as nx
+    import matplotlib.pyplot as plt
     from writeSpice import (
         add_probes_to_device,
         generate_source_list,
@@ -319,9 +460,10 @@ def test_write_spice_str_1():
     probes["concentration"] = [{"node": "connect1"}]
 
     netlist_dict, netlist_graph = get_modules(in_v=verilog_file, visual=False)
+    in_netlist = netlist_graph["smart_toilet"]["netlist"]
 
     out_probes, netlist_graph_out = add_probes_to_device(
-        probes, netlist_graph["smart_toilet"]["netlist"]
+        probes, in_netlist
     )
 
     Xcl = SimulationXyce()
@@ -331,8 +473,15 @@ def test_write_spice_str_1():
 
     sim_lines = generate_time_lines(Xcl)
 
+    draw = False
+    draw = True
+
+    if draw:
+        nx.draw_spring(in_netlist, with_labels=True)
+        plt.show()
+
     write_spice_file(
-        netlist_graph["smart_toilet"]["netlist"],
+        in_netlist,
         probes_list=out_probes,
         source_lines=dev_lines,
         length_list=length_file,
