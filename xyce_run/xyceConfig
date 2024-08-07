@@ -1,0 +1,7 @@
+
+{
+"xyce_command":
+"Xyce",
+"library_files":
+["./platforms/h.r.3.3/pdk/Components/verilogA_build/lib/MFXyce.so"]
+}

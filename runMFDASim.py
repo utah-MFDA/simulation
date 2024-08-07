@@ -190,6 +190,7 @@ def runSimulation(
 
         # default result directory
         result_wd = workDir+"/"+os.path.basename(arcName).replace('.tar','')
+        # result_wd = workDir+"/results"
         result_wd = workDir+"/results"
 
         simRunComm     += " --workdir "+dockerWD+'/'+os.path.basename(arcName).replace('.tar','')
