@@ -1,0 +1,143 @@
+
+// JSONC definition
+
+// Analysis to perform
+// reserved words analysis analysis_type params
+{
+"analysis":
+  {
+  "analysis_1":
+    {
+    "analysis_type": "transient",
+    "params": "0.1ms 1ms"
+    }
+  },
+
+
+// input devices
+// reserved words: direction, device, params, pressure, flow
+//   solution
+"inputs":
+  {
+  // input soln1 pressurePump pressure=69k
+  "soln1":
+    {
+    "direction": "input",
+    "device": "pressurePump",
+    "params":
+      {
+      "pressure": "69k"
+      }
+    },
+
+  // input soln2 pressurePump pressure=69k
+  "soln2":
+    {
+    "direction": "input",
+    "device": "pressurePump",
+    "params":
+      {
+      "pressure": "69k"
+      }
+    },
+
+  // input soln3 pressurePump pressure=69k
+  "soln3":
+    {
+    "direction": "input",
+    "device": "pressurePump",
+    "params":
+      {
+      "pressure": "69k"
+      }
+    }
+  },
+
+
+// chemical definitions
+// reserved words: input, concentration, solutions
+"solutions":
+  {
+  // chem H2O soln1 10m
+  "H20":
+    {
+    "input": "soln1",
+    "concentration": "10m"
+    },
+  // chem Tag soln2 10m
+  "Tag":
+    {
+    "input": "soln2",
+    "concentration": "10m"
+    },
+  // chem Sample soln3 10m
+  "Sample":
+    {
+    "input": "soln3",
+    "concentration": "10m"
+    }
+  },
+
+// pressure probesprobe pressure connect2
+// reserved words: probes, pressure, flow, concentration
+"probes":
+  {
+  //probe pressure connect6
+  "pressure":
+    ["connect6"]
+  },
+  // - node or node-dev
+  // flow probes
+  //flow:
+  // - node-dev
+  // concentration probe
+  //concentration:
+  // - node or node-dev
+
+
+// eval probes
+// reserved words: eval, type, chemical, concentration,
+//   node, pressure, flow, unit, volume, avg_velocity,
+//   
+"eval":
+  {
+  //eval H2O 0 out 9.8m
+  "out":
+    {
+    "type": "concetration",
+    "chemical": "H20",
+    "concentration": "9.8m",
+    "time": "0"
+    },
+  // Alternative definitions
+  "concentration":
+    {
+    "eval_1":
+      {
+      "chemical": "H20",
+      "node": "out",
+      "concentration": "9.8m",
+      "time": "0",
+      }
+    },
+  "pressure":
+    {
+    "eval_2":
+      {
+      "node": "out",
+      "pressure": "0",
+      "time": "0",
+      }
+    },
+  "flow":
+    {
+    "eval_3":
+      {
+      "node": "out",
+      "flow": "80u",
+      "unit": "volume",
+      "time": "0"
+      }
+    }
+  }
+}
