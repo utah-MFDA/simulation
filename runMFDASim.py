@@ -4,7 +4,7 @@ import os
 import shutil
 import subprocess
 
-import docker
+# import docker
 import tarfile
 import json
 import re
@@ -91,10 +91,10 @@ def runSimulation(
         ):
 
 
-    if verilogFile[-2:] == '.v':
-        design_name = verilogFile[:-2]
-    else:
-        raise ValueError("Netlist is not a valid file, must be .v, \ninput file: "+str(verilogFile))
+    # if verilogFile[-2:] == '.v':
+    #     design_name = verilogFile[:-2]
+    # else:
+    #     raise ValueError("Netlist is not a valid file, must be .v, \ninput file: "+str(verilogFile))
 
     # hard coded simulation directory in docker image
 
@@ -151,19 +151,19 @@ def runSimulation(
         overwrite=False
         """
         arcName = convertToCir_from_config(
-            design      =design,
-            verilogFile =verilogFile,
-            sim_config  =sim_config,
-            wd          =workDir,
-            libFile     =libraryFile,
-            configFile  =cirConfigFile,
-            length_file =length_file,
-            preRouteSim =preRouteSim,
-            noarchive   =_noarchive,
-            gen_output_dir=verilog_2_xyce_extras_loc,
-            basename_only=convert_basename,
-            pcell_file  =pcell_file,
-            )
+                design      =design,
+                verilogFile =verilogFile,
+                sim_config  =sim_config,
+                wd          =workDir,
+                libFile     =libraryFile,
+                configFile  =cirConfigFile,
+                length_file =length_file,
+                preRouteSim =preRouteSim,
+                noarchive   =_noarchive,
+                gen_output_dir=verilog_2_xyce_extras_loc,
+                basename_only=convert_basename,
+                pcell_file  =pcell_file,
+                )
 
 
 
@@ -174,7 +174,7 @@ def runSimulation(
             _xyce_run_config = None
 
         local_xyce_run(
-            design_name=design_name,
+            design_name=design,
             verilogFile=verilogFile,
             sim_config=sim_config,
             workDir=workDir,
@@ -185,9 +185,8 @@ def runSimulation(
             _eval_file=_eval_file
             )
     else:
-
         docker_xyce_run(
-            design_name=design_name,
+            design_name=design,
             verilogFile=verilogFile,
             sim_config=sim_config,
             workDir=workDir,
@@ -468,6 +467,7 @@ def generate_report(
     elif isinstance(df, pd.DataFrame):
         # results_prn_wd
         csv_out = f"{prn_dir}/{design_name}_xyceOut.csv"
+        print(prn_dir)
         print(f"Writing results to {csv_out}")
         df.to_csv(csv_out)
     else:
@@ -515,7 +515,7 @@ def convertToCir_from_config(
     #from writeSpice import generate_cir_main
     import writeSpice
 
-    if gen_output_dir==None:
+    if gen_output_dir == None:
         of = f"{wd}/{design}"
     else:
         os.makedirs(f"{wd}/{gen_output_dir}", exist_ok=True)
@@ -530,7 +530,7 @@ def convertToCir_from_config(
         length_file=length_file,
         out_file=of,
         basename_only=basename_only,
-        pcell_file=None,
+        pcell_file=pcell_file,
     )
     # locate nessary files
     #files = getSimFiles(verilogFile, wd)

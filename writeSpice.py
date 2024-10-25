@@ -321,11 +321,11 @@ def merge_wl_net(in_g, wl_g, node, wl_file=None,
     debug_node = False, debug_edge = False, debug_draw=False):
 
     mapping = {}
-    print("Node:", node)
-    print(wl_g.nodes)
-    print(wl_g.edges)
+    # print("Node:", node)
+    # print(wl_g.nodes)
+    # print(wl_g.edges)
     # print(wl_file)
-    print([n for n in wl_g.nodes if n in in_g.nodes and n != node])
+    # print([n for n in wl_g.nodes if n in in_g.nodes and n != node])
     for common_node in [n for n in wl_g.nodes if n in in_g.nodes]:
         for prop in in_g.nodes[common_node].items():
             wl_g.nodes[common_node][prop[0]] = in_g.nodes[common_node][prop[0]]
@@ -367,7 +367,7 @@ def merge_wl_net(in_g, wl_g, node, wl_file=None,
             # Checks name if break point
             if re.match(r'[\w_]+_br_\d_\d', str(conn_node)) is not None:
                 for conn_node2 in list(wl_g[conn_node]):
-                    print(conn_node2)
+                    # print(conn_node2)
                     wl_g.nodes[conn_node2]['node_type'] = wl_g.nodes[node]['node_type']
                     wl_g.nodes[conn_node2]['input_node'] = node
                 wl_g.nodes[node]['virt_node'] = ''
@@ -496,10 +496,6 @@ def generate_spice_nets(in_netlist,
             elif isinstance(len_df, dict):
                 wl = len_df[node] #["length (mm)"]
 
-            if node == 'soln2':
-                print(wl)
-                #raise Exception()
-
             if isinstance(wl, float):
                 in_netlist.nodes[node]['chan_len'] = wl
                 node_edges = list(in_netlist.edges(node))
@@ -549,7 +545,10 @@ def generate_spice_nets(in_netlist,
                 else:
                     raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
             elif isinstance(wl, dict):
-                in_netlist = merge_wl_net(in_netlist, wl_graph[node], node, wl_file=len_df)
+                try:
+                    in_netlist = merge_wl_net(in_netlist, wl_graph[node], node, wl_file=len_df)
+                except TypeError:
+                    raise ValueError("Missing XYCE_WL_GRAPH in environment, usually (design)_route_nets.json in results dir")
             else:
                 pass
 
@@ -617,10 +616,34 @@ def generate_spice_nets(in_netlist,
     return in_netlist
 
 
-def write_components_from_graph(in_g, of):
+def read_pcell_file(pc_file):
+
+    if '.' not in os.path.basename(pc_file):
+        reader = csv.DictReader(open(pc_file, 'r'))
+        pcomp_dict = {}
+        for row in reader:
+            pcomp_dict[row['lef']] = {'base cell': row['cell_name'], 'parameters':row['parameters']}
+        print(pcomp_dict)
+        return pcomp_dict
+    elif pc_file[-4] == '.csv':
+        reader = csv.DictReader(open(pc_file, 'r'))
+        pcomp_dict = {}
+        for row in reader:
+            pcomp_dict[row['lef']] = {'base cell': row['cell_name'], 'parameters':row['parameters']}
+        print(pcomp_dict)
+        return reader
+    else:
+        print("Pcell file type not supported yet,", pc_file)
+
+def write_components_from_graph(in_g, of, pcell_file=None):
 
     if isinstance(of, str):
         of = open(of, 'w+')
+
+    if pcell_file is not None:
+        pcells = read_pcell_file(pcell_file)
+    else:
+        pcells = {}
 
     in_nodes = []
     out_nodes = []
@@ -709,6 +732,7 @@ def write_components_from_graph(in_g, of):
     of.write('\n\n')
 
     for oth_n in oth_nodes:
+        n_type = in_g.nodes[oth_n]['node_type']
         try:
             es = list(in_g.edges(oth_n))
             fl_wr = list([in_g.get_edge_data(e[0],e[1])['fl_net'] for e in es])
@@ -772,7 +796,11 @@ def write_components_from_graph(in_g, of):
                 print(ch_wr)
             ch_wr = ' '.join(ch_wr)
 
-        of.write(f"Y{in_g.nodes[oth_n]['node_type']} {oth_n} {fl_wr} {ch_wr}\n")
+        if pcell_file is not None and \
+                n_type in pcells:
+            of.write(f"Y{pcells[n_type]['base cell']} {oth_n} {fl_wr} {ch_wr} {pcells[n_type]['parameters']}\n")
+        else:
+            of.write(f"Y{in_g.nodes[oth_n]['node_type']} {oth_n} {fl_wr} {ch_wr}\n")
 
 
     for pr_n in probe_nodes:
@@ -897,7 +925,7 @@ def write_spice_file(
         in_netlist_temp = copy.deepcopy(in_netlist)
         in_netlist_ch = generate_spice_nets(in_netlist_temp, length_list)
 
-        new_probes = write_components_from_graph(in_netlist_ch, c_of)
+        new_probes = write_components_from_graph(in_netlist_ch, c_of, pcell_file)
 
         # add transient lines
         c_of.write('\n\n')

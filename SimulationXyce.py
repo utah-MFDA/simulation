@@ -122,8 +122,8 @@ class SimulationXyce:
         self.probes['concentrationNode'] = []
 
     def load_analysis_file(self, file, ftype=None):
-        if '.' in file.split['/'][-1]:
-            extn = file.split['.'][-1]
+        if '.' in file.split('/')[-1]:
+            extn = file.split('.')[-1]
         else:
             extn = None
 
@@ -153,7 +153,7 @@ class SimulationXyce:
             # remove comments
             if '#' in line:
                 line = line.split('#')[0]
-            line = re.sub(r'(\w+)\s*\=\s*([\w\.]+)', '\1=\2', line)
+            line = re.sub(r'(\w+)[ ]*\=[ ]*([\w\.]+)', r'\1=\2', line)
             line = ' '.join(line.lstrip().split())  # removes leading and extra WS
 
             if len(line) == 0:
