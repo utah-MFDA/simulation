@@ -7,6 +7,7 @@ import subprocess
 import docker
 import tarfile
 import json
+import re
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -523,7 +524,8 @@ def convertToCir_from_config(
     # call from write spice
     writeSpice.generate_cir_main(
         design=design,
-        verilog_file=f'{wd}/{verilogFile}',
+        #verilog_file=f'{wd}/{verilogFile}',
+        verilog_file=verilogFile,
         config_file=sim_config,
         length_file=length_file,
         out_file=of,
@@ -750,7 +752,7 @@ def change_results_node_ref(df, node_file, chem):
                     # hopefully the regex works above
                     #node_name = '_'.join(node_name.split('_')[:-1])
                     #new_node = 'C_'+str(chem)+'('+node_name+')'
-                    node_name = '_'.join(node_name)
+                    node_name = '_'.join(node_name)  # MADE NEED TO COMMENT
                     # to be supported later
                     #new_node = f'C_{str(chem)}({node_dev}-{node_name})'
                     new_node = f'C_{str(chem)}({node_name})'
@@ -831,6 +833,7 @@ def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, s
         raise ValueError(f"{sim_obj} is not a SimulationXyce object")
 
     ev_chem_list = sim_obj.getEvaluation()
+    print("EVALS", ev_chem_list)
     eval_df_coln = ['Chemical', 'Time', 'Node', 'Error', 'Expected Conc', 'Eval Conc']
     eval_df = pd.DataFrame(columns=eval_df_coln)
 

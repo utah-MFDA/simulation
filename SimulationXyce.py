@@ -1,5 +1,6 @@
 import yaml
 import json5
+import re
 
 
 class SimulationXyce:
@@ -152,6 +153,7 @@ class SimulationXyce:
             # remove comments
             if '#' in line:
                 line = line.split('#')[0]
+            line = re.sub(r'(\w+)\s*\=\s*([\w\.]+)', '\1=\2', line)
             line = ' '.join(line.lstrip().split())  # removes leading and extra WS
 
             if len(line) == 0:
@@ -201,10 +203,10 @@ class SimulationXyce:
 
             elif key == 'probe':
                 probe_type = params[1]
-                if probe_type in ['flow', 'pressureNode', 'concentrationNode']:
+                if len(params) == 4 and (probe_type in ['flow', 'pressureNode', 'concentrationNode', 'pressure']):
                     node = params[3]
                     device = params[2]
-                elif probe_type in ['pressure']:
+                elif len(params) == 3 and probe_type in ['pressure']:
                     node = params[2]
                     device = None
                 else:

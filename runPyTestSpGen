@@ -1,3 +1,0 @@
- 
-PYTHONPATH=. python3 -m pytest -rP testing_local/test_spice_gen.py > test_output_sp-gen
-mv out_spice* .out_spice
