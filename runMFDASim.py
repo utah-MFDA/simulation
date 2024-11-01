@@ -134,7 +134,7 @@ def runSimulation(
     if ('eval_result' in extra_args) and (extra_args['eval_result'].lower() in ['true', '1']):
         _eval_file = True
     else:
-        _eval_file = False
+        _eval_file = True
 
     #####
 
@@ -704,8 +704,9 @@ def load_xyce_results_file(rFile):
 
 def change_results_node_ref(df, node_file, chem):
 
-    node_mod = r'([VIvi])\(\s*(\d+)\s*\)'
-    node_parse = r'(?:(\w+)_(\w+)_chem|(\w+)_(\w+))'
+    node_mod = r'([VIvi])\(\s*(\d+|\w+)\s*\)'
+    node_parse = r'(?:(\w+)_(\w+)_comp_chem|(\w+)_(\w+))'
+    node_flow_parse = r'VFL_(\w+)_(\w+)'
 
     df_nodes = list(df)
     node_dict = json.load(open(node_file))
@@ -716,23 +717,33 @@ def change_results_node_ref(df, node_file, chem):
             continue
         else:
             node_match = re.match(node_mod, node)
+            if node_match is None:
+                raise ValueError(f"Unable to parse '{node}'.")
             node_num = node_match[2]
             node_type = node_match[1]
-            # node_num = node.replace('V(', '').replace(')', '')
-            print("Node #:", node_num, "Node T:", node_type)
-            node_key = list(node_dict.keys())[list(node_dict.values()).index(int(node_num))]
-            is_chem_node = False
-
-            parsed_node = re.match(node_parse, node_key)
-            if parsed_node[1] is not None:
+            if node_type == 'I':
+                print('Flow node ', node_num)
+                parsed_node = re.match(node_flow_parse, node_num)
                 node_name = parsed_node[1]
                 node_dev  = parsed_node[2]
-                is_chem_node = True
-            elif parsed_node[3] is not None:
-                node_name = parsed_node[3]
-                node_dev  = parsed_node[4]
-            else:
-                raise ValueError(f'Node {node_key} is not correctly formated')
+                node_key = node_name+'_'+node_dev
+
+            elif node_type == 'V':
+                # node_num = node.replace('V(', '').replace(')', '')
+                print("Node #:", node_num, "Node T:", node_type)
+                node_key = list(node_dict.keys())[list(node_dict.values()).index(int(node_num))]
+                is_chem_node = False
+
+                parsed_node = re.match(node_parse, node_key)
+                if parsed_node[1] is not None:
+                    node_name = parsed_node[1]
+                    node_dev  = parsed_node[2]
+                    is_chem_node = True
+                elif parsed_node[3] is not None:
+                    node_name = parsed_node[3]
+                    node_dev  = parsed_node[4]
+                else:
+                    raise ValueError(f'Node {node_key} is not correctly formated')
 
 
             #node_name = '_'.join(node_key.split('_')[:-1])
@@ -752,7 +763,7 @@ def change_results_node_ref(df, node_file, chem):
                     # hopefully the regex works above
                     #node_name = '_'.join(node_name.split('_')[:-1])
                     #new_node = 'C_'+str(chem)+'('+node_name+')'
-                    node_name = '_'.join(node_name)  # MADE NEED TO COMMENT
+                    # node_name = '_'.join(node_name)  # MADE NEED TO COMMENT
                     # to be supported later
                     #new_node = f'C_{str(chem)}({node_dev}-{node_name})'
                     new_node = f'C_{str(chem)}({node_name})'
