@@ -14,6 +14,8 @@ debugLinSim*
 components.cpython-38.pyc
 debugLinearSim.svg
 debugLinearSimCh
+env
+__pycache__
 
 simConfig
 

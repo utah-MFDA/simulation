@@ -1264,7 +1264,7 @@ def generate_cir_main(
         design, verilog_file, config_file, length_file, out_file,
         basename_only=False, pcell_file=None, wl_graph_file=None):
 
-    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/verilog_2_NX/')
+    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/v_2_NX/')
     from Verilog2NX import get_modules, visual_graph
 
     net_dict, net_graph = get_modules(in_v=verilog_file, visual=False)
