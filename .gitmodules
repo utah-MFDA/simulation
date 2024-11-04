@@ -1,4 +1,0 @@
-
-[submodule "xyce_docker_server"]
-	path = xyce_run
-	url = https://github.com/bgoenner/xyce_docker_server
