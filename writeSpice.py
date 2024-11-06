@@ -261,11 +261,11 @@ def add_probes_to_device(probes, netlist_graph):
                 pr_node  = p[node]
 
             # check for existing probes
-            if f'V({pr_node}_{dev_node}_comp_chem)' not in [p_pr['print'] for p_pr in probe_list]:
+            if f'V({pr_node}_{dev_node}_chem)' not in [p_pr['print'] for p_pr in probe_list]:
                 dev_node = list(netlist_graph[pr_node].keys())[0]
                 probe_list.append({
                     "probe":"chem_probe",
-                    "print":f'V({pr_node}_{dev_node}_comp_chem)'
+                    "print":f'V({pr_node}_{dev_node}_chem)'
                 })
 
     if 'concentrationNode' in probes:

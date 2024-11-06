@@ -702,17 +702,20 @@ def load_xyce_results_file(rFile):
     return r_df
 
 
+# This also removes 
 def change_results_node_ref(df, node_file, chem):
 
     node_mod = r'([VIvi])\(\s*(\d+|\w+)\s*\)'
-    node_parse = r'(?:(\w+)_(\w+)_comp_chem|(\w+)_(\w+))'
+    node_parse = r'(?:(\w+)_(\w+)_comp_chem|(\w+)_(\w+)_chem|(\w+)_(\w+))'
     node_flow_parse = r'VFL_(\w+)_(\w+)'
 
     df_nodes = list(df)
     node_dict = json.load(open(node_file))
 
+    print(df_nodes)
     for node in df_nodes:
         print("---"+node+"---")
+        node_name = ""
         if node == 'TIME':
             continue
         else:
@@ -724,8 +727,11 @@ def change_results_node_ref(df, node_file, chem):
             if node_type == 'I':
                 print('Flow node ', node_num)
                 parsed_node = re.match(node_flow_parse, node_num)
-                node_name = parsed_node[1]
-                node_dev  = parsed_node[2]
+                if parsed_node is not None:
+                    node_name = parsed_node[1]
+                    node_dev  = parsed_node[2]
+                else:
+                    raise Exception(f"Unable to parse {node_num}")
                 node_key = node_name+'_'+node_dev
 
             elif node_type == 'V':
@@ -735,15 +741,23 @@ def change_results_node_ref(df, node_file, chem):
                 is_chem_node = False
 
                 parsed_node = re.match(node_parse, node_key)
-                if parsed_node[1] is not None:
-                    node_name = parsed_node[1]
-                    node_dev  = parsed_node[2]
-                    is_chem_node = True
-                elif parsed_node[3] is not None:
-                    node_name = parsed_node[3]
-                    node_dev  = parsed_node[4]
+                print(parsed_node.groups())
+                if parsed_node is not None:
+                    if parsed_node[1] is not None:
+                        node_name = parsed_node[1]
+                        node_dev  = parsed_node[2]
+                        is_chem_node = True
+                    elif parsed_node[3] is not None:
+                        node_name = parsed_node[3]
+                        node_dev  = parsed_node[4]
+                        is_chem_node = True
+                    elif parsed_node[5] is not None:
+                        node_name = parsed_node[5]
+                        node_dev  = parsed_node[6]
+                    else:
+                        raise ValueError(f'Node {node_key} is not correctly formated')
                 else:
-                    raise ValueError(f'Node {node_key} is not correctly formated')
+                    raise Exception(f"Unable to parse {node_num}")
 
 
             #node_name = '_'.join(node_key.split('_')[:-1])
