@@ -62,11 +62,6 @@ def add_probes_to_device(probes, netlist_graph):
         else:
             raise ValueError("Passed probe is not of type dict or Probe")
 
-    def check_probe_node_pair(dev_node, probe_node):
-        if (dev_node, probe_node) not in netlist_graph.edges:
-            raise KeyError(f"Device probe pair not in netlist, adj dev nodes {dev_node}:{netlist_graph[dev_node]} " + \
-                           f"adj probe nodes {probe_node}: {netlist_graph}"
-
         netlist_graph.remove_edge(pr_node, dev_node)
         flow_probe = f"vfl_{pr_node}_{p[dev]}"
         new_probe_nodes = [
@@ -110,6 +105,13 @@ def add_probes_to_device(probes, netlist_graph):
             if nn in g.nodes[dev_n] and \
                     g.nodes[dev_n][nn] == curr_n:
                 g.nodes[dev_n][nn] = new_n
+
+
+    def check_probe_node_pair(dev_node, probe_node):
+        if (dev_node, probe_node) not in netlist_graph.edges:
+            raise KeyError(f"Device probe pair not in netlist, adj dev nodes {dev_node}:{netlist_graph[dev_node]} " + \
+                           f"adj probe nodes {probe_node}: {netlist_graph}")
+
     # start function ---------------------------------------
 
     if 'pressure' in probes:
@@ -674,9 +676,9 @@ def write_components_from_graph(in_g, of, probe_list=[], pcell_file=None):
         if 'input_node' in in_g.nodes[i_n]:
             inst_n = i_n  # instance captured so it is unique
             i_n = in_g.nodes[i_n]['input_node']  # syncs up with pump nodes
-            of.write(f"{chan_comp} {inst_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}\n")
+            of.write(f"{chan_comp} {inst_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}m\n")
         else:
-            of.write(f"{chan_comp} {i_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}\n")
+            of.write(f"{chan_comp} {i_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}m\n")
 
     of.write('\n\n')
 
@@ -704,7 +706,7 @@ def write_components_from_graph(in_g, of, probe_list=[], pcell_file=None):
         if isinstance(e_ch2, dict):
             e_ch2 = e_ch2["channel_net"]
         wl = in_g.nodes[w_n]['chan_len']
-        of.write(f"{chan_comp} {w_n} {e_fl1} {e_fl2} {e_ch1} {e_ch2} length={wl}\n")
+        of.write(f"{chan_comp} {w_n} {e_fl1} {e_fl2} {e_ch1} {e_ch2} length={wl}m\n")
 
     of.write('\n\n')
 
@@ -725,7 +727,7 @@ def write_components_from_graph(in_g, of, probe_list=[], pcell_file=None):
         if isinstance(e_ch, dict):
             e_ch = e_ch["channel_net"]
         wl = in_g.nodes[o_n]['chan_len']
-        of.write(f"{chan_comp} {o_n} {e_fl} 0 {e_ch} {o_n}_out_chem length={wl}\n")
+        of.write(f"{chan_comp} {o_n} {e_fl} 0 {e_ch} {o_n}_out_chem length={wl}m\n")
 
     of.write('\n\n')
 
