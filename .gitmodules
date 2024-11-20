@@ -6,6 +6,3 @@
 [submodule "xyce_docker_server"]
 	path = xyce_run
 	url = https://github.com/utah-MFDA/xyce_docker_server
-[submodule "verilog_2_NX"]
-	path = verilog_2_NX
-	url = https://github.com/utah-MFDA/verilog_2_NX
