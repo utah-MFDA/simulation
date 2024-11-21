@@ -4,7 +4,6 @@ import os
 import shutil
 import subprocess
 
-# import docker
 import tarfile
 import json
 import re
@@ -119,6 +118,9 @@ def runSimulation(
         _local_xyce = False
         _noarchive = False
         convert_basename = True
+        import docker
+    else:
+        raise InputError("--local_xyce much be false or true (0 or 1)")
 
 
     # This need to be changed to implicitly be called
@@ -191,6 +193,7 @@ def runSimulation(
             )
 
 
+#<<<<<<< HEAD
 def local_xyce_run(
         design_name,
         verilogFile,
@@ -207,6 +210,23 @@ def local_xyce_run(
         _eval_file=False,
         _main_plt_results=False
         ):
+# =======
+#     
+#     if _local_xyce:
+#         #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
+#         if verilog_2_xyce_relative:
+#             result_wd = workDir
+#             #result_wd = f"{workDir}/{verilog_2_xyce_extras_loc}"
+#         else:
+#             result_wd = verilog_2_xyce_extras_loc
+#
+#         runLocalXyce(xyce_files = xyceFiles, workDir=result_wd, config_file=_xyce_run_config)
+#
+#         #results_prn_wd = result_wd+'/results'
+#         results_prn_wd = result_wd#+'/results'
+#         load_wd   = ''
+#         nodes_dir = result_wd
+# >>>>>>> main
 
     #simRunComm     = "python3 "+docker_PyWD+"/xyceRun.py --list "+xyceFiles
     if verilog_2_xyce_relative:
@@ -353,10 +373,15 @@ def generate_report(
     if isinstance(df, list):
         csv_out = f"{prn_dir}/{design_name}_xyceOut.csv"
     elif isinstance(df, pd.DataFrame):
+#<<<<<<< HEAD
         # results_prn_wd
         csv_out = f"{prn_dir}/{design_name}_xyceOut.csv"
         print(prn_dir)
         print(f"Writing results to {csv_out}")
+# =======
+#         csv_out = results_prn_wd+"/xyceOut.csv"
+#         print("Writing results to "+csv_out)
+# >>>>>>> main
         df.to_csv(csv_out)
     else:
         raise ValueError("devel error: results DF not of type list or pandas DataFrame")
@@ -412,7 +437,6 @@ def convertToCir_from_config(
     # call from write spice
     writeSpice.generate_cir_main(
         design=design,
-        #verilog_file=f'{wd}/{verilogFile}',
         verilog_file=verilogFile,
         config_file=sim_config,
         length_file=length_file,
@@ -514,6 +538,27 @@ def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
         print(data.decode())
 
 
+local_file_path = os.path.dirname(os.path.realpath(__file__))
+
+def runLocalXyce(xyce_files, workDir, xyce_run_location=f'{local_file_path}/xyce_run', 
+                 config_file=None):
+
+    simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
+        "--list "+f'{workDir}/{xyce_files}'+" "\
+        "--workdir "+workDir+" "
+        #"--no_result_dir"
+    if config_file is not None:
+        simRunComm += " --config "+config_file
+
+    print('Running xyce locally as: '+simRunComm)
+    
+    subprocess.run(simRunComm.split())
+
+
+    
+
+
+>>>>>>> main
 def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=False):
 
     client = docker.from_env()
@@ -699,6 +744,7 @@ def load_xyce_results(rDir, nodes_dir, rlist=None, chem_list=None):
         # we assume in list generation the indexes did not shift
         for ind, rFile in enumerate(rlist):
 
+# <<<<<<< HEAD
             full_result_fpath = rDir+rFile
             full_node_fpath = nodes_dir+rFile
             print(full_result_fpath)
@@ -710,6 +756,18 @@ def load_xyce_results(rDir, nodes_dir, rlist=None, chem_list=None):
                     full_node_fpath.replace('.prn', '.str.nodes'),
                     chem_list[ind]
                 )
+# =======
+#             print(rFile)
+#             temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
+#             #temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
+#             
+#             if chem_list is not None:
+#                 #temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
+#
+#                 node_f = os.path.basename(rFile).replace('.prn', '.str.nodes')
+#                 temp_df = change_r_node_ref(temp_df,  rDir+rFile, nodes_dir+node_f, chem_list[ind])
+#                 #temp_df = change_r_node_ref(temp_df, rFile, rFile.replace('.prn', '.str.nodes'), chem_list[ind])
+# >>>>>>> main
 
             # remove duplicate columns
             if ind > 0:
