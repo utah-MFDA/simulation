@@ -54,16 +54,24 @@ class SimulationXyce:
         def getDev(self):
             return self.dev
 
+        def print_eval(self):
+            return f"""property: {self.prop}
+net:  {self.node}
+value: {self.value}
+device: {self.dev}
+time: {self.time}
+"""
+
     # this will need some more generic definitions
     class Dev:
         def __init__(self, node, dev_type, args, is_grounded=True):
-            self.type = dev_type
+            self.devtype = dev_type
             self.node = node
             self.is_grounded = is_grounded
             self.args = args
 
         def getType(self):
-            return self.type
+            return self.devtype
 
         def getNode(self):
             return self.node
@@ -73,6 +81,12 @@ class SimulationXyce:
 
         def addArgument(self, arg):
             self.args.append(arg)
+
+        def print_dev(self):
+            return f"""chem: {self.devtype}
+net:  {self.node}
+args: {self.args}
+"""
 
     class ChemInput:
         def __init__(self, chem, node, in_value):
@@ -88,6 +102,12 @@ class SimulationXyce:
 
         def getChem(self):
             return self.chem
+
+        def print_chem(self):
+            return f"""chem: {self.chem}
+net:  {self.node}
+value: {self.value}
+"""
 
     class Probe:
         def __init__(self, probe_type, node, device=None):
@@ -105,6 +125,13 @@ class SimulationXyce:
             if self.device is None:
                 raise ValueError("No device in probe")
             return self.device
+
+        def print_probe(self):
+            return f"""Probe ---
+type: {self.probe_type}
+net:  {self.node}
+device {self.device}
+"""
 
 
     def __init__(self):
@@ -606,3 +633,16 @@ class SimulationXyce:
 
     def getProbeList(self):
         return self.probes
+
+    def get_sim_str(self):
+        nl = '\n'
+        return f"""
+Devices =============================
+{nl.join([d.print_dev() for d in self.dev.values()])}
+Chem Input ==========================
+{nl.join([c.print_chem() for c in self.chem.values()])}
+Probe ===============================
+{nl.join([p2.print_probe() for p in self.probes.values() for p2 in p])}
+Eval ================================
+{nl.join([e2.print_eval() for e in self.eval.values() for e2 in e])}
+"""
