@@ -371,7 +371,7 @@ def merge_wl_net(in_g, wl_g, node, wl_file=None,
     debug_node = False, debug_edge = False, debug_draw=False):
 
     mapping = {}
-    
+
     for common_node in [n for n in wl_g.nodes if n in in_g.nodes]:
         for prop in in_g.nodes[common_node].items():
             wl_g.nodes[common_node][prop[0]] = in_g.nodes[common_node][prop[0]]
@@ -567,7 +567,7 @@ def generate_spice_nets(
                 if len(node_edges) == 1:
                     comp_node = list(in_netlist[node])[0]
                     add_net_defs_to_graph(in_netlist, node, comp_node)
-                    
+
                 else:
                     raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
             elif isinstance(wl, dict):
@@ -586,7 +586,10 @@ def generate_spice_nets(
             if no_lengths:
                 wl = 0.01
             elif isinstance(len_df, pd.DataFrame):
-                wl = len_df.loc[node]["length (mm)"]
+                try:
+                    wl = len_df.loc[node]["length (mm)"]
+                except KeyError:
+                    raise KeyError(f"Not able to find node {node} in lenght file {os.path.abspath(wl_graph_f)}")
             elif isinstance(len_df, dict):
                 wl = len_df[node] #["length (mm)"]
 
