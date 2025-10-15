@@ -119,8 +119,8 @@ def runSimulation(
         _noarchive = False
         convert_basename = True
         import docker
-    else:
-        raise InputError("--local_xyce much be false or true (0 or 1)")
+    # else:
+    #     raise InputError("--local_xyce much be false or true (0 or 1)")
 
 
     # This need to be changed to implicitly be called
@@ -558,7 +558,7 @@ def runLocalXyce(xyce_files, workDir, xyce_run_location=f'{local_file_path}/xyce
     
 
 
->>>>>>> main
+# >>>>>>> main
 def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=False):
 
     client = docker.from_env()

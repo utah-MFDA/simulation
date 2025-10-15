@@ -140,7 +140,7 @@ def add_probes_to_device(probes, netlist_graph):
                 try:
                     dev_node = list(netlist_graph[p.getNode()].keys())[0]
                 except IndexError:
-                    raise IndexError(f"Not able to find device {list(netlist_graph[p.getNode()].keys())} for node {p.getNode()}")
+                    raise IndexError(f"Flow probe error: Not able to find device {list(netlist_graph[p.getNode()].keys())} for node {p.getNode()}")
                 pr_node  = p.getNode()
             else:
                 if p[node] not in netlist_graph.nodes:
@@ -1426,6 +1426,9 @@ def generate_cir_main(
     from SimulationXyce import SimulationXyce
     Xcl = SimulationXyce()
     Xcl.parse_config_file(config_file)
+
+    print("Simulation import config")
+    print(Xcl.get_sim_str())
 
     # print(net_graph.keys())
     out_probes, netlist_graph_out = add_probes_to_device(Xcl.probes, net_graph[design]['netlist'])
