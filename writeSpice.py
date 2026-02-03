@@ -16,12 +16,14 @@ import mmap
 import copy
 import logging
 
+
 def add_probes_to_device(probes, netlist_graph):
 
     probe_list = []
-    node = 'node'
-    dev = 'device'
+    node = "node"
+    dev = "device"
 
+#<<<<<<< HEAD
     def add_probe_no_node(probe, probe_list, probe_type):
         print(probe)
         if isinstance(probe, SimulationXyce.SimulationXyce.Probe):
@@ -117,7 +119,6 @@ def add_probes_to_device(probes, netlist_graph):
     if 'pressure' in probes:
         # TODO add dev to pressure probe call
         for p in probes['pressure']:
-            # print(p)
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
                 dev_node = list(netlist_graph[p.getNode()].keys())[0]
                 probe_list.append({
@@ -186,12 +187,16 @@ def add_probes_to_device(probes, netlist_graph):
                 "edge": (dev_node, pr_node),
                 "print": f'V({pressure_probe_nd})'
             })
+# ======= END HEAD
 
     # concentration probes are assumed (<connect_name>_chem)
-    if 'concentration' in probes:
-        for p in probes['concentration']:
-            print(p)
+    if "concentration" in probes:
+        for p in probes["concentration"]:
+
+            print(list(netlist_graph.nodes))
+            print(list(netlist_graph.edges))
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+# <<<<<<< HEAD
                 if p.getNode() not in netlist_graph.nodes:
                     logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
                     raise KeyError(f"Probe for node {p.getNode()} not in netlist")
@@ -315,6 +320,7 @@ def add_probes_to_device(probes, netlist_graph):
                     "print":chem_probe
                 })
 
+    # =======
     return probe_list, netlist_graph
 
 
@@ -333,7 +339,7 @@ def generate_source_list(spice_config_class, has_chem=False):
         # adds arguments
         if isinstance(dev.getArgs(), dict):
             for key, val in dev.getArgs().items():
-                dev_lines[dev.getNode()].append(f'{key}={val}')
+                dev_lines[dev.getNode()].append(f"{key}={val}")
         elif isinstance(dev.getArgs(), list):
             for a in dev.getArgs():
                 dev_lines[dev.getNode()].append(a)
@@ -341,11 +347,11 @@ def generate_source_list(spice_config_class, has_chem=False):
             dev_lines[dev.getNode()].append(dev.getArgs())
 
     chem_args = {}
-    #print(spice_config_class.getInputChemList())
+    # print(spice_config_class.getInputChemList())
     if has_chem:
         for key, chem in spice_config_class.getInputChemList().items():
             if isinstance(chem, SimulationXyce.SimulationXyce.ChemInput):
-                chem_args[key] = {chem.getNode():chem.getInValue()}
+                chem_args[key] = {chem.getNode(): chem.getInValue()}
             if isinstance(chem, list):
                 chem_args[key] = {}
                 for c in chem:
@@ -353,20 +359,22 @@ def generate_source_list(spice_config_class, has_chem=False):
 
     return dev_lines, chem_args
 
+
 def generate_time_lines(spice_config_class):
     # returns a list
 
     out_lines = []
-    if 'transient' in spice_config_class.getSimulationTimes():
-        for t in spice_config_class.getSimulationTimes()['transient']:
-            out_lines.append(['.tran']+t[1:])
-    if 'static' in spice_config_class.getSimulationTimes():
-        for t in spice_config_class.getSimulationTimes()['static']:
-            out_lines.append(['.dc']+t[1:])
+    if "transient" in spice_config_class.getSimulationTimes():
+        for t in spice_config_class.getSimulationTimes()["transient"]:
+            out_lines.append([".tran"] + t[1:])
+    if "static" in spice_config_class.getSimulationTimes():
+        for t in spice_config_class.getSimulationTimes()["static"]:
+            out_lines.append([".dc"] + t[1:])
 
     return out_lines
 
 
+# <<<<<<< HEAD
 def merge_wl_net(in_g, wl_g, node, wl_file=None,
     debug_node = False, debug_edge = False, debug_draw=False):
 
@@ -895,6 +903,7 @@ def write_time_lines(spice_config_class):
     pass
 
 
+#<<<<<<< HEAD
 def write_spice_file(
       in_netlist, probes_list, source_lines, sims_time_lines=None,
       sim_type=None, length_list=None, chem_list=None, out_file=None,
@@ -922,14 +931,15 @@ def write_spice_file(
     pc_dict = {}
     if isinstance(pcell_file, str):
         has_pcells = True
-        with open(pcell_file, 'r+') as pc_if:
+        with open(pcell_file, "r+") as pc_if:
             import csv
+
             pc_reader = csv.reader(pc_if)
             for i, row in enumerate(pc_reader):
                 if i == 0:
                     continue
                 else:
-                    pc_dict[row[0]] = {'pcell':row[1], 'params':row[2]}
+                    pc_dict[row[0]] = {"pcell": row[1], "params": row[2]}
     else:
         has_pcells = False
 
@@ -946,12 +956,15 @@ def write_spice_file(
                 'spice_str_file':chem_out_file,
                 'spice_file':os.path.basename(chem_out_file)[:-4]}
             if add_prn_to_list:
-                output_file_entry['OutputFile'] = os.path.basename(chem_out_file)[:-4]+'.prn'
+                output_file_entry["OutputFile"] = (
+                    os.path.basename(chem_out_file)[:-4] + ".prn"
+                )
         else:
             output_file_entry = {
-                'Chemical':chem,
-                'spice_str_file':chem_out_file,
-                'spice_file':chem_out_file[:-4]}
+                "Chemical": chem,
+                "spice_str_file": chem_out_file,
+                "spice_file": chem_out_file[:-4],
+            }
             if add_prn_to_list:
                 a, b = os.path.split(chem_out_file)
                 # output_file_entry['OutputFile'] = a + "/results/" + b[:-4]+'.prn'
@@ -970,7 +983,7 @@ def write_spice_file(
         chem_source_list = copy.deepcopy(source_lines)
         if isinstance(chem_node_dict, dict):
             for node, val in chem_node_dict.items():
-                chem_source_list[node].append(f'chemConcentration={val}')
+                chem_source_list[node].append(f"chemConcentration={val}")
 
         # write inputs and connections
         for node, line in chem_source_list.items():
@@ -981,12 +994,12 @@ def write_spice_file(
             c_of.write(new_line)
 
         wire_connections = {}
-        probe_wires = [[],[]]
+        probe_wires = [[], []]
+        node_dict = {}
 
         in_netlist_temp = copy.deepcopy(in_netlist)
         in_netlist_ch = generate_spice_nets(in_netlist_temp, length_list)
 
-#<<<<<<< HEAD
         new_probes = write_components_from_graph(in_netlist_ch, c_of, probes_list, pcell_file)
 # =======
 #                 if in_netlist.nodes[conn_node]["node_type"] == "wire" or \
@@ -1219,7 +1232,7 @@ def write_spice_file(
 # >>>>>>> main
 
         # add transient lines
-        c_of.write('\n\n')
+        c_of.write("\n\n")
 
         for t in sims_time_lines:
             print(t)
@@ -1246,7 +1259,7 @@ def write_spice_file(
 
     o_csv_col = ['Chemical', 'spice_str_file', 'spice_file']
     if add_prn_to_list:
-        o_csv_col.append('OutputFile')
+        o_csv_col.append("OutputFile")
     o_csv = pd.DataFrame(output_file_list, columns=o_csv_col)
 
     return o_csv
@@ -1254,8 +1267,7 @@ def write_spice_file(
 
 def get_length_list(len_file):
 
-
-    if len_file.split('.')[-1] == "csv":
+    if len_file.split(".")[-1] == "csv":
         len_df = pd.read_csv(len_file, index_col=0)
     elif len_file.split('.')[-1] == 'xlsx':
         len_df = pd.read_excel(len_file, index_col=0)
@@ -1285,7 +1297,7 @@ def get_length_list(len_file):
     return len_df
 
 def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
-    if os.path.isfile(SPfile) and (SPfile[-4:]==".cir" or SPfile[-8:]==".cir.str"):
+    if os.path.isfile(SPfile) and (SPfile[-4:] == ".cir" or SPfile[-8:] == ".cir.str"):
         SPfile = [SPfile]
     else:
         # if directory is given
@@ -1294,16 +1306,16 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                        if os.path.isfile(os.path.join(SPfile, f)) and f[-4:]==".cir"]
 
     for f in SPfile:
-        SPfile_o = open(f, 'r')
+        SPfile_o = open(f, "r")
 
         if cir_out:
-            if len(f) > 8 and f[-8:] == '.cir.str':
-                new_file = f[:-8]+'.cir'
-            elif f[-4:] != '.cir':
-                new_file = f+'.cir'
+            if len(f) > 8 and f[-8:] == ".cir.str":
+                new_file = f[:-8] + ".cir"
+            elif f[-4:] != ".cir":
+                new_file = f + ".cir"
         else:
-            new_file = f+'.num'
-        SPfile_n = open(new_file, 'w')
+            new_file = f + ".num"
+        SPfile_n = open(new_file, "w")
 
         nodeList = {}
 
@@ -1319,9 +1331,9 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
 
 
             if line == "" or line == "\n":
-                SPfile_n.write(line + line_comment+'\n')
+                SPfile_n.write(line + line_comment + "\n")
             else:
-                line_vars = line.replace('  ', ' ').split(' ')
+                line_vars = line.replace("  ", " ").split(" ")
                 if len(line_vars) > 1:
                     arg1 = line_vars[0]
                     end_line_str = []
@@ -1332,25 +1344,27 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                             for n in nodeList.keys():
                                 if n in param:
                                     n_num = str(nodeList[n])
-                                    rplace_str = '('+n+')'
-                                    newParam = param.replace('('+n+')', '('+n_num+')')
-                                    line_vars[ind+1] = newParam
-                        new_sp_line = ' '.join(line_vars)+'\n'
+                                    rplace_str = "(" + n + ")"
+                                    newParam = param.replace(
+                                        "(" + n + ")", "(" + n_num + ")"
+                                    )
+                                    line_vars[ind + 1] = newParam
+                        new_sp_line = " ".join(line_vars) + "\n"
                     # xyce voltage probes start with v
                     elif arg1[0] == "v":
                         for ind, param in enumerate(line_vars[1:]):
                             if ind < 2:
                                 if "=" in param:
                                     end_line_str += [param]
-                                elif param == '0':
+                                elif param == "0":
                                     line_nodes.append(0)
                                 else:
                                     if param not in nodeList.keys():
                                         # we do not want 0
-                                        nodeList[param] = len(nodeList)+1
+                                        nodeList[param] = len(nodeList) + 1
                                     line_node = nodeList[param]
                                     line_nodes.append(line_node)
-                            if ind >=2:
+                            if ind >= 2:
                                 end_line_str += [param]
                         # append all
                         # print(arg1)
@@ -1367,12 +1381,12 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                             # exception for parameters which will explicitly use =
                             if "=" in param:
                                 end_line_str += [param]
-                            elif param == '0':
+                            elif param == "0":
                                 line_nodes.append(0)
                             else:
                                 if param not in nodeList.keys():
                                     # we do not want 0
-                                    nodeList[param] = len(nodeList)+1
+                                    nodeList[param] = len(nodeList) + 1
                                 line_node = nodeList[param]
                                 line_nodes.append(line_node)
                     # append all
@@ -1385,9 +1399,12 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                     SPfile_n.write(new_sp_line+line_comment)
                 else:
                     SPfile_n.write(line + line_comment+'\n')
+                    SPfile_n.write(new_sp_line + line_comment)
+                else:
+                    SPfile_n.write(line + line_comment + "\n")
 
-        node_file = f+'.nodes'
-        with open(node_file, 'w') as node_f:
+        node_file = f + ".nodes"
+        with open(node_file, "w") as node_f:
             json.dump(nodeList, node_f)
 
         SPfile_o.close()
@@ -1397,9 +1414,9 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
 def visualize_netlist(in_cir):
     netlist_parse_reg = r"^[ ]*((?P<std_comp>[IVivRrCc]\w*)\s+(?P<pos_node>\w+)\s+(?P<neg_node>\w+)\s+(\d+[\w]?[\w]?)\s*?$|(?P<custom_component>[Yy]\w*)\s+(?P<instance>\w+)\s+(?P<params>[\w\s=.]*?$))"
 
-    net_reg = bytes(netlist_parse_reg, 'utf-8')
+    net_reg = bytes(netlist_parse_reg, "utf-8")
 
-    with open(in_cir, 'r+') as f:
+    with open(in_cir, "r+") as f:
         data = mmap.mmap(f.fileno(), 0)
         mo = regex.finditer(net_reg, data, re.MULTILINE)
 
@@ -1420,13 +1437,15 @@ def generate_cir_main(
         basename_only=False, pcell_file=None, wl_graph_file=None):
 
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/v_2_NX/')
+
     from Verilog2NX import get_modules, visual_graph
 
     net_dict, net_graph = get_modules(in_v=verilog_file, visual=False)
 
-    #out_probes, netlist_graph_out = add_probes_to_device(probes, netlist_graph['smart_toilet']['netlist'])
+    # out_probes, netlist_graph_out = add_probes_to_device(probes, netlist_graph['smart_toilet']['netlist'])
 
     from SimulationXyce import SimulationXyce
+
     Xcl = SimulationXyce()
     Xcl.parse_config_file(config_file)
 
@@ -1456,8 +1475,9 @@ def generate_cir_main(
         pcell_file=pcell_file,
         wl_graph=wl_graph_file
         )
+    )
 
     for spf in sp_files.iterrows():
-        convert_nodes_2_numbers_xyce(spf[1]['spice_str_file'], cir_out=True)
+        convert_nodes_2_numbers_xyce(spf[1]["spice_str_file"], cir_out=True)
 
-    sp_files.to_csv(os.path.dirname(out_file)+'/spice_files.csv')
+    sp_files.to_csv(os.path.dirname(out_file) + "/spice_files.csv")
