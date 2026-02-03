@@ -13,12 +13,15 @@ import matplotlib
 
 #module_reg = r"\s*module\s*(?P<module>\s*[a-zA-Z][\w]*)\s*\((?P<ports>[\s*\w*,]*)\)\s*;(?P<module_netlist>[\w*\s*,;\(\)\.]*?)endmodule"
 comm_remove= r'[ ]*\/\/.*$\n'
-module_reg = r"^[ ]*module\s*(?P<module_name>[a-zA-Z][\w]*)\s*\((?P<module_ports>[\s\w,]*)\)\s*;(?P<module_netlist>[\s\w.,\(\);\/]*?)endmodule"
+module_reg = r"^[ ]*module\s*(?P<module_name>[a-zA-Z][\w]*)\s*\((?P<module_ports>[\s\w,]*)\)\s*;(?P<module_netlist>[\s\S]*?)endmodule"
 input_reg  = r"^[ ]*input\s*(?P<input_port>[\w*, \n]*);"
 output_reg = r"^[ ]*output\s*(?P<output_port>[\w*, \n]*);"
-wire_reg   = r"^[ ]*wire\s*(?P<wires>[\w*, \n]*);"
+wire_reg   = r"^[ ]*wire\s*\\?(?P<wires>[\w\.\,\ \n]*);"
 comp_reg   = r"^[ ]*(?P<component>[a-zA-Z][\w]*)\s*(?P<name>[a-zA-Z][\w]*)\s*\((?P<ports>[\w\(\),\s.]*)\)\s*;"
-net_reg = r"^[ ]*(module\s*(?P<module_name>[a-zA-Z][\w]*)\s*\((?P<module_ports>[\s\w,]*\);)|wire\s*(?P<wires>[a-zA-Z][\w\s,]*);|input\s*(?P<in_ports>[a-zA-Z][\w\s,]*);|output\s*(?P<out_ports>[a-zA-Z][\w\s,]*);|(?P<component>[a-zA-Z][\w]*)\s*(?P<name>[a-zA-Z][\w]*)\s*\((?P<ports>[\w\(\),\s.]*)\)\s*;)"
+#net_reg = r"^[ ]*(module\s*(?P<module_name>[a-zA-Z][\w]*)\s*\((?P<module_ports>[\s\w,]*\);)|wire\s*(?P<wires>[a-zA-Z\\][\w\s,]*);|input\s*(?P<in_ports>[a-zA-Z][\w\s,]*);|output\s*(?P<out_ports>[a-zA-Z][\w\s,]*);|(?P<component>[a-zA-Z][\w]*)\s*(?P<name>[a-zA-Z][\w]*)\s*\((?P<ports>[\w\(\),\s.]*)\)\s*;)"
+#net_reg = r"^[ ]*(module\s*(?P<module_name>[a-zA-Z\\][\w.]*)\s*\((?P<module_ports>[\s\w,.]*\);)|wire\s*(?P<wires>[a-zA-Z\\][\w\s,.]*);|input\s*(?P<in_ports>[a-zA-Z][\w\s,]*);|output\s*(?P<out_ports>[a-zA-Z\\][\w\s,.]*);|(?P<component>[a-zA-Z][\w]*)\s*(?P<name>[a-zA-Z\\][\w.]*)\s*\((?P<ports>[\w\(\),\s.]*)\)\s*;)"
+#net_reg = r"^[ ]*(module\s*\\?(?P<module_name>[a-zA-Z][\w.]*)\s*\((?P<module_ports>[\s\w,.]*\);)|wire\s*\\?(?P<wires>[a-zA-Z][\w\s,.]*);|input\s*\\?(?P<in_ports>[a-zA-Z][\w\s,]*);|output\s*\\?(?P<out_ports>[a-zA-Z][\w\s,.]*);|(?P<component>[a-zA-Z][\w]*)\s*\\?(?P<name>[a-zA-Z][\w.]*)\s*\((?P<ports>[\w\(\),\s.]*)\)\s*;)"
+net_reg = r"^[ ]*(module\s*\\?(?P<module_name>[a-zA-Z][\w.]*)\s*\((?P<module_ports>[\s\w,.]*\);)|wire\s*\\?(?P<wires>[a-zA-Z][\w\s,.]*);|input\s*\\?(?P<in_ports>[a-zA-Z][\w\s,]*);|output\s*\\?(?P<out_ports>[a-zA-Z][\w\s,.]*);|(?P<component>[a-zA-Z][\w]*)\s*\\?(?P<name>[a-zA-Z][\w.]*)\s*\((?P<ports>[\w\(\),\s.]*)\)\s*;)"
 component_port_reg = r".(?P<component_port>[a-zA-Z][\w]*)\s*\(\s*(?P<net_port>[a-zA-Z][\w]*)\s*\)\s*"
 
 m_frm = 'utf-8'
@@ -36,8 +39,8 @@ def get_modules(in_v, visual=False, debug=False, no_submodules=False):
         data = mmap.mmap(f.fileno(), 0)
         mo = regex.finditer(mod_re_b, data, re.MULTILINE)
 
-    mod_names= {}
-    mod_nets = {}
+    mod_names = {}
+    mod_nets  = {}
 
     mod_graphs = {} # place for nx graph mod_name : {'netlist':Graph()}
 
@@ -52,13 +55,16 @@ def get_modules(in_v, visual=False, debug=False, no_submodules=False):
             'wires':[],
             'components':{}
         }
-        mod_names[m.group('module_name').decode('utf-8')] = {'isSubmodule':False} 
+        mod_names[m.group('module_name').decode('utf-8')] = {
+            'isSubmodule':False
+        }
 
         mod_graphs[m.group('module_name').decode('utf-8')] = {
                 'netlist':nx.Graph(),
                 'inputs':[],
                 'outputs':[],
-                'wires':[]}
+                'wires':[]
+        }
 
     if debug:
         print(mod_graphs)
@@ -72,11 +78,16 @@ def get_modules(in_v, visual=False, debug=False, no_submodules=False):
         # remove ws and split by ,
         mod_ports = [p.strip() for p in m.group('module_ports').decode('utf-8').split(',')]
         #mod_ports = regex.sub(r'\s', '', m.group('module_ports').decode('utf-8')).split(',')
-        
+
         # build out netlist
-        mod_parsed_net = parse_net(m.group('module_netlist'), mod_names=mod_names, mod_graph=mod_graphs[mod_name]['netlist'])
-        #print(mod_parsed_net)
-    
+        mod_parsed_net = parse_net(
+            m.group('module_netlist'),
+            mod_names=mod_names,
+            mod_graph=mod_graphs[mod_name]['netlist']
+        )
+        import pprint
+        pprint.pp(mod_parsed_net)
+
         for p in mod_ports:
             print(p)
             p_type = None
@@ -103,7 +114,7 @@ def get_modules(in_v, visual=False, debug=False, no_submodules=False):
 
         print(mod_parsed_net)
 
-        
+
 
         mod_nets[mod_name]['wires'] = mod_parsed_net['wires']
         mod_nets[mod_name]['components'] = mod_parsed_net['components']
@@ -127,13 +138,13 @@ def get_modules(in_v, visual=False, debug=False, no_submodules=False):
         mod_graphs[top_module]['netlist'] = graphs_2_just_components(in_netlist_dict=mod_graphs, top_module=top_module)
 
 
- 
+
     if visual:
         for G_el in mod_graphs:
             #print(G_el)
             G = mod_graphs[G_el]['netlist']
             #pos = {n:(ind*5, (ind/6-ind%6)*10) for ind,n in enumerate(G.nodes)}
-            
+
             #subax1 = plt.subplot(121)
             #nx.draw(G, pos=pos, with_labels=True, font_weight='bold')
             nx.draw(G, with_labels=True, font_weight='bold')
@@ -144,7 +155,7 @@ def get_modules(in_v, visual=False, debug=False, no_submodules=False):
     return mod_nets, mod_graphs
 
 def graphs_2_just_components(in_netlist_dict, top_module, in_netlist=None, debug=False):
-    
+
     if not isinstance(in_netlist, nx.Graph):
         top_graph = in_netlist_dict[top_module]['netlist']
     else:
@@ -236,10 +247,10 @@ def parse_net(in_net, mod_names=None, mod_graph=None, debug=False):
 
     for v in values:
         v_str = v.groups()[0].decode('utf-8')
-        #print(v_str)
+        print(v_str)
         ports = []
         key = regex.match(r'\w*', v_str)[0]
-        #print(key)
+        print(key)
         if key == 'input':
             ports = regex.sub(bytes(r'[\s;]','utf-8'),bytes('','utf-8'), v.group('in_ports'))
             ports = ports.decode('utf-8').split(',')
@@ -311,9 +322,9 @@ def visual_graph(net_graph):
 
 def visual_all_graphs(net_graphs):
     for G_el in net_graphs:
-            G = net_graphs[G_el]['netlist']
-            nx.draw(G, with_labels=True, font_weight='bold')
-            plt.show()
+        G = net_graphs[G_el]['netlist']
+        nx.draw(G, with_labels=True, font_weight='bold')
+        plt.show()
 
 def remove_comments(in_v):
     # get modules
