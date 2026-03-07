@@ -1,0 +1,1 @@
+current_design fan_out_output

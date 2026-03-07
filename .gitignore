@@ -36,6 +36,15 @@ testing_local/*/results_old/*
 testing_local/*/spiceFiles/*
 testing_local/*/*.tar
 
+test_netlists/*/results/1_*
+test_netlists/*/results/2_*
+test_netlists/*/results/3_*
+test_netlists/*/results/4_1*
+test_netlists/*/results/output_guide.mod
+test_netlists/*/results/route.guide
+test_netlists/*/results/wire_length.csv
+test_netlists/*/src/cfg
+
 ./testing/*/spiceList
 test_output
 test_output_docker
