@@ -433,7 +433,7 @@ def convertToCir_from_config(
         os.makedirs(f"{wd}/{gen_output_dir}", exist_ok=True)
         of = f"{wd}/{gen_output_dir}/{design}"
 
-    # call from write spice
+    # call from write spice)
     writeSpice.generate_cir_main(
         design=design,
         verilog_file=verilogFile,
@@ -959,22 +959,22 @@ if __name__ == "__main__":
         '--netlist',   metavar='<netlist_file>', type=str, required=True)
     parser.add_argument(
         '--sim_config', metavar='<sim_config>', type=str, required=True)
-    parser.add_argument('--sim_dir',   metavar='<sim_dir>',
-                        type=str, required=True)
-    parser.add_argument('--lib',       metavar='<lib>',
-                        type=str, required=True)
+    parser.add_argument(
+        '--sim_dir',   metavar='<sim_dir>', type=str, required=True)
+    parser.add_argument(
+        '--lib', metavar='<lib>', type=str, required=False)
 
     # included with the parser
     parser.add_argument(
-        '--cir_config', metavar='<cir_config>', type=str, required=True)
+        '--cir_config', metavar='<cir_config>', type=str, required=False)
 
     parser.add_argument(
         '--output_dir', metavar='<output_dir>', type=str, default=None)
     parser.add_argument(
         '--pcell_file', metavar='<pcell_file>', type=str, default=None)
 
-    parser.add_argument('--design', metavar='<design>',
-                        type=str, required=True)
+    parser.add_argument(
+        '--design', metavar='<design>',type=str, required=True)
     parser.add_argument(
         '--length_file', metavar='<length_file>', type=str, default=None)
 
@@ -983,9 +983,10 @@ if __name__ == "__main__":
     parser.add_argument('--docker_wd', metavar='<docker_wd>',
                         type=str, default="/mfda_simulation/local/simulations")
 
-    parser.add_argument('--preRoute', action="store_true", default=False)
-    parser.add_argument('--convert_verilog',
-                        action="store_false", default=True)
+    parser.add_argument(
+        '--preRoute', action="store_true", default=False)
+    parser.add_argument(
+        '--convert_verilog', action="store_false", default=True)
 
     parser.add_argument('--plot', action='store_true', default=False)
     parser.add_argument('--eval_result', action='store_true', default=False)
@@ -1024,7 +1025,8 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         pcell_file=args.pcell_file,
         verilog_2_xyce_extras_loc=args.xyce_write_loc,
-        extra_args=ex_args)
+        extra_args=ex_args
+    )
 
     """
     runSimulation(
