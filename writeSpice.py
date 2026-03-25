@@ -490,7 +490,7 @@ def build_graph(dict_gph):
         for nd_k, nd_val in nd.items():
             if nd_k is not 'id':
                 G_out.nodes[nd['id']][nd_k] = nd_val
-        
+
     if 'edges' in dict_gph:
         for edg in dict_gph['edges']:
             G_out.add_edge(edg['source'], edg['target'])
@@ -498,7 +498,7 @@ def build_graph(dict_gph):
         for edg in dict_gph['links']:
             G_out.add_edge(edg['source'], edg['target'])
 
-        
+
     return G_out
 """
 
@@ -609,6 +609,9 @@ def generate_spice_nets(
 
         if in_netlist.nodes[node]['node_type'] == 'input':
             # and (not no_lengths):
+            #in_netlist.nodes[node]['node_color']='tab:blue'
+            #nx.draw(in_netlist, with_labels=True)
+            #plt.show()
             #nx.draw(wl_graph[node], with_labels=True)
             #plt.show()
 
@@ -766,8 +769,8 @@ def write_components_from_graph(
         probe_list=[],
         pcell_file=None
 ):
-    # nx.draw_spring(in_g, with_labels=True)
-    # plt.show()
+    #nx.draw_spring(in_g, with_labels=True)
+    #plt.show()
 
     if isinstance(of, str):
         of = open(of, 'w+')
@@ -809,6 +812,10 @@ def write_components_from_graph(
     for i_n in in_nodes:
         if 'chan_len' not in in_g.nodes[i_n]:
             in_g.nodes[i_n]['chan_len'] = '0.1m'
+            e_in = list(nx.all_neighbors(in_g, i_n))[0]
+            if 'fl_net' not in in_g[i_n][e_in] or 'fl_net' not in in_g[e_in]:
+                in_g.edges[(i_n, e_in)]['fl_net'] = e_in
+                in_g.edges[(i_n, e_in)]['ch_net'] = e_in + "_chem"
         try:
             e = list(in_g.edges(i_n))[0]
             e_fl = in_g[e[0]][e[1]]['fl_net']
