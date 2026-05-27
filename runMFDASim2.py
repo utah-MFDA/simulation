@@ -252,135 +252,6 @@ def generate_cir_files_from_write_spice(
     )  
 
 
-def convertToCir_from_config(
-        design,
-        verilogFile,
-        sim_config,
-        wd,
-        libFile,
-        configFile=None,
-        length_file=None,
-        preRouteSim=False,
-        overwrite=False,
-        noarchive=False,
-        gen_output_dir=None,
-        basename_only=False,
-        pcell_file=None):
-
-    # from writeSpice import generate_cir_main
-    import writeSpice
-
-    if gen_output_dir == None:
-        of = f"{wd}/{design}"
-    else:
-        os.makedirs(f"{wd}/{gen_output_dir}", exist_ok=True)
-        of = f"{wd}/{gen_output_dir}/{design}"
-
-    # call from write spice
-    writeSpice.generate_cir_main(
-        design=design,
-        verilog_file=verilogFile,
-        config_file=sim_config,
-        length_file=length_file,
-        out_file=of,
-        basename_only=basename_only,
-        pcell_file=pcell_file,
-    )
-    # locate nessary files
-    # files = getSimFiles(verilogFile, wd)
-
-    vFile = wd+"/"+verilogFile
-
-    if length_file is None:
-        len_file = wd+"/"+verilogFile[:-2]+"_lengths.xlsx"
-    else:
-        len_file = length_file
-
-    # create Sim class
-    _sim = SimulationXyce()
-    # _sim.parse_config_file(sim_config)
-    _sim.load_analysis_file(sim_config)
-
-    if noarchive:
-        return None
-    # ---------------------------
-    # end early if no files need
-    # transfer
-
-    # create archive
-    arcNameBase = vFile[:-2]+"_xyce"
-
-    xyceTar, arcName = createXyceArchive(arcNameBase, Overwrite=overwrite)
-
-    srcDir = wd+"/spiceFiles"
-    xyceTar.add(srcDir, arcname=os.path.basename(
-        srcDir.replace("spiceFiles", arcName.replace('.tar', ''))))
-
-    xyceTar.close()
-
-    print("--------------------")
-    print("created archive: " + arcName)
-    print("--------------------")
-
-    return arcName
-
-
-def createXyceArchive(arcName, Overwrite=True, attempt=0):
-    newName = arcName+"_"+str(attempt)+".tar"
-    try:
-        xyceTar = tarfile.open(newName, 'x')
-        return xyceTar, newName
-    except FileExistsError:
-        if Overwrite:
-            os.remove(newName)
-            xyceTar = tarfile.open(newName, 'x')
-            return xyceTar, newName
-        else:
-            return createXyceArchive(arcName, attempt=attempt+1)
-
-
-def pushCir2Docker(simArchive, dockerContainer, dockerWD):
-
-    client = docker.from_env()
-
-    # check for running image
-    is_docker_container_running(client, dockerContainer)
-
-    # create archive
-    # tarfile.open()
-
-    xyceContainer = client.containers.get(dockerContainer)
-
-    with open(simArchive, 'rb') as fd:
-        ok = xyceContainer.put_archive(dockerWD, data=fd)
-        if not ok:
-            raise Exception('Put file failed')
-        else:
-            print("Files transfer success")
-
-
-def runRemoteXyce(simStartComm, dockerContainer, simDockerPyWD):
-
-    client = docker.from_env()
-
-    # check for running image
-    is_docker_container_running(client, dockerContainer)
-
-    xyceContainer = client.containers.get(dockerContainer)
-
-    print("------------------------------")
-    print("send command: "+simStartComm)
-    print("to directory: " + dockerContainer+":"+simDockerPyWD)
-
-    _, stream = xyceContainer.exec_run(cmd=simStartComm,
-                                       workdir=simDockerPyWD,
-                                       stream=True,
-                                       # stream=False,
-                                       )
-    for data in stream:
-        print(data.decode())
-
-
 local_file_path = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -398,85 +269,6 @@ def runLocalXyce(xyce_files, workDir, xyce_run_location=f'{local_file_path}',
         no_result_dir=True
     )
 
-    # simRunComm = "python3 "+xyce_run_location+"/xyceRun.py " +\
-    #     "--list "+f'{workDir}/{xyce_files}'+" "\
-    #     "--workdir "+workDir+" "
-    # # "--no_result_dir"
-    # if config_file is not None:
-    #     simRunComm += " --config "+config_file
-
-    # print('Running xyce locally as: '+simRunComm)
-
-    # subprocess.run(simRunComm.split(), check=True)
-
-
-# >>>>>>> main
-def pullFromDocker(targetDirectory, dockerContainer, simDockerWD, OR_fileExists=False):
-
-    client = docker.from_env()
-
-    is_docker_container_running(client, dockerContainer)
-
-    xyceContainer = client.containers.get(dockerContainer)
-
-    if not os.path.exists(targetDirectory):
-        os.makedirs(targetDirectory)
-    else:
-        pass  # directory exists
-
-    targetFileAbs = targetDirectory+'/result.tar'
-
-    try:
-        f = open(targetFileAbs, 'xb')
-    except FileExistsError:
-        if OR_fileExists:
-            f = open(targetFileAbs, 'wb')
-        else:
-            attempt = 0
-            while True:
-                try:
-                    targetFileAbs = targetDirectory+'/result'+attempt+'.tar'
-                    f = open(targetFileAbs, 'xb')
-                    break
-                except FileExistsError:
-                    attempt += 1
-
-    bits, stat = xyceContainer.get_archive(simDockerWD)
-    print(stat)
-
-    for chunk in bits:
-        f.write(chunk)
-    f.close
-
-    # unpack archive
-    local_arc = tarfile.open(targetFileAbs, 'r')
-    local_arc.extractall(path=targetDirectory)
-    os.remove(targetFileAbs)
-
-    # move files to results
-    for f1 in os.listdir(targetDirectory):
-        f1_ = targetDirectory+"/"+f1
-        if os.path.isdir(f1_):
-            for f2 in os.listdir(f1_):
-
-                os.rename(f1_+"/"+f2, targetDirectory+"/"+f2)
-            os.removedirs(f1_)
-
-
-# def runLocalXyce(xyce_files, workDir, xyce_run_location=f'{local_file_path}/xyce_run',
-#                  config_file=None):
-#
-#     simRunComm = "python3 "+xyce_run_location+"/xyceRun.py "+\
-#         "--list "+f'{workDir}/{xyce_files}'+" "\
-#         "--workdir "+'./'+" "
-#         #"--workdir "+workDir+" "
-#         #"--no_result_dir"
-#     if config_file is not None:
-#         simRunComm += " --config "+config_file
-#
-#     print('Running xyce locally as: '+simRunComm)
-#
-#     subprocess.run(simRunComm.split())
 
 
 # load the prn file into a dataframe
@@ -607,18 +399,6 @@ def load_xyce_results(rDir, nodes_dir, rlist=None, chem_list=None):
                     full_node_fpath.replace('.prn', '.str.nodes'),
                     chem_list[ind]
                 )
-# =======
-#             print(rFile)
-#             temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
-#             #temp_df = pd.read_table(rFile, skipfooter=1, index_col=0, delim_whitespace=True, engine='python')
-#
-#             if chem_list is not None:
-#                 #temp_df = change_r_node_ref(temp_df, rDir+"/../"+rFile, chem_list[ind])
-#
-#                 node_f = os.path.basename(rFile).replace('.prn', '.str.nodes')
-#                 temp_df = change_r_node_ref(temp_df,  rDir+rFile, nodes_dir+node_f, chem_list[ind])
-#                 #temp_df = change_r_node_ref(temp_df, rFile, rFile.replace('.prn', '.str.nodes'), chem_list[ind])
-# >>>>>>> main
 
             # remove duplicate columns
             if ind > 0:
@@ -846,14 +626,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    ex_args = {
-        'plot': args.plot,
-        # 'eval_file':args.eval_file,
-        'eval_result': args.eval_result,
-        'xyce_run_config': args.xyce_run_config,
-        # 'dont_move_results':args.dont_move_results
-    }
-
     runSimulation(
         design=args.design,
         verilogFile=args.netlist,
@@ -866,23 +638,11 @@ if __name__ == "__main__":
         preRouteSim=args.preRoute,
         dockerContainer=args.docker_container,
         dockerWD=args.docker_wd,
-        # xyceFiles      = "spiceList",
         convert_v=args.convert_verilog,
         output_dir=args.output_dir,
         pcell_file=args.pcell_file,
         verilog_2_xyce_extras_loc=args.xyce_write_loc,
-        extra_args=ex_args)
-
-    """
-    runSimulation(
-        verilogFile,
-        workDir,
-        libraryFile,
-        cirConfigFile,
-        length_file=None,
-        preRouteSim=False,
-        dockerContainer=None,
-        dockerWD=None,
-        xyceFiles="spiceList",
-        convert_v=True)
-    """
+        plot_results=args.plot,
+        evaluate_results=args.eval_result,
+        xyce_run_config_file=args.xyce_run_config,
+        )
