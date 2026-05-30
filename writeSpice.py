@@ -25,7 +25,6 @@ def add_probes_to_device(probes, netlist_graph):
     node = "node"
     dev = "device"
 
-#<<<<<<< HEAD
     def add_probe_no_node(probe, probe_list, probe_type):
         print(probe)
         if isinstance(probe, SimulationXyce.SimulationXyce.Probe):
@@ -222,7 +221,6 @@ def add_probes_to_device(probes, netlist_graph):
 
     if 'concentrationNode' in probes:
         for p in probes['concentrationNode']:
-# <<<<<<< HEAD
             # explicit chem node dev
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
                 if p.getNode() not in netlist_graph.nodes:
@@ -238,75 +236,6 @@ def add_probes_to_device(probes, netlist_graph):
             if "chem_probe" not in netlist_graph.nodes[dev_node]:
                 #netlist_graph.nodes[dev_node]["chem_probe"] = []
                 netlist_graph.edges[(dev_node, pr_node)]["chem_probe"] = []
-# =======
-#                 # explicit chem node dev
-#                 if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-#                                         
-#                     netlist_graph.nodes[p.getDevice()]["chem_connection"] ={"node":f"vchpr_{p.getNode()}_{p.getDevice()}_chem","oth_node":p.getNode()}
-#                     #netlist_graph.nodes[p.getNode()]["chem_connection"]={"node":f"vchpr_{p.getNode()}_conn_chem","oth_node":p.getDevice()}
-#                     if netlist_graph.nodes[p.getNode()]["node_type"] in "input" and \
-#                         len(netlist_graph[p.getNode()]) > 1:
-#                         chan_node = f"{p.getNode()}_channel_out_chem "
-#                     elif netlist_graph.nodes[p.getNode()]["node_type"] == "output" and \
-#                         len(netlist_graph[p.getNode()]) > 1:
-#                         chan_node = f"{p.getNode()}_in_chem "
-#                     elif netlist_graph.nodes[p.getNode()]["node_type"] == "wire" and \
-#                         len(netlist_graph[p.getNode()]) > 2:
-#                         # which port
-#                         if netlist_graph.edges[p.getDevice(), p.getNode()]["port"] == "out_fluid":
-#                             chan_node = f"{p.getNode()}_in "
-#                         else:
-#                             chan_node = f"{p.getNode()}_channel_out "
-#                     elif "chem_connection" in netlist_graph.nodes[p.getNode()]:
-#                         chan_node = f"vchpr_{p.getNode()}_conn_chem"
-#                         netlist_graph.nodes[p.getNode()]["chem_connection"]={"node":chan_node,"oth_node":p.getDevice()}
-#                     else:
-#                         chan_node = f"vchpr_{p.getNode()}_conn_chem"
-#
-#                     new_probe_node = [
-#                         (f"vchpr_{p.getNode()}_{p.getDevice()}_pr", {
-#                         'node_type':'concentration_probe',
-#                         'chem_pr_wires':[
-#                             f"vchpr_{p.getNode()}_{p.getDevice()}_chem",
-#                             chan_node] 
-#                             }),
-#                     ]
-#                 else:
-#                     netlist_graph.nodes[p[dev]]["chem_connection"] ={"node":f"vchpr_{p[node]}_{p[dev]}_chem","oth_node":p[node]}
-#                     #netlist_graph.nodes[p[node]]["chem_connection"]={"node":f"vchpr_{p[node]}_conn_chem","oth_node":p[dev]}
-#                     print(netlist_graph.nodes[p[node]])
-#                     if netlist_graph.nodes[p[node]]["node_type"] in "input" and \
-#                         len(netlist_graph[p[node]]) > 1:
-#                         chan_node = f"{p[node]}_channel_out_chem "
-#                     elif netlist_graph.nodes[p[node]]["node_type"] == "output" and \
-#                         len(netlist_graph[p[node]]) > 1:
-#                         chan_node = f"{p[node]}_in_chem "
-#                     elif netlist_graph.nodes[p[node]]["node_type"] == "wire" and \
-#                         len(netlist_graph[p[node]]) > 2:
-#                         # which port
-#                         if netlist_graph.edges[p.getDevice(), p[node]]["port"] == "out_fluid":
-#                             chan_node = f"{p[node]}_in "
-#                         else:
-#                             chan_node = f"{p[node]}_channel_out "
-#                     elif "chem_connection" in netlist_graph.nodes[p[node]]:
-#                         chan_node = f"vchpr_{p[node]}_conn_chem"
-#                         netlist_graph.nodes[p[node]]["chem_connection"]={"node":chan_node,"oth_node":p.getDevice()}
-#                     else:
-#                         chan_node = f"vchpr_{p[node]}_conn_chem"
-#                 # explicit chem node wire
-#                     new_probe_node = [
-#                         (f"vchpr_{p[node]}_{p[dev]}_pr", {
-#                             'node_type':'concentration_probe',
-#                             'chem_pr_wires':[
-#                                 f"vchpr_{p[node]}_{p[dev]}_chem",
-#                                 chan_node] 
-#                                 }),
-#                     ]
-#                 #new_es = []
-#                 #new_es.append((new_probe_nodes[0][0], p[dev]))
-#                 #new_es.append((new_probe_nodes[0][0], new_probe_nodes[1][0]))
-#                 #new_es.append((new_probe_nodes[1][0], p[node]))
-# >>>>>>> main
 
             chem_probe = f'V({p.getNode()}_{p.getDevice()}_comp_chem)'
             # handled by downstream instructions
@@ -322,7 +251,6 @@ def add_probes_to_device(probes, netlist_graph):
                     "print":chem_probe
                 })
 
-    # =======
     return probe_list, netlist_graph
 
 
@@ -812,7 +740,12 @@ def write_components_from_graph(
         else:
             oth_nodes.append(n)
 
-    print("IN nodes", in_nodes,'\nOUT nodes', out_nodes, '\nCHAN nodes', wire_nodes, '\nCOMP nodes', oth_nodes)
+    print(
+        "IN nodes", in_nodes,
+        '\nOUT nodes', out_nodes,
+        '\nCHAN nodes', wire_nodes,
+        '\nCOMP nodes', oth_nodes
+    )
 
     # write nodes
     for i_n in in_nodes:
@@ -855,6 +788,7 @@ def write_components_from_graph(
         e_ch1 = in_g[e[0][0]][e[0][1]]['ch_net']
         e_fl2 = in_g[e[1][0]][e[1][1]]['fl_net']
         e_ch2 = in_g[e[1][0]][e[1][1]]['ch_net']
+        # need to fix addition of sets
         if isinstance(e_fl1, set):
             e_fl1 = list(e_fl1)[0]
         if isinstance(e_fl2, set):
