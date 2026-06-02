@@ -19,11 +19,17 @@ import logging
 
 from pprint import pp
 
+def convert_dict_to_probes(probes):
+    pass
+
 def add_probes_to_device(probes, netlist_graph):
 
     probe_list = []
     node = "node"
     dev = "device"
+
+    assumed_sim_type = "flow"
+
 
     def add_probe_no_node(probe, probe_list, probe_type):
         print(probe)
@@ -188,16 +194,15 @@ def add_probes_to_device(probes, netlist_graph):
                 "edge": (dev_node, pr_node),
                 "print": f'V({pressure_probe_nd})'
             })
-# ======= END HEAD
 
     # concentration probes are assumed (<connect_name>_chem)
     if "concentration" in probes:
+        assumed_sim_type = "chem"
         for p in probes["concentration"]:
 
             print(list(netlist_graph.nodes))
             print(list(netlist_graph.edges))
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-# <<<<<<< HEAD
                 if p.getNode() not in netlist_graph.nodes:
                     logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
                     raise KeyError(f"Probe for node {p.getNode()} not in netlist")
@@ -215,11 +220,12 @@ def add_probes_to_device(probes, netlist_graph):
             if f'V({pr_node}_{dev_node}_chem)' not in [p_pr['print'] for p_pr in probe_list]:
                 dev_node = list(netlist_graph[pr_node].keys())[0]
                 probe_list.append({
-                    "probe":"chem_probe",
-                    "print":f'V({pr_node}_{dev_node}_chem)'
+                    "probe": "chem_probe",
+                    "print": f'V({pr_node}_{dev_node}_chem)'
                 })
 
     if 'concentrationNode' in probes:
+        assumed_sim_type = "chem"
         for p in probes['concentrationNode']:
             # explicit chem node dev
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
@@ -228,7 +234,7 @@ def add_probes_to_device(probes, netlist_graph):
                     raise KeyError(f"Probe for node {p.getNode()} not in netlist")
                 pr_node  = p.getNode()
                 dev_node = p.getDevice()
-            else:
+            else: # is dictionary
                 pr_node = p[node]
                 dev_node = p[dev]
 
@@ -237,7 +243,10 @@ def add_probes_to_device(probes, netlist_graph):
                 #netlist_graph.nodes[dev_node]["chem_probe"] = []
                 netlist_graph.edges[(dev_node, pr_node)]["chem_probe"] = []
 
-            chem_probe = f'V({p.getNode()}_{p.getDevice()}_comp_chem)'
+            if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+                chem_probe = f'V({p.getNode()}_{p.getDevice()}_comp_chem)'
+            else:
+                chem_probe = f'V({p[node]}_{p[dev]}_comp_chem)'
             # handled by downstream instructions
             # netlist_graph.nodes[dev_node]["chem_probe"].append([chem_probe])
             if chem_probe not in netlist_graph.edges[(dev_node, pr_node)]['chem_probe']:
@@ -251,10 +260,10 @@ def add_probes_to_device(probes, netlist_graph):
                     "print":chem_probe
                 })
 
-    return probe_list, netlist_graph
+    return probe_list, netlist_graph, assumed_sim_type
 
 
-def generate_source_list(spice_config_class, has_chem=False):
+def generate_source_list(spice_config_class, has_chem=False, has_temp=False):
 
     dev_lines = {}
 
@@ -266,6 +275,8 @@ def generate_source_list(spice_config_class, has_chem=False):
         # adds chem port
         if has_chem:
             dev_lines[dev.getNode()].append(f"{dev.getNode()}_in_chem")
+        if has_temp:
+            dev_lines[dev.getNode()].append(f"{dev.getNode()}_in_heat")
         # adds arguments
         if isinstance(dev.getArgs(), dict):
             for key, val in dev.getArgs().items():
@@ -341,12 +352,9 @@ def merge_wl_net(in_g, wl_g, node, wl_file=None,
             wl_g.nodes[n]['chan_len'] = node_wl_dict[n]
             for con_n in wl_g[n]:
                 #if re.match(r'br_\d_\d', str(n)) is not None:
-                wl_g.edges[(n, con_n)]['fl_net'] = {
-                    f"{node}_{con_n}"
-                }
-                wl_g.edges[(n, con_n)]['ch_net'] = {
-                    f"{node}_{con_n}_chem"
-                }
+                wl_g.edges[(n, con_n)]['fl_net'] = f"{node}_{con_n}"
+                wl_g.edges[(n, con_n)]['ch_net'] = f"{node}_{con_n}_chem"
+
             mapping[n] = f"{node}_{n}"
     wl_g = nx.relabel_nodes(wl_g, mapping)
 
@@ -432,25 +440,28 @@ def build_graph(dict_gph):
         for edg in dict_gph['links']:
             G_out.add_edge(edg['source'], edg['target'])
 
-
     return G_out
+
+
 """
 
 
 """
 
 def generate_spice_nets(
-        in_netlist,
-        length_list=None,
-        add_prn_to_list=False,
-        pcell_file=None,
-        wl_graph=None
-        ):
+    in_netlist,
+    length_list=None,
+    add_prn_to_list=False,
+    pcell_file=None,
+    wl_graph=None,
+    simulation_type="chem"
+):
 
     WIRE = ['wire', 'input', 'output']
     PROBE = ['flow_probe', 'pressure_probe', 'concentration_probe']
     FL_PROBE = ['flow_probe', 'pressure_probe']
     C_PROBE = ['chem_probe', 'concentration_probe']
+    T_PROBE = ['temp_probe', 'temperature_probe']
 
     if length_list is None:
         no_lengths = True
@@ -464,7 +475,10 @@ def generate_spice_nets(
         from networkx.readwrite import json_graph
         wl_graph_f = ''
         if wl_graph is None:
-            wl_graph_f = length_list.replace('_length.csv', '_route_nets.json')
+            if length_list[-4:] == '.csv':
+                wl_graph_f = length_list.replace('_length.csv', '_route_nets.json')
+            if length_list[-5:] == '.xlsx':
+                wl_graph_f = length_list.replace('_length.xslx', '_route_nets.json')
         wl_graph = {}
         print("Reading: ", wl_graph_f)
         with open(wl_graph_f, 'r') as js_f:
@@ -473,8 +487,6 @@ def generate_spice_nets(
             print(f'r: "{r}"')
             print('VAL:')
             pp(json_f[r])
-            #new_graph = json_graph.node_link_graph(r[1])
-            #new_graph = nx.node_link_graph(json_f[r])
             new_graph = build_graph(json_f[r])
             if len(new_graph.nodes) > 1:
                 wl_graph[r] = new_graph
@@ -485,6 +497,7 @@ def generate_spice_nets(
         # os.environ.pop('XYCE_WL_GRAPH')
 
 
+    # start internal net functions ####
 
     def add_fl_net_2_edge(g, edge, net_name):
         if 'fl_net' in g.edges[edge]:
@@ -508,11 +521,27 @@ def generate_spice_nets(
         else:
             g.edges[edge]['ch_net'] = net_name
 
+    def add_ht_net_2_edge(g, edge, net_name):
+        #print(f"Prop: {g.edges[edge]}")
+        if "has_flow_probe" in g.edges[edge]:
+            print("EDGE IN FLOW NODE", edge)
+
+        if 'ht_net' in g.edges[edge]:
+            if net_name == g.edges[edge]['ht_net']:
+                print(f"  Net {net_name} already added to {edge}")
+            else:
+                raise Exception(f"Conflicting net names adding {net_name}, already {g.edges[edge]['ch_net']}")
+        else:
+            g.edges[edge]['ht_net'] = net_name
+
+
     def add_net_defs_to_graph(g, node, comp_node):
         if g.nodes[comp_node]['node_type'] in PROBE:
             print(f"  Skipping probe node {comp_node}")
             return
         print("comp node :", comp_node, "wire node: ", node)
+
+        # check for flow probe
         net_edge = (comp_node, node)
         if any([(fl_pr in g.edges[net_edge]) for fl_pr in FL_PROBE]):
             print(f"fluid probe at edge {net_edge}")
@@ -524,6 +553,8 @@ def generate_spice_nets(
         else:
             chan_fluid_net = f"{node}_{comp_node}"
             add_fl_net_2_edge(g, (comp_node, node), chan_fluid_net)
+
+        # check for chemical probe
         if any([(fl_pr in g.edges[net_edge]) for fl_pr in C_PROBE]):
             print(f"chemical probe at edge {net_edge}")
             g.edges[net_edge]['ch_net'] = {
@@ -533,6 +564,19 @@ def generate_spice_nets(
         else:
             chan_chem_net  = f"{node}_{comp_node}_chem"
             add_ch_net_2_edge(g, (comp_node, node), chan_chem_net)
+
+        # check for temperature probe
+        if any([(fl_pr in g.edges[net_edge]) for fl_pr in T_PROBE]):
+            print(f"temperature probe at edge {net_edge}")
+            g.edges[net_edge]['ht_net'] = {
+                "comp_net": f"{node}_{comp_node}_comp_heat",
+                "channel_net": f"{node}_{comp_node}_net_heat"
+            }
+        else:
+            chan_heat_net  = f"{node}_{comp_node}_heat"
+            add_ht_net_2_edge(g, (comp_node, node), chan_heat_net)
+
+    # end internal net functions ####
 
     for node in list(in_netlist.nodes):
 
@@ -653,6 +697,7 @@ def generate_spice_nets(
                     in_netlist.nodes[a_pr_ns[0]]['node_type'],
                     in_netlist.nodes[a_pr_ns[1]]['node_type']
                 ]
+
                 if a_pr_nt[0] in WIRE and a_pr_nt[1] not in WIRE:
                     chan_chem_net  = f"{a_pr_ns[0]}_{a_pr_ns[1]}_chem"
                 elif a_pr_nt[0] not in WIRE and a_pr_nt[1] in WIRE:
@@ -662,11 +707,38 @@ def generate_spice_nets(
                     chan_chem_net  = f"{a_pr_ns[0]}_{a_pr_ns[1]}_chem"
                 else:
                     raise Exception("Nodes are both nodes wires for probe")
+
+                if simulation_type == "heat":
+                    if a_pr_nt[0] in WIRE and a_pr_nt[1] not in WIRE:
+                        chan_heat_net  = f"{a_pr_ns[0]}_{a_pr_ns[1]}_heat"
+                    elif a_pr_nt[0] not in WIRE and a_pr_nt[1] in WIRE:
+                        chan_heat_net  = f"{a_pr_ns[1]}_{a_pr_ns[0]}_heat"
+                    elif a_pr_nt[0] not in WIRE and a_pr_nt[1] not in WIRE:
+                        print(f"Connecting two components {a_pr_ns}")
+                        chan_heat_net  = f"{a_pr_ns[0]}_{a_pr_ns[1]}_heat"
+                    else:
+                        raise Exception("Nodes are both nodes wires for probe")
+
+
                 for att_node in in_netlist[node]:
                     chan_fluid_net = f"{node}_{att_node}"
                     print("attached node :", att_node, "probe node: ", node,'\nNet:', chan_fluid_net)
-                    add_fl_net_2_edge(in_netlist, (att_node, node), chan_fluid_net)
-                    add_ch_net_2_edge(in_netlist, (att_node, node), chan_chem_net)
+                    add_fl_net_2_edge(
+                        in_netlist,
+                        (att_node, node),
+                        chan_fluid_net
+                    )
+                    add_ch_net_2_edge(
+                        in_netlist,
+                        (att_node, node),
+                        chan_chem_net
+                    )
+                    if simulation_type == "heat":
+                        add_ht_net_2_edge(
+                            in_netlist,
+                            (att_node, node),
+                            chan_heat_net
+                        )
             else:
                 raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
         else:
@@ -696,15 +768,29 @@ def read_pcell_file(pc_file):
     else:
         print("Pcell file type not supported yet,", pc_file)
 
+"""
+    Writes the netlist file from the generated graph
+"""
 
 def write_components_from_graph(
-        in_g,
-        of,
-        probe_list=[],
-        pcell_file=None
+    in_g,
+    of,
+    probe_list=[],
+    pcell_file=None,
+    simulation_type="chem"
 ):
     #nx.draw_spring(in_g, with_labels=True)
     #plt.show()
+
+    if simulation_type == "chem":
+        CHEM_SIM = True
+        HEAT_SIM = False
+    elif simulation_type == "heat":
+        CHEM_SIM = True
+        HEAT_SIM = True
+    else:
+        CHEM_SIM = False
+        HEAT_SIM = False
 
     if isinstance(of, str):
         of = open(of, 'w+')
@@ -723,7 +809,12 @@ def write_components_from_graph(
     new_probes = []
     probe_2_write = []
 
-    chan_comp = 'Ychannel'
+    if simulation_type == "flow":
+        chan_comp = 'Ychannel_flow'
+    elif simulation_type == "chem":
+        chan_comp = 'Ychannel'
+    elif simulation_type == "heat":
+        chan_comp = 'Ychannel_ht'
 
     for n in in_g.nodes:
         # these are handled by the graph wires
@@ -749,6 +840,7 @@ def write_components_from_graph(
 
     # write nodes
     for i_n in in_nodes:
+        # temp fix
         if 'chan_len' not in in_g.nodes[i_n]:
             in_g.nodes[i_n]['chan_len'] = '0.1m'
             e_in = list(nx.all_neighbors(in_g, i_n))[0]
@@ -758,24 +850,47 @@ def write_components_from_graph(
         try:
             e = list(in_g.edges(i_n))[0]
             e_fl = in_g[e[0]][e[1]]['fl_net']
-            e_ch = in_g[e[0]][e[1]]['ch_net']
+            if CHEM_SIM:
+                e_ch = in_g[e[0]][e[1]]['ch_net']
+            if HEAT_SIM:
+                e_ht = in_g[e[0]][e[1]]['ht_net']
         except KeyError:
             raise KeyError(f"Net node properly made for edge {e}, node {i_n}")
-        if isinstance(e_fl, set):
-            e_fl = list(e_fl)[0]
-        if isinstance(e_ch, set):
-            e_ch = list(e_ch)[0]
+
         wl = in_g.nodes[i_n]['chan_len']
         if isinstance(e_fl, dict):
             e_fl = e_fl["channel_net"]
-        if isinstance(e_ch, dict):
+        if CHEM_SIM and isinstance(e_ch, dict):
             e_ch = e_ch["channel_net"]
+        if HEAT_SIM and isinstance(e_ht, dict):
+            e_ht = e_ht["channel_net"]
         if 'input_node' in in_g.nodes[i_n]:
             inst_n = i_n  # instance captured so it is unique
             i_n = in_g.nodes[i_n]['input_node']  # syncs up with pump nodes
-            of.write(f"{chan_comp} {inst_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}m\n")
+
+            # write to file
+
+            #of.write(f"{chan_comp} {inst_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}m\n")
+            of.write(f"{chan_comp} {inst_n} {i_n}_in {e_fl}")
+            # add chemical probes
+            if CHEM_SIM:
+                of.write(f" {i_n}_in_chem {e_ch}")
+            if HEAT_SIM:
+                of.write(f" {i_n}_in_heat {e_ht}")
+            # write params
+            of.write(f" length={wl}m\n")
         else:
-            of.write(f"{chan_comp} {i_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}m\n")
+            # write to file
+
+            #of.write(f"{chan_comp} {i_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}m\n")
+            of.write(f"{chan_comp} {i_n} {i_n}_in {e_fl}")
+            # add chemical probes
+            if simulation_type == "chem":
+                of.write(f" {i_n}_in_chem {e_ch}")
+            if simulation_type == "heat":
+                of.write(f" {i_n}_in_heat {e_ht}")
+            # write params
+            of.write(f" length={wl}m\n")
 
     of.write('\n\n')
 
@@ -785,28 +900,52 @@ def write_components_from_graph(
         if len(e) != 2:
             continue
         e_fl1 = in_g[e[0][0]][e[0][1]]['fl_net']
-        e_ch1 = in_g[e[0][0]][e[0][1]]['ch_net']
         e_fl2 = in_g[e[1][0]][e[1][1]]['fl_net']
-        e_ch2 = in_g[e[1][0]][e[1][1]]['ch_net']
+
+        # TODO seperate chem or heat
+        if CHEM_SIM:
+            e_ch1 = in_g[e[0][0]][e[0][1]]['ch_net']
+            e_ch2 = in_g[e[1][0]][e[1][1]]['ch_net']
+
+        if HEAT_SIM:
+            e_ht1 = in_g[e[0][0]][e[0][1]]['ht_net']
+            e_ht2 = in_g[e[1][0]][e[1][1]]['ht_net']
         # need to fix addition of sets
-        if isinstance(e_fl1, set):
-            e_fl1 = list(e_fl1)[0]
-        if isinstance(e_fl2, set):
-            e_fl2 = list(e_fl2)[0]
-        if isinstance(e_ch1, set):
-            e_ch1 = list(e_ch1)[0]
-        if isinstance(e_ch2, set):
-            e_ch2 = list(e_ch2)[0]
+        # if isinstance(e_fl1, set):
+        #     e_fl1 = list(e_fl1)[0]
+        # if isinstance(e_fl2, set):
+        #     e_fl2 = list(e_fl2)[0]
+        # if isinstance(e_ch1, set):
+        #     e_ch1 = list(e_ch1)[0]
+        # if isinstance(e_ch2, set):
+        #     e_ch2 = list(e_ch2)[0]
         if isinstance(e_fl1, dict):
             e_fl1 = e_fl1["channel_net"]
-        if isinstance(e_ch1, dict):
-            e_ch1 = e_ch1["channel_net"]
         if isinstance(e_fl2, dict):
             e_fl2 = e_fl2["channel_net"]
-        if isinstance(e_ch2, dict):
+
+        if CHEM_SIM and isinstance(e_ch1, dict):
+            e_ch1 = e_ch1["channel_net"]
+        if CHEM_SIM and isinstance(e_ch2, dict):
             e_ch2 = e_ch2["channel_net"]
+
+        if HEAT_SIM and isinstance(e_ht1, dict):
+            e_ht1 = e_ht1["channel_net"]
+        if HEAT_SIM and isinstance(e_ht2, dict):
+            e_ht2 = e_ht2["channel_net"]
+
+
         wl = in_g.nodes[w_n]['chan_len']
-        of.write(f"{chan_comp} {w_n} {e_fl1} {e_fl2} {e_ch1} {e_ch2} length={wl}m\n")
+
+        # write init flow devs
+        of.write(f"{chan_comp} {w_n} {e_fl1} {e_fl2}")
+        if CHEM_SIM:
+            of.write(f" {e_ch1} {e_ch2}")
+        if HEAT_SIM:
+            of.write(f" {e_ht1} {e_ht2}")
+        # write params
+        of.write(f" length={wl}m\n")
+
 
     of.write('\n\n')
 
@@ -815,25 +954,40 @@ def write_components_from_graph(
             e_out = list(in_g[o_n])[0]
             #print(o_n, e_out)
             in_g.edges[(o_n, e_out)]['fl_net'] = e_out
-            in_g.edges[(o_n, e_out)]['ch_net'] = e_out + "_chem"
+            if CHEM_SIM:
+                in_g.edges[(o_n, e_out)]['ch_net'] = e_out + "_chem"
+            if HEAT_SIM:
+                in_g.edges[(o_n, e_out)]['ht_net'] = e_out + "_heat"
             in_g.nodes[o_n]['chan_len'] = '0.1m'
         try:
             e = list(in_g.edges(o_n))[0]
             e_fl = in_g[e[0]][e[1]]['fl_net']
-            e_ch = in_g[e[0]][e[1]]['ch_net']
+            if CHEM_SIM:
+                e_ch = in_g[e[0]][e[1]]['ch_net']
+            if HEAT_SIM:
+                e_ht = in_g[e[0]][e[1]]['ht_net']
         except KeyError:
             raise KeyError(f"Net node properly made for edge {e}, node {o_n}")
-        if isinstance(e_fl, set):
-            e_fl = list(e_fl)[0]
-        if isinstance(e_ch, set):
-            e_ch = list(e_ch)[0]
+        # if isinstance(e_fl, set):
+        #     e_fl = list(e_fl)[0]
+        # if isinstance(e_ch, set):
+        #     e_ch = list(e_ch)[0]
         # change for probe
         if isinstance(e_fl, dict):
             e_fl = e_fl["channel_net"]
-        if isinstance(e_ch, dict):
+        if CHEM_SIM and isinstance(e_ch, dict):
             e_ch = e_ch["channel_net"]
+        if HEAT_SIM and isinstance(e_ht, dict):
+            e_ht = e_ht["channel_net"]
         wl = in_g.nodes[o_n]['chan_len']
-        of.write(f"{chan_comp} {o_n} {e_fl} 0 {e_ch} {o_n}_out_chem length={wl}m\n")
+
+        # of.write(f"{chan_comp} {o_n} {e_fl} 0 {e_ch} {o_n}_out_chem length={wl}m\n")
+        of.write(f"{chan_comp} {o_n} {e_fl} 0")
+        if CHEM_SIM:
+            of.write(f" {e_ch} {o_n}_out_chem")
+        if HEAT_SIM:
+            of.write(f" {e_ht} {o_n}_out_heat")
+        of.write(f" length={wl}m\n")
 
     of.write('\n\n')
 
@@ -856,6 +1010,8 @@ def write_components_from_graph(
 
         port_n = []
         print(f"node: {oth_n}, connected nodes {in_g[oth_n]}")
+        # currently assume in-out and a-b-out
+        # TODO need to identify node names from library
         if len(in_g[oth_n]) == 2:
             port_n.append(check_port(oth_n, 'in_fluid'))
             port_n.append(check_port(oth_n, 'out_fluid'))
@@ -868,35 +1024,62 @@ def write_components_from_graph(
         # overwrites previous probe nodes
         fl_wr_new = []
         ch_wr_new = []
+        ht_wr_new = []
         try:
             for pn in port_n:
                 if isinstance(in_g.edges[(oth_n, pn)]['fl_net'], dict):
                     fl_wr_new.append(in_g.edges[(oth_n, pn)]['fl_net']["comp_net"])
                 else:
-                    if isinstance(in_g.edges[(oth_n, pn)]['fl_net'], set):
-                        fl_wr_new.append(list(in_g.edges[(oth_n, pn)]['fl_net'])[0])
-                    else:
-                        fl_wr_new.append(in_g.edges[(oth_n, pn)]['fl_net'])
+                    # if isinstance(in_g.edges[(oth_n, pn)]['fl_net'], set):
+                    #     fl_wr_new.append(list(in_g.edges[(oth_n, pn)]['fl_net'])[0])
+                    # else:
+                    fl_wr_new.append(in_g.edges[(oth_n, pn)]['fl_net'])
 
-                if isinstance(in_g.edges[(oth_n, pn)]['ch_net'], dict):
+                if CHEM_SIM and isinstance(in_g.edges[(oth_n, pn)]['ch_net'], dict):
                     ch_wr_new.append(in_g.edges[(oth_n, pn)]['ch_net']["comp_net"])
+                elif CHEM_SIM:
+                    # if isinstance(in_g.edges[(oth_n, pn)]['ch_net'], set):
+                    #     ch_wr_new.append(list(in_g.edges[(oth_n, pn)]['ch_net'])[0])
+                    # else:
+                    ch_wr_new.append(in_g.edges[(oth_n, pn)]['ch_net'])
                 else:
-                    if isinstance(in_g.edges[(oth_n, pn)]['ch_net'], set):
-                        ch_wr_new.append(list(in_g.edges[(oth_n, pn)]['ch_net'])[0])
-                    else:
-                        ch_wr_new.append(in_g.edges[(oth_n, pn)]['ch_net'])
+                    pass
+
+                if HEAT_SIM and isinstance(in_g.edges[(oth_n, pn)]['ht_net'], dict):
+                    ht_wr_new.append(in_g.edges[(oth_n, pn)]['ht_net']["comp_net"])
+                elif HEAT_SIM:
+                    # if isinstance(in_g.edges[(oth_n, pn)]['ch_net'], set):
+                    #     ch_wr_new.append(list(in_g.edges[(oth_n, pn)]['ch_net'])[0])
+                    # else:
+                    ht_wr_new.append(in_g.edges[(oth_n, pn)]['ht_net'])
+                else:
+                    pass
         except KeyError:
             raise KeyError(f"{pn} not in nets of component {oth_n}, nets: {in_g[oth_n]}")
 
         fl_wr = ' '.join(fl_wr_new)
-        ch_wr = ' '.join(ch_wr_new) + ' '
+        if CHEM_SIM:
+            ch_wr = ' '.join(ch_wr_new) + ' '
+        if HEAT_SIM:
+            ht_wr = ' '.join(ht_wr_new) + ' '
 
         if pcell_file is not None and \
                 pcells is not None and \
                 n_type in pcells:
-            of.write(f"Y{pcells[n_type]['base cell']} {oth_n} {fl_wr} {ch_wr} {pcells[n_type]['parameters']}\n")
+            #of.write(f"Y{pcells[n_type]['base cell']} {oth_n} {fl_wr} {ch_wr} {pcells[n_type]['parameters']}\n")
+            of.write(f"Y{pcells[n_type]['base cell']} {oth_n} {fl_wr}")
+            if CHEM_SIM:
+                of.write(f" {ch_wr}")
+            if HEAT_SIM:
+                of.write(f" {ht_wr}")
+            of.write(f" {pcells[n_type]['parameters']}\n")
         else:
-            of.write(f"Y{in_g.nodes[oth_n]['node_type']} {oth_n} {fl_wr} {ch_wr}\n")
+            of.write(f"Y{in_g.nodes[oth_n]['node_type']} {oth_n} {fl_wr}")
+            if CHEM_SIM:
+                of.write(f" {ch_wr}")
+            if HEAT_SIM:
+                of.write(f" {ht_wr}")
+            of.write("\n")
 
 
     of.write("\n\n")
@@ -928,15 +1111,29 @@ def write_time_lines(spice_config_class):
     pass
 
 
-#<<<<<<< HEAD
 def write_spice_file(
-      in_netlist, probes_list, source_lines, sims_time_lines=None,
-      sim_type=None, length_list=None, chem_list=None, out_file=None,
-      add_prn_to_list=False, basename_only=False, pcell_file=None, wl_graph=None):
+    in_netlist,
+    probes_list,
+    source_lines,
+    sims_time_lines=None,
+    sim_type=None,
+    length_list=None,
+    chem_list=None,
+    out_file=None,
+    add_prn_to_list=False,
+    basename_only=False,
+    pcell_file=None,
+    wl_graph=None,
+    simulation_type="chem"
+):
 
     dev = "dev"
 
-    conn_channel = 'Ychannel'
+    conn_channel = {
+        'flow': 'Ychannel',
+        'chem': 'Ychannel',
+        'heat': 'Ychannel'
+    }
 
     if out_file is None:
         out_file = 'out_spice'
@@ -970,16 +1167,18 @@ def write_spice_file(
 
     output_file_list = []
 
+    # for each chemical create a netlist file
 
     for chem, chem_node_dict in chem_list.items():
 
         chem_out_file = f'{out_file}_{chem}.cir.str'
+        print("Writing string file:\n\t", chem_out_file)
 
         if basename_only:
             output_file_entry = {
-                'Chemical':chem,
-                'spice_str_file':chem_out_file,
-                'spice_file':os.path.basename(chem_out_file)[:-4]}
+                'Chemical': chem,
+                'spice_str_file': chem_out_file,
+                'spice_file': os.path.basename(chem_out_file)[:-4]}
             if add_prn_to_list:
                 output_file_entry["OutputFile"] = (
                     os.path.basename(chem_out_file)[:-4] + ".prn"
@@ -1001,59 +1200,61 @@ def write_spice_file(
         if not os.path.isdir(os.path.dirname(chem_out_file)) and \
                 os.path.dirname(chem_out_file) != '':
             os.mkdir(os.path.dirname(chem_out_file))
-        c_of = open(chem_out_file, 'w+')
 
-        c_of.write(f"* Simulation of device {dev}; chem: {chem}\n")
+        with open(chem_out_file, 'w+') as c_of:
 
-        chem_source_list = copy.deepcopy(source_lines)
-        if isinstance(chem_node_dict, dict):
-            for node, val in chem_node_dict.items():
-                chem_source_list[node].append(f"chemConcentration={val}")
+            c_of.write(f"* Simulation of device {dev}; chem: {chem}\n")
 
-        # write inputs and connections
-        for node, line in chem_source_list.items():
-            line[0] = "Y"+line[0]
-            new_line = line+['\n']
-            new_line = ' '.join(new_line)
+            chem_source_list = copy.deepcopy(source_lines)
+            if isinstance(chem_node_dict, dict):
+                for node, val in chem_node_dict.items():
+                    chem_source_list[node].append(f"chemConcentration={val}")
 
-            c_of.write(new_line)
+            # write inputs and connections
+            for node, line in chem_source_list.items():
+                line[0] = "Y"+line[0]
+                new_line = line+['\n']
+                new_line = ' '.join(new_line)
 
-        wire_connections = {}
-        probe_wires = [[], []]
-        node_dict = {}
+                c_of.write(new_line)
 
-        in_netlist_temp = copy.deepcopy(in_netlist)
-        in_netlist_ch = generate_spice_nets(in_netlist_temp, length_list)
+            wire_connections = {}
+            probe_wires = [[], []]
+            node_dict = {}
 
-        new_probes = write_components_from_graph(
-            in_g=in_netlist_ch,
-            of=c_of,
-            probe_list=probes_list,
-            pcell_file=pcell_file
-        )
+            in_netlist_temp = copy.deepcopy(in_netlist)
+            in_netlist_ch = generate_spice_nets(in_netlist_temp, length_list)
 
-        # add transient lines
-        c_of.write("\n\n")
+            new_probes = write_components_from_graph(
+                in_g=in_netlist_ch,
+                of=c_of,
+                probe_list=probes_list,
+                pcell_file=pcell_file,
+                simulation_type=simulation_type
+            )
 
-        for t in sims_time_lines:
-            print(t)
-            c_of.write(' '.join(t)+'\n')
+            # add transient lines
+            c_of.write("\n\n")
 
-        # add probes
-        if sim_type is not None:
-            if isinstance(sim_type, str):
-                sim_type = [sim_type]
+            for t in sims_time_lines:
+                print(t)
+                c_of.write(' '.join(t)+'\n')
 
-            for st in sim_type:
-                if st == "transient":
-                    nl = re.sub(r'[ ]+', r' ', '.print tran '+' '.join([pr["print"] for pr in probes_list])+' '.join(new_probes))
-                    c_of.write(nl+'\n')
-                elif st == "static":
-                    nl = re.sub(r'[ ]+', r' ', '.print dc '+' '.join([pr["print"] for pr in probes_list])+' '.join(new_probes))
-                    c_of.write(nl+'\n')
-                else:
-                    raise ValueError("sim_type must be transient or static")
-        c_of.write('\n.end')
+            # add probes
+            if sim_type is not None:
+                if isinstance(sim_type, str):
+                    sim_type = [sim_type]
+
+                for st in sim_type:
+                    if st == "transient":
+                        nl = re.sub(r'[ ]+', r' ', '.print tran '+' '.join([pr["print"] for pr in probes_list])+' '.join(new_probes))
+                        c_of.write(nl+'\n')
+                    elif st == "static":
+                        nl = re.sub(r'[ ]+', r' ', '.print dc '+' '.join([pr["print"] for pr in probes_list])+' '.join(new_probes))
+                        c_of.write(nl+'\n')
+                    else:
+                        raise ValueError("sim_type must be transient or static")
+            c_of.write('\n.end')
 
     if 'XYCE_WL_GRAPH' in os.environ:
         os.environ.pop('XYCE_WL_GRAPH')
@@ -1097,14 +1298,19 @@ def get_length_list(len_file):
 
     return len_df
 
+"""
+    converts the str node file to num nodes
+"""
+
 def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
-    if os.path.isfile(SPfile) and (SPfile[-4:] == ".cir" or SPfile[-8:] == ".cir.str"):
+    if os.path.isfile(SPfile) and \
+            (SPfile[-4:] == ".cir" or SPfile[-8:] == ".cir.str"):
         SPfile = [SPfile]
     else:
         # if directory is given
         SPfile = ['/'.join([SPfile, f])
-                       for f in os.listdir(SPfile)
-                       if os.path.isfile(os.path.join(SPfile, f)) and f[-4:]==".cir"]
+            for f in os.listdir(SPfile)
+                if os.path.isfile(os.path.join(SPfile, f)) and f[-4:] == ".cir"]
 
     for f in SPfile:
         SPfile_o = open(f, "r")
@@ -1116,45 +1322,79 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                 new_file = f + ".cir"
         else:
             new_file = f + ".num"
-        SPfile_n = open(new_file, "w")
 
-        nodeList = {}
+        with open(new_file, "w") as SPfile_n:
 
-        for line in SPfile_o:
-            # remove leading WS
-            line = line.rstrip()
+            nodeList = {}
 
-            # remove comments
-            line = line.split('*')[0]
-            line_comment = ''.join(line.split('*')[1:])
+            for line in SPfile_o:
+                # remove leading WS
+                line = line.rstrip()
 
+                # remove comments
+                line = line.split('*')[0]
+                line_comment = re.search(r'\*.*$', line)
+                if line_comment is None:
+                    line_comment = ""
 
-
-
-            if line == "" or line == "\n":
-                SPfile_n.write(line + line_comment + "\n")
-            else:
-                line_vars = line.replace("  ", " ").split(" ")
-                if len(line_vars) > 1:
-                    arg1 = line_vars[0]
-                    end_line_str = []
-                    line_nodes = []
-                    # xyce command start with .
-                    if arg1[0] == ".":
-                        for ind, param in enumerate(line_vars[1:]):
-                            for n in nodeList.keys():
-                                if n in param:
-                                    n_num = str(nodeList[n])
-                                    rplace_str = "(" + n + ")"
-                                    newParam = param.replace(
-                                        "(" + n + ")", "(" + n_num + ")"
-                                    )
-                                    line_vars[ind + 1] = newParam
-                        new_sp_line = " ".join(line_vars) + "\n"
-                    # xyce voltage probes start with v
-                    elif arg1[0] == "v":
-                        for ind, param in enumerate(line_vars[1:]):
-                            if ind < 2:
+                if re.match(line, r"\s*"):  # == "" or line == "\n":
+                    SPfile_n.write(line + line_comment + "\n")
+                else:
+                    #line_vars = line.replace("  ", " ").split(" ")
+                    line_vars = line.split()
+                    if len(line_vars) > 1:
+                        arg1 = line_vars[0]
+                        end_line_str = []
+                        line_nodes = []
+                        # xyce command start with .
+                        if re.match(r'\.[a-zA-Z0-9_]+', line_vars[0]):  # == ".":
+                            if line_vars[0][1:] == 'print':
+                                for ind, param in enumerate(line_vars[1:]):
+                                    for n in nodeList.keys():
+                                        if n in param:
+                                            n_num = str(nodeList[n])
+                                            # rplace_str = "(" + n + ")"
+                                            # newParam = param.replace(
+                                            #     "(" + n + ")", "(" + n_num + ")"
+                                            # )
+                                            newParam = re.sub(
+                                                r"([VvIi])\(" + n + "\)",
+                                                r"\1(" + n_num + r")",
+                                                param
+                                            )
+                                            line_vars[ind + 1] = newParam
+                                new_sp_line = " ".join(line_vars) + "\n"
+                            else:
+                                new_sp_line = " ".join(line_vars) + "\n"
+                        # xyce voltage probes start with v
+                        elif arg1[0] == "v":
+                            for ind, param in enumerate(line_vars[1:]):
+                                if ind < 2:
+                                    if "=" in param:
+                                        end_line_str += [param]
+                                    elif param == "0":
+                                        line_nodes.append(0)
+                                    else:
+                                        if param not in nodeList.keys():
+                                            # we do not want 0
+                                            nodeList[param] = len(nodeList) + 1
+                                        line_node = nodeList[param]
+                                        line_nodes.append(line_node)
+                                if ind >= 2:
+                                    end_line_str += [param]
+                            # append all
+                            # print(arg1)
+                            new_sp_line = ' '.join(
+                                [arg1] +
+                                [str(x) for x in line_nodes] +
+                                end_line_str
+                                ) + '\n'
+                        else:
+                            # replaces params for numbers
+                            # <device> <name>
+                            device = [arg1, line_vars[1]]
+                            for param in line_vars[2:]:
+                                # exception for parameters which will explicitly use =
                                 if "=" in param:
                                     end_line_str += [param]
                                 elif param == "0":
@@ -1165,49 +1405,24 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                                         nodeList[param] = len(nodeList) + 1
                                     line_node = nodeList[param]
                                     line_nodes.append(line_node)
-                            if ind >= 2:
-                                end_line_str += [param]
-                        # append all
-                        # print(arg1)
-                        new_sp_line = ' '.join(
-                            [arg1]+
-                            [str(x) for x in line_nodes]+
-                            end_line_str
-                            )+'\n'
-                    else:
-                        # replaces params for numbers
-                        # <device> <name>
-                        device = [arg1, line_vars[1]]
-                        for param in line_vars[2:]:
-                            # exception for parameters which will explicitly use =
-                            if "=" in param:
-                                end_line_str += [param]
-                            elif param == "0":
-                                line_nodes.append(0)
-                            else:
-                                if param not in nodeList.keys():
-                                    # we do not want 0
-                                    nodeList[param] = len(nodeList) + 1
-                                line_node = nodeList[param]
-                                line_nodes.append(line_node)
-                    # append all
-                        new_sp_line = ' '.join(
-                            device+
-                            [str(x) for x in line_nodes]+
-                            end_line_str
-                            )+'\n'
+                            # append all
+                            new_sp_line = ' '.join(
+                                device +
+                                [str(x) for x in line_nodes] +
+                                end_line_str
+                                ) + '\n'
 
-                    SPfile_n.write(new_sp_line+line_comment)
-                else:
-                    SPfile_n.write(line + line_comment+'\n')
-                    SPfile_n.write(new_sp_line + line_comment)
+                        SPfile_n.write(new_sp_line + line_comment)
+                    else:
+                        new_sp_line = ""
+                        SPfile_n.write(line + line_comment+'\n')
+                        SPfile_n.write(new_sp_line + line_comment)
 
         node_file = f + ".nodes"
         with open(node_file, "w") as node_f:
             json.dump(nodeList, node_f)
 
         SPfile_o.close()
-        SPfile_n.close()
 
 
 def visualize_netlist(in_cir):
@@ -1232,8 +1447,16 @@ def visualize_netlist(in_cir):
 
 
 def generate_cir_main(
-        design, verilog_file, config_file, length_file, out_file,
-        basename_only=False, pcell_file=None, wl_graph_file=None):
+    design,
+    verilog_file,
+    config_file,
+    length_file,
+    out_file,
+    basename_only=False,
+    pcell_file=None,
+    wl_graph_file=None,
+    simulation_type="flow"
+):
 
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/v_2_NX/')
 
@@ -1252,9 +1475,23 @@ def generate_cir_main(
     print(Xcl.get_sim_str())
 
     # print(net_graph.keys())
-    out_probes, netlist_graph_out = add_probes_to_device(Xcl.probes, net_graph[design]['netlist'])
+    out_probes, netlist_graph_out, assumed_sim = add_probes_to_device(
+        Xcl.probes,
+        net_graph[design]['netlist']
+    )
 
-    dev_lines, chem_args = generate_source_list(Xcl, has_chem=True)
+    if assumed_sim == "chem" and simulation_type == "flow":
+        simulation_type = "chem"
+
+    if assumed_sim == "heat" and simulation_type == "flow":
+        simulation_type = "heat"
+    elif assumed_sim == "heat" and simulation_type == "chem":
+        simulation_type = "heat"
+
+    dev_lines, chem_args = generate_source_list(
+        Xcl,
+        has_chem=True,
+        has_temp=(simulation_type == "heat"))
 
     # print(out_probes)
 
@@ -1272,8 +1509,9 @@ def generate_cir_main(
         add_prn_to_list=True,
         basename_only=basename_only,
         pcell_file=pcell_file,
-        wl_graph=wl_graph_file
-        )
+        wl_graph=wl_graph_file,
+        simulation_type=simulation_type
+    )
 
     for spf in sp_files.iterrows():
         convert_nodes_2_numbers_xyce(spf[1]["spice_str_file"], cir_out=True)
