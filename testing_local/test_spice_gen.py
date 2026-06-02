@@ -34,34 +34,32 @@ def test_add_probes():
     # visual_graph(netlist_graph['smart_toilet']['netlist'])
 
 
-"""
-"""
 
-
-def test_source_list_gen():
-    import sys
-    import os
-    # from writeSpice import add_probes_to_device
-    from add_probes import add_probes_to_device
-    from writeSpice import generate_source_list
-    from SimulationXyce import SimulationXyce
-
-    sys.path.insert(0, os.path.dirname(
-        os.path.realpath(__file__))+'/../v_2_NX/')
-    from Verilog2NX import get_modules, visual_graph
-
-    verilog_file = 'testing_local/smart_toilet_test_config/smart_toilet.v'
-    netlist_dict, netlist_graph = get_modules(in_v=verilog_file, visual=False)
-
-    config_file = "testing_local/smart_toilet_test_config/simulation.config"
-
-    Xcl = SimulationXyce()
-    Xcl.parse_config_file(config_file)
-
-    dev_lines, chem_args = generate_source_list(Xcl)
-
-    print('device lines:')
-    print(dev_lines)
+# duplicate?
+# def test_source_list_gen():
+#     import sys
+#     import os
+#     # from writeSpice import add_probes_to_device
+#     from add_probes import add_probes_to_device
+#     from writeSpice import generate_source_list
+#     from SimulationXyce import SimulationXyce
+#
+#     sys.path.insert(0, os.path.dirname(
+#         os.path.realpath(__file__))+'/../v_2_NX/')
+#     from Verilog2NX import get_modules, visual_graph
+#
+#     verilog_file = 'testing_local/smart_toilet_test_config/smart_toilet.v'
+#     netlist_dict, netlist_graph = get_modules(in_v=verilog_file, visual=False)
+#
+#     config_file = "testing_local/smart_toilet_test_config/simulation.config"
+#
+#     Xcl = SimulationXyce()
+#     Xcl.parse_config_file(config_file)
+#
+#     dev_lines, chem_args = generate_source_list(Xcl)
+#
+#     print('device lines:')
+#     print(dev_lines)
 
 
 """
@@ -481,7 +479,7 @@ def test_write_spice_str_concentration_probe():
 def test_write_spice_str_5():
     import sys
     import os
-    #from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
     from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
