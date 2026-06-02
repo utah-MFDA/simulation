@@ -17,6 +17,8 @@ debugLinearSimCh
 env
 __pycache__
 
+to_be_removed
+
 simConfig
 
 Continuous/remoteComFiles*
@@ -35,6 +37,7 @@ testing_local/*/results/*
 testing_local/*/results_old/*
 testing_local/*/spiceFiles/*
 testing_local/*/*.tar
+testing_local/test-output.txt
 
 test_netlists/*/results/1_*
 test_netlists/*/results/2_*

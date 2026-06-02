@@ -22,6 +22,7 @@ from pprint import pp
 def convert_dict_to_probes(probes):
     pass
 
+
 def add_probes_to_device(probes, netlist_graph):
 
     probe_list = []
@@ -123,7 +124,7 @@ def add_probes_to_device(probes, netlist_graph):
 
     # start function ---------------------------------------
 
-    if 'pressure' in probes:
+    if "pressure" in probes:
         # TODO add dev to pressure probe call
         for p in probes['pressure']:
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
@@ -1308,7 +1309,8 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
         SPfile = [SPfile]
     else:
         # if directory is given
-        SPfile = ['/'.join([SPfile, f])
+        SPfile = [
+            '/'.join([SPfile, f])
             for f in os.listdir(SPfile)
                 if os.path.isfile(os.path.join(SPfile, f)) and f[-4:] == ".cir"]
 
