@@ -70,7 +70,7 @@ def runSimulation(
         design,
         verilogFile,
         sim_config,
-        workDir,
+        work_dir,
         libraryFile,
         isLocalXyce,
         cirConfigFile=None,
@@ -86,12 +86,13 @@ def runSimulation(
         plot_results=False,
         evaluate_results=False,
         xyce_run_config_file=None,
-        extra_args={}
+        # extra_args={}
 ):
 
+    xyceFiles = 'spice_files.csv'
 
     # Checks local_xyce value
-    #if (isLocalXyce):
+    # if (isLocalXyce):
     _local_xyce = True
     _noarchive = True  # no docker archive created
     convert_basename = False
@@ -102,6 +103,7 @@ def runSimulation(
         generate_cir_files_from_write_spice(
             design=design,
             verilog_file=verilogFile,
+            wd=work_dir,
             sim_config=sim_config,
             length_file=length_file,
             pcell_file=pcell_file
@@ -112,7 +114,7 @@ def runSimulation(
             design_name=design,
             verilogFile=verilogFile,
             sim_config=sim_config,
-            workDir=workDir,
+            workDir=work_dir,
             libraryFile=libraryFile,
             output_dir=output_dir,
             xyceFiles=xyceFiles,
@@ -143,8 +145,11 @@ def local_xyce_run(
     else:
         result_wd = verilog_2_xyce_extras_loc
 
-    runLocalXyce(xyce_files=xyceFiles, workDir=result_wd,
-                 config_file=xyce_run_config)
+    runLocalXyce(
+        xyce_files=xyceFiles,
+        workDir=result_wd,
+        config_file=xyce_run_config
+    )
 
     results_prn_wd = result_wd  # +'/results'
     load_wd = ''
@@ -222,41 +227,47 @@ def generate_report(
 
     if _main_plt_results:
         plot_xyce_results_list(df)
-        
+
 
 def generate_cir_files_from_write_spice(
     design,
     verilog_file,
+    wd,
     sim_config=None,
     length_file=None,
+    gen_output_dir=None,
     basename_only=False,
     pcell_file=None
 ):
     import writeSpice
-    
+
     # output file
     if gen_output_dir == None:
         of = f"{wd}/{design}"
     else:
         os.makedirs(f"{wd}/{gen_output_dir}", exist_ok=True)
         of = f"{wd}/{gen_output_dir}/{design}"
-    
+
     writeSpice.generate_cir_main(
         design=design,
-        verilog_file=verilogFile,
+        verilog_file=verilog_file,
         config_file=sim_config,
         length_file=length_file,
         out_file=of,
         basename_only=basename_only,
         pcell_file=pcell_file,
-    )  
+    )
 
 
 local_file_path = os.path.dirname(os.path.realpath(__file__))
 
 
-def runLocalXyce(xyce_files, workDir, xyce_run_location=f'{local_file_path}',
-                 config_file=None):
+def runLocalXyce(
+    xyce_files,
+    workDir,
+    xyce_run_location=f'{local_file_path}',
+    config_file=None
+):
 
     import xyceRun
 
@@ -270,11 +281,17 @@ def runLocalXyce(xyce_files, workDir, xyce_run_location=f'{local_file_path}',
     )
 
 
-
 # load the prn file into a dataframe
 def load_xyce_results_file(rFile):
-    r_df = pd.read_table(rFile, skipfooter=1, index_col=0,
-                         delim_whitespace=True, engine='python')
+
+    r_df = pd.read_table(
+        rFile,
+        skipfooter=1,
+        index_col=0,
+        #delim_whitespace=True,
+        sep=r'\s+',
+        engine='python'
+    )
     return r_df
 
 
@@ -630,7 +647,7 @@ if __name__ == "__main__":
         design=args.design,
         verilogFile=args.netlist,
         sim_config=args.sim_config,
-        workDir=args.sim_dir,
+        work_dir=args.sim_dir,
         libraryFile=args.lib,
         isLocalXyce=args.local_xyce,
         cirConfigFile=args.cir_config,
@@ -645,4 +662,4 @@ if __name__ == "__main__":
         plot_results=args.plot,
         evaluate_results=args.eval_result,
         xyce_run_config_file=args.xyce_run_config,
-        )
+    )

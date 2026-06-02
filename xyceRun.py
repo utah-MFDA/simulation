@@ -105,7 +105,10 @@ class xyceSimulator:
         # generate library string
         xyce_lib_str = self.genPluginStr()
 
-        xyce_run = self.xyce_command+' -plugin '+xyce_lib_str+' '
+        if xyce_lib_str.strip() != '':
+            xyce_run = self.xyce_command+' -plugin '+xyce_lib_str+' '
+        else:
+            xyce_run = self.xyce_command + ' ' + xyce_lib_str
 
         for f in files:
             xyce_run_file = (xyce_run+f)
@@ -113,7 +116,12 @@ class xyceSimulator:
             print("run Xyce: " + xyce_run_file)
             xyce_run_file = ' '.join(xyce_run_file.split())
             # print(xyce_run_file)
-            subprocess.run(xyce_run_file, shell=True, stdout=True)
+            subprocess.run(
+                xyce_run_file,
+                shell=True,
+                stdout=True,
+                stderr=True
+            )
 
         # TODO test
         # self._move_results_files(os.path.dirname(files[0]))

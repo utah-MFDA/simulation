@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# This script requires a build of the implementing library
+#   at .lib/xyce_lib
+
+docker_img=bgoenner/openmfda:devel_0.0.1.5c
+
+docker_name=xyce_mfda_testing
+
+lib_name=MFXyce_0.0.2b.so
+
+xyce_plugin=xyce_lib/$lib_name
+xyce_cmd=/usr/local/bin/Xyce
+
+file_full_path=$(realpath $1)
+
+docker_cmd="$xyce_cmd -plugin $xyce_plugin /xyce_cir/$(basename $file_full_path)"
+docker_cmd_base="$xyce_cmd -plugin $xyce_plugin /xyce_cir/$(basename $file_full_path)"
+
+this_script=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
+
+echo $this_script
+echo $file_full_path
+# echo $docker_cmd
+#
+# docker_cmd=""
+file_cmd="$xyce_cmd -plugin $xyce_plugin /xyce_cir/$(basename $file_full_path)"
+
+# docker_run=docker run \
+#   -u 1000:1000 \
+#   -v $this_script/.lib:/xyce_lib \
+#   -v $(dirname $file_full_path):/xyce_cir \
+#   -a stdout \
+#   -a stdin \
+#   -a stderr \
+#   -t \
+#   --entrypoint='' \
+#   --name $docker_name \
+#   $docker_img $docker_cmd
+#   --rm
+# docker run \
+#   -u 1000:1000 \
+#   -v $this_script/.lib:/xyce_lib \
+#   -v $(dirname $file_full_path):/xyce_cir \
+#   -a stdout \
+#   -a stdin \
+#   -a stderr \
+#   -t \
+#   --entrypoint='' \
+#   --name $docker_name \
+#   $docker_img $file_cmd
+#
+
+docker_cmd=""
+
+for invar in "$@"
+do
+  file_cmd="$xyce_cmd -plugin $xyce_plugin /xyce_cir/$(basename $invar); "
+  docker_cmd+="${file_cmd}"
+done
+
+echo $docker_cmd
+
+docker run \
+  -u 1000:1000 \
+  -v $this_script/.lib:/xyce_lib \
+  -v $(dirname $file_full_path):/xyce_cir \
+  -a stdout \
+  -a stderr \
+  -t \
+  --rm \
+  --entrypoint='' \
+  --name $docker_name \
+  $docker_img bash -c "$docker_cmd"
+
+# count=""
+#
+# for invar in "$@"
+# do
+#   file_cmd="$xyce_cmd -plugin $xyce_plugin /xyce_cir/$(basename $invar)"
+#
+#   if [ "x$count" == "x" ]; then
+#     docker run \
+#       -u 1000:1000 \
+#       -v $this_script/.lib:/xyce_lib \
+#       -v $(dirname $file_full_path):/xyce_cir \
+#       -a stdout \
+#       -a stdin \
+#       -a stderr \
+#       -t \
+#       --rm
+#       --entrypoint='' \
+#       --name $docker_name \
+#       $docker_img bash
+#
+#     count="0"
+#   fi
+#
+#     docker exec \
+#       -u 1000:1000 \
+#       -t \
+#       $docker_name $file_cmd
+#
+# done
+
+
+
+

@@ -422,7 +422,8 @@ def convertToCir_from_config(
         noarchive=False,
         gen_output_dir=None,
         basename_only=False,
-        pcell_file=None):
+        pcell_file=None
+):
 
     # from writeSpice import generate_cir_main
     import writeSpice
