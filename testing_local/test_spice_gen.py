@@ -7,7 +7,8 @@
 def test_add_probes():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
 
     sys.path.insert(0, os.path.dirname(
         os.path.realpath(__file__))+'/../v_2_NX/')
@@ -40,7 +41,8 @@ def test_add_probes():
 def test_source_list_gen():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from SimulationXyce import SimulationXyce
 
@@ -69,7 +71,8 @@ def test_source_list_gen():
 def test_source_list_gen():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from SimulationXyce import SimulationXyce
 
@@ -106,7 +109,8 @@ def test_convert_netlist():
 def test_write_spice_str_0():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
     from writeSpice import convert_nodes_2_numbers_xyce
@@ -167,7 +171,8 @@ def test_write_spice_str_0():
 def test_write_spice_str_1():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
     from writeSpice import convert_nodes_2_numbers_xyce
@@ -227,7 +232,8 @@ def test_write_spice_str_1():
 def test_write_spice_str_2():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
     from writeSpice import convert_nodes_2_numbers_xyce
@@ -285,7 +291,8 @@ def test_write_spice_str_2():
 def test_write_spice_str_3():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
     from writeSpice import convert_nodes_2_numbers_xyce
@@ -344,7 +351,8 @@ def test_write_spice_str_3():
 def test_write_spice_str_0_ht():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
     from writeSpice import convert_nodes_2_numbers_xyce
@@ -411,7 +419,8 @@ def test_write_spice_ht_nodes():
 def test_write_spice_str_concentration_probe():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    # from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
     from writeSpice import convert_nodes_2_numbers_xyce
@@ -472,7 +481,8 @@ def test_write_spice_str_concentration_probe():
 def test_write_spice_str_5():
     import sys
     import os
-    from writeSpice import add_probes_to_device
+    #from writeSpice import add_probes_to_device
+    from add_probes import add_probes_to_device
     from writeSpice import generate_source_list
     from writeSpice import write_spice_file
     from writeSpice import convert_nodes_2_numbers_xyce
