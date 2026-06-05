@@ -17,10 +17,17 @@ def test_add_probes():
 
     probes = {}
     probes['pressure'] = [{'node': 'connect1'}]
+
     probes['pressureNode'] = [{'node': 'connect1', 'device': 'serp1'}]
     probes['pressureNode'] = [{'node': 'connect1', 'device': 'serp2'}]
+
     probes['flow'] = [{'node': 'connect1', 'device': 'serp1'}]
+
     probes['concentration'] = [{'node': 'connect1'}]
+
+    probes['temperature'] = [{'node': 'connect1'}]
+    probes['temperatureNode'] = [{'node': 'connect1', 'device': 'serp1'}]
+    # probes['heat_flux'] = [{'node': 'connect1', 'device': 'serp1'}]
 
     verilog_file = 'testing_local/smart_toilet_test_config/smart_toilet.v'
 
@@ -32,7 +39,6 @@ def test_add_probes():
     print(out_probes)
 
     # visual_graph(netlist_graph['smart_toilet']['netlist'])
-
 
 
 # duplicate?
@@ -60,7 +66,6 @@ def test_add_probes():
 #
 #     print('device lines:')
 #     print(dev_lines)
-
 
 """
 """

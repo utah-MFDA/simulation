@@ -248,4 +248,89 @@ def add_probes_to_device(probes, netlist_graph):
                     "print": chem_probe
                 })
 
+
+    if 'pressure' in probes:
+        # TODO add dev to pressure probe call
+        for p in probes['pressure']:
+            if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+                dev_node = list(netlist_graph[p.getNode()].keys())[0]
+                probe_list.append({
+                    "probe": "temperature_probe",
+                    "print": f'V({p.getNode()}_{dev_node}_heat)'
+                })
+            else:
+                dev_node = list(netlist_graph[p[node]].keys())[0]
+                probe_list.append({
+                    "probe": "temperature_probe",
+                    "print": f'V({p[node]}_{dev_node}_heat)'
+                })
+
+    # temperature probes are assumed (<connect_name>_heat)
+    # if "temperature" in probes:
+    #     assumed_sim_type = "heat"
+    #     for p in probes["temperature"]:
+    #
+    #         print(list(netlist_graph.nodes))
+    #         print(list(netlist_graph.edges))
+    #         if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+    #             if p.getNode() not in netlist_graph.nodes:
+    #                 logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
+    #                 raise KeyError(
+    #                     f"Probe for node {p.getNode()} not in netlist")
+    #             dev_node = list(netlist_graph[p.getNode()].keys())[0]
+    #             pr_node = p.getNode()
+    #         else:
+    #             if p[node] not in netlist_graph.nodes:
+    #                 logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
+    #                 raise KeyError(f"Probe for node {p[node]} not in netlist")
+    #             dev_node = list(netlist_graph[p[node]].keys())[0]
+    #             pr_node = p[node]
+    #
+    #         check_probe_node_pair(dev_node, pr_node)
+    #         # check for existing probes
+    #         if f'V({pr_node}_{dev_node}_heat)' not in [p_pr['print'] for p_pr in probe_list]:
+    #             dev_node = list(netlist_graph[pr_node].keys())[0]
+    #             probe_list.append({
+    #                 "probe": "temp_probe",
+    #                 "print": f'V({pr_node}_{dev_node}_heat)'
+    #             })
+
+    if 'temperatureNode' in probes:
+        assumed_sim_type = "heat"
+        for p in probes['temperatureNode']:
+            # explicit chem node dev
+            if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+                if p.getNode() not in netlist_graph.nodes:
+                    logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
+                    raise KeyError(
+                        f"Probe for node {p.getNode()} not in netlist")
+                pr_node = p.getNode()
+                dev_node = p.getDevice()
+            else:  # is dictionary
+                pr_node = p[node]
+                dev_node = p[dev]
+
+            check_probe_node_pair(dev_node, pr_node)
+            if "temp_probe" not in netlist_graph.nodes[dev_node]:
+                # netlist_graph.nodes[dev_node]["chem_probe"] = []
+                netlist_graph.edges[(dev_node, pr_node)]["temp_probe"] = []
+
+            if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+                temp_probe = f'V({p.getNode()}_{p.getDevice()}_comp_heat)'
+            else:
+                temp_probe = f'V({p[node]}_{p[dev]}_comp_heat)'
+            # handled by downstream instructions
+            # netlist_graph.nodes[dev_node]["chem_probe"].append([chem_probe])
+            if temp_probe not in netlist_graph.edges[(dev_node, pr_node)]['temp_probe']:
+                netlist_graph.edges[(dev_node, pr_node)
+                                    ]["temp_probe"].append([temp_probe])
+                # same as if in list
+            if temp_probe not in [p_pr['print'] for p_pr in probe_list]:
+                probe_list.append({
+                    "probe": "temp_probe",
+                    "name": f"vth_{dev_node}_{pr_node}",
+                    "edge": (dev_node, pr_node),
+                    "print": temp_probe
+                })
+
     return probe_list, netlist_graph, assumed_sim_type

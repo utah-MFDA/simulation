@@ -288,7 +288,7 @@ def load_xyce_results_file(rFile):
         rFile,
         skipfooter=1,
         index_col=0,
-        #delim_whitespace=True,
+        # delim_whitespace=True,
         sep=r'\s+',
         engine='python'
     )
@@ -299,7 +299,20 @@ def load_xyce_results_file(rFile):
 def change_results_node_ref(df, node_file, chem):
 
     node_mod = r'([VIvi])\(\s*(\d+|\w+)\s*\)'
-    node_parse = r'(?:(\w+)_(\w+)_comp_chem|(\w+)_(\w+)_chem|(\w+)_(\w+))'
+    # node_parse = r'(?:(\w+)_(\w+)_comp_chem|(\w+)_(\w+)_chem|(\w+)_(\w+))'
+    node_parse = r'(?:(\w+)_(\w+)_comp_chem|(\w+)_(\w+)_chem|(\w+)_(\w+)_comp_heat|(\w+)_(\w+)_heat|(\w+)_(\w+))'
+    # regular_reg = [r'(\w+)_(\w+)']
+    # chem_reg = [
+    #     r'(\w+)_(\w+)_comp_chem',
+    #     r'(\w+)_(\w+)_chem'
+    # ]
+    # heat_reg = [
+    #     r'(\w+)_(\w+)_comp_heat',
+    #     r'(\w+)_(\w+)_heat'
+    # ]
+    # node_parse = r'(?:' + '|'.join(
+    #     chem_reg + heat_reg + regular_reg
+    # ) + ')'
     node_flow_parse = r'VFL_(\w+)_(\w+)'
 
     df_nodes = list(df)
@@ -332,11 +345,15 @@ def change_results_node_ref(df, node_file, chem):
                 print("Node #:", node_num, "Node T:", node_type)
                 node_key = list(node_dict.keys())[list(
                     node_dict.values()).index(int(node_num))]
+
                 is_chem_node = False
+                is_temp_node = False
 
                 parsed_node = re.match(node_parse, node_key)
                 print(parsed_node.groups())
+                # the type of node is determined by group position
                 if parsed_node is not None:
+                    # chemistry nodes
                     if parsed_node[1] is not None:
                         node_name = parsed_node[1]
                         node_dev = parsed_node[2]
@@ -345,12 +362,22 @@ def change_results_node_ref(df, node_file, chem):
                         node_name = parsed_node[3]
                         node_dev = parsed_node[4]
                         is_chem_node = True
+                    # heat transfer nodes
                     elif parsed_node[5] is not None:
                         node_name = parsed_node[5]
                         node_dev = parsed_node[6]
+                        is_temp_node = True
+                    elif parsed_node[7] is not None:
+                        node_name = parsed_node[7]
+                        node_dev = parsed_node[8]
+                        is_temp_node = True
+                    # flow nodes
+                    elif parsed_node[9] is not None:
+                        node_name = parsed_node[9]
+                        node_dev = parsed_node[10]
                     else:
                         raise ValueError(
-                            f'Node {node_key} is not correctly formated')
+                            f'Node {node_key} is not correctly formated, reg: {parsed_node.groups()}')
                 else:
                     raise Exception(f"Unable to parse {node_num}")
 
@@ -362,7 +389,7 @@ def change_results_node_ref(df, node_file, chem):
             else:
                 node_name_k = node_key
 
-            print(node_name+' : '+node_name_k)
+            print(node_name + ' : ' + node_name_k)
 
             # We assume chem node end in '_chem'
             if node_type == 'V':
@@ -374,6 +401,8 @@ def change_results_node_ref(df, node_file, chem):
                 # may be an old implementation for output nodes
                 elif node_name_k[-2:] == 'c0':
                     new_node = 'C_'+str(chem)+'('+node_name+')'
+                elif is_temp_node:
+                    new_node = f'T_({node_name})'
                 # all else are pressure nodes
                 else:
                     new_node = f'P({node_dev}-{node_name})'
@@ -404,7 +433,6 @@ def load_xyce_results(rDir, nodes_dir, rlist=None, chem_list=None):
         # we assume in list generation the indexes did not shift
         for ind, rFile in enumerate(rlist):
 
-            # <<<<<<< HEAD
             full_result_fpath = rDir+rFile
             full_node_fpath = nodes_dir+rFile
             print(full_result_fpath)

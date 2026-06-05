@@ -146,6 +146,9 @@ device {self.device}
         self.probes['flow'] = []
         self.probes['concentration'] = []
         self.probes['concentrationNode'] = []
+        self.probes['temperature'] = []
+        self.probes['heat_flux'] = []
+        self.probes['temperatureNode'] = []
 
         self.simulation_type = "flow"
 
@@ -255,6 +258,8 @@ device {self.device}
         ]
         HT_TYPES = [
             "heat",
+            "temp",
+            "temperature",
             "thermal",
         ]
 
@@ -509,13 +514,33 @@ device {self.device}
                 node=node,
                 device=device
             ))
+        elif probe_type == "temperature":
+            self.probes['temperature'].append(
+                self.Probe(
+                    'temperature',
+                    node=node,
+                ))
+        elif probe_type == "temperatureNode":
+            self.probes['temperature'].append(
+                self.Probe(
+                    'temperatureNode',
+                    node=node,
+                    device=device
+                ))
+        elif probe_type == "heat_flux":
+            self.probes['heat_flux'].append(
+                self.Probe(
+                    'heat_flux',
+                    node=node,
+                    device=device
+                ))
         else:
             if isinstance(l_num, int):
                 raise ValueError(
-                    f'{probe_type} is not a valid node, use "pressure", "flow", "pressureNode", "concentrationNode" or declare the input chemical before this line. Line number {l_num+1}')
+                    f'{probe_type} is not a valid node, use "pressure", "flow", "pressureNode", "concentrationNode", "temperatureNode" or declare the input chemical before this line. Line number {l_num+1}')
             else:
                 raise ValueError(
-                    f'{probe_type} is not a valid node, use "pressure", "flow", "pressureNode", "concentrationNode" or declare the input chemical before this line. Line number {l_num}')
+                    f'{probe_type} is not a valid node, use "pressure", "flow", "pressureNode", "concentrationNode", "temperatureNode" or declare the input chemical before this line. Line number {l_num}')
 
     def add_analysis(self, analysis_type, params):
         if analysis_type == 'transient':

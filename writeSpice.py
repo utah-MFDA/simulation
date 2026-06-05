@@ -609,6 +609,8 @@ def write_components_from_graph(
             if 'fl_net' not in in_g[i_n][e_in] or 'fl_net' not in in_g[e_in]:
                 in_g.edges[(i_n, e_in)]['fl_net'] = e_in
                 in_g.edges[(i_n, e_in)]['ch_net'] = e_in + "_chem"
+                if HEAT_SIM:
+                    in_g.edges[(i_n, e_in)]['ht_net'] = e_in + "_heat"
         try:
             e = list(in_g.edges(i_n))[0]
             e_fl = in_g[e[0]][e[1]]['fl_net']
@@ -647,9 +649,9 @@ def write_components_from_graph(
             #of.write(f"{chan_comp} {i_n} {i_n}_in {e_fl} {i_n}_in_chem {e_ch} length={wl}m\n")
             of.write(f"{chan_comp} {i_n} {i_n}_in {e_fl}")
             # add chemical probes
-            if simulation_type == "chem":
+            if CHEM_SIM:
                 of.write(f" {i_n}_in_chem {e_ch}")
-            if simulation_type == "heat":
+            if HEAT_SIM:
                 of.write(f" {i_n}_in_heat {e_ht}")
             # write params
             of.write(f" length={wl}m\n")
@@ -1260,8 +1262,6 @@ def generate_cir_main(
         Xcl,
         has_chem=True,
         has_temp=(simulation_type == "heat"))
-
-    # print(out_probes)
 
     sim_lines = generate_time_lines(Xcl)
 
