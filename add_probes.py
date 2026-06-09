@@ -181,12 +181,12 @@ def add_probes_to_device(probes, netlist_graph):
             })
 
     # concentration probes are assumed (<connect_name>_chem)
-    if "concentration" in probes:
+    if "concentration" in probes and len(probes['concentration']) > 0:
         assumed_sim_type = "chem"
         for p in probes["concentration"]:
 
-            print(list(netlist_graph.nodes))
-            print(list(netlist_graph.edges))
+            #print(list(netlist_graph.nodes))
+            #print(list(netlist_graph.edges))
             if isinstance(p, SimulationXyce.SimulationXyce.Probe):
                 if p.getNode() not in netlist_graph.nodes:
                     logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
@@ -210,7 +210,7 @@ def add_probes_to_device(probes, netlist_graph):
                     "print": f'V({pr_node}_{dev_node}_chem)'
                 })
 
-    if 'concentrationNode' in probes:
+    if 'concentrationNode' in probes and len(probes['concentrationNode']) > 0:
         assumed_sim_type = "chem"
         for p in probes['concentrationNode']:
             # explicit chem node dev
@@ -266,36 +266,37 @@ def add_probes_to_device(probes, netlist_graph):
                 })
 
     # temperature probes are assumed (<connect_name>_heat)
-    # if "temperature" in probes:
-    #     assumed_sim_type = "heat"
-    #     for p in probes["temperature"]:
-    #
-    #         print(list(netlist_graph.nodes))
-    #         print(list(netlist_graph.edges))
-    #         if isinstance(p, SimulationXyce.SimulationXyce.Probe):
-    #             if p.getNode() not in netlist_graph.nodes:
-    #                 logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
-    #                 raise KeyError(
-    #                     f"Probe for node {p.getNode()} not in netlist")
-    #             dev_node = list(netlist_graph[p.getNode()].keys())[0]
-    #             pr_node = p.getNode()
-    #         else:
-    #             if p[node] not in netlist_graph.nodes:
-    #                 logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
-    #                 raise KeyError(f"Probe for node {p[node]} not in netlist")
-    #             dev_node = list(netlist_graph[p[node]].keys())[0]
-    #             pr_node = p[node]
-    #
-    #         check_probe_node_pair(dev_node, pr_node)
-    #         # check for existing probes
-    #         if f'V({pr_node}_{dev_node}_heat)' not in [p_pr['print'] for p_pr in probe_list]:
-    #             dev_node = list(netlist_graph[pr_node].keys())[0]
-    #             probe_list.append({
-    #                 "probe": "temp_probe",
-    #                 "print": f'V({pr_node}_{dev_node}_heat)'
-    #             })
+    if "temperature" in probes and (len(probes['temperature']) > 0):
+        assumed_sim_type = "heat"
+        for p in probes["temperature"]:
 
-    if 'temperatureNode' in probes:
+            #print(list(netlist_graph.nodes))
+            #print(list(netlist_graph.edges))
+            if isinstance(p, SimulationXyce.SimulationXyce.Probe):
+                if p.getNode() not in netlist_graph.nodes:
+                    logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
+                    print(f"Nodes in netlist:\n{netlist_graph.nodes}")
+                    raise KeyError(
+                        f"Probe for node {p.getNode()} not in netlist")
+                dev_node = list(netlist_graph[p.getNode()].keys())[0]
+                pr_node = p.getNode()
+            else:
+                if p[node] not in netlist_graph.nodes:
+                    logging.debug(f"Nodes in netlist:\n{netlist_graph.nodes}")
+                    raise KeyError(f"Probe for node {p[node]} not in netlist")
+                dev_node = list(netlist_graph[p[node]].keys())[0]
+                pr_node = p[node]
+
+            check_probe_node_pair(dev_node, pr_node)
+            # check for existing probes
+            if f'V({pr_node}_{dev_node}_heat)' not in [p_pr['print'] for p_pr in probe_list]:
+                dev_node = list(netlist_graph[pr_node].keys())[0]
+                probe_list.append({
+                    "probe": "temp_probe",
+                    "print": f'V({pr_node}_{dev_node}_heat)'
+                })
+
+    if ('temperatureNode' in probes) and (len(probes['temperatureNode']) > 0):
         assumed_sim_type = "heat"
         for p in probes['temperatureNode']:
             # explicit chem node dev

@@ -111,6 +111,8 @@ value: {self.value}
 
     class Probe:
         def __init__(self, probe_type, node, device=None):
+            if node is None:
+                raise ValueError("Node is None")
             self.probe_type = probe_type
             self.node = node
             self.device = device
@@ -213,10 +215,17 @@ device {self.device}
 
             elif key == 'probe':
                 probe_type = params[1]
-                if len(params) == 4 and (probe_type in ['flow', 'pressureNode', 'concentrationNode', 'pressure']):
+                if len(params) == 4 and (probe_type in [
+                        'flow',
+                        'pressureNode',
+                        'concentrationNode',
+                        'pressure',
+                        'temperature',
+                        'temperatureNode'
+                ]):
                     node = params[3]
                     device = params[2]
-                elif len(params) == 3 and probe_type in ['pressure']:
+                elif len(params) == 3 and probe_type in ['pressure', 'temperature']:
                     node = params[2]
                     device = None
                 else:

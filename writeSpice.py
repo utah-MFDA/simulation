@@ -80,8 +80,16 @@ def generate_time_lines(spice_config_class):
 """
 This function inserts the channel graph into the verilog graph
 """
-def merge_wl_net(in_g, wl_g, node, wl_file=None,
-    debug_node = False, debug_edge = False, debug_draw=False):
+def merge_wl_net(
+    in_g,
+    wl_g,
+    node,
+    wl_file=None,
+    sim_type="chem",
+    debug_node = False,
+    debug_edge = False,
+    debug_draw=False
+):
 
     import matplotlib.pyplot as plt
 
@@ -89,6 +97,7 @@ def merge_wl_net(in_g, wl_g, node, wl_file=None,
 
     for common_node in [n for n in wl_g.nodes if n in in_g.nodes]:
         for prop in in_g.nodes[common_node].items():
+            print("   Transfer prop -", prop[0], ':', prop[1])
             wl_g.nodes[common_node][prop[0]] = in_g.nodes[common_node][prop[0]]
 
     if wl_file is not None:
@@ -115,7 +124,10 @@ def merge_wl_net(in_g, wl_g, node, wl_file=None,
             for con_n in wl_g[n]:
                 #if re.match(r'br_\d_\d', str(n)) is not None:
                 wl_g.edges[(n, con_n)]['fl_net'] = f"{node}_{con_n}"
-                wl_g.edges[(n, con_n)]['ch_net'] = f"{node}_{con_n}_chem"
+                if sim_type == 'chem' or sim_type == 'heat':
+                    wl_g.edges[(n, con_n)]['ch_net'] = f"{node}_{con_n}_chem"
+                if sim_type == 'heat':
+                    wl_g.edges[(n, con_n)]['ht_net'] = f"{node}_{con_n}_heat"
 
             mapping[n] = f"{node}_{n}"
     wl_g = nx.relabel_nodes(wl_g, mapping)
@@ -246,9 +258,9 @@ def generate_spice_nets(
         with open(wl_graph_f, 'r') as js_f:
             json_f = json.load(js_f)
         for r in json_f.keys():
-            print(f'r: "{r}"')
-            print('VAL:')
-            pp(json_f[r])
+            # print(f'r: "{r}"')
+            # print('VAL:')
+            # pp(json_f[r])
             new_graph = build_graph(json_f[r])
             if len(new_graph.nodes) > 1:
                 wl_graph[r] = new_graph
@@ -292,7 +304,7 @@ def generate_spice_nets(
             if net_name == g.edges[edge]['ht_net']:
                 print(f"  Net {net_name} already added to {edge}")
             else:
-                raise Exception(f"Conflicting net names adding {net_name}, already {g.edges[edge]['ch_net']}")
+                raise Exception(f"Conflicting net names adding {net_name}, already {g.edges[edge]['ht_net']}")
         else:
             g.edges[edge]['ht_net'] = net_name
 
@@ -325,6 +337,7 @@ def generate_spice_nets(
             }
         else:
             chan_chem_net  = f"{node}_{comp_node}_chem"
+            print("add edge:", chan_chem_net)
             add_ch_net_2_edge(g, (comp_node, node), chan_chem_net)
 
         # check for temperature probe
@@ -336,6 +349,7 @@ def generate_spice_nets(
             }
         else:
             chan_heat_net  = f"{node}_{comp_node}_heat"
+            print("add edge:", chan_heat_net)
             add_ht_net_2_edge(g, (comp_node, node), chan_heat_net)
 
     # end internal net functions ####
@@ -380,12 +394,13 @@ def generate_spice_nets(
                 print(f"connecting net {node}")
                 if wl_graph is None:
                     print(f"failed to connect graph, {('XYCE_WL_GRAPH' in os.environ)}")
-                print(wl_graph)
+                # print(wl_graph)
                 in_netlist = merge_wl_net(
                     in_netlist,
                     wl_graph[node],
                     node, 
-                    wl_file=len_df
+                    wl_file=len_df,
+                    sim_type=simulation_type
                 )
             else:
                 pass
@@ -395,6 +410,8 @@ def generate_spice_nets(
         elif in_netlist.nodes[node]['node_type'] == 'output':
             # TODO check if output as dev
             #print(len_df)
+
+            # get wire length
             if no_lengths:
                 wl = 0.01
             elif isinstance(len_df, pd.DataFrame):
@@ -417,7 +434,13 @@ def generate_spice_nets(
                     raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
             elif isinstance(wl, dict):
                 try:
-                    in_netlist = merge_wl_net(in_netlist, wl_graph[node], node, wl_file=len_df)
+                    in_netlist = merge_wl_net(
+                        in_netlist,
+                        wl_graph[node],
+                        node,
+                        wl_file=len_df,
+                        sim_type=simulation_type
+                    )
                 except TypeError:
                     raise ValueError("Missing XYCE_WL_GRAPH in environment, usually (design)_route_nets.json in results dir")
             else:
@@ -432,7 +455,7 @@ def generate_spice_nets(
             elif isinstance(len_df, pd.DataFrame):
                 wl = len_df.loc[node]["length (mm)"]
             elif isinstance(len_df, dict):
-                print(len_df)
+                # print(len_df)
                 wl = len_df[node] #["length (mm)"]
 
             if isinstance(wl, float):
@@ -446,7 +469,13 @@ def generate_spice_nets(
                 else:
                     raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
             elif isinstance(wl, dict):
-                in_netlist = merge_wl_net(in_netlist, wl_graph[node], node, wl_file=len_df)
+                in_netlist = merge_wl_net(
+                    in_netlist,
+                    wl_graph[node],
+                    node,
+                    wl_file=len_df,
+                    sim_type=simulation_type
+                )
             else:
                 pass
 
@@ -504,7 +533,7 @@ def generate_spice_nets(
             else:
                 raise Exception(f"Too many nodes in input, {node_edges}. This will be handled by a net parser, the length file is invalid")
         else:
-            print(f"Node {node} is of type {in_netlist.nodes[node]['node_type']}")
+            print(f"Node {node} is of type {in_netlist.nodes[node]['node_type']} (no action)")
 
     # iterate through nodes only looking at component nets
 
@@ -539,7 +568,8 @@ def write_components_from_graph(
     of,
     probe_list=[],
     pcell_file=None,
-    simulation_type="chem"
+    simulation_type="chem",
+    channel_dev=None,
 ):
     #nx.draw_spring(in_g, with_labels=True)
     #plt.show()
@@ -571,7 +601,9 @@ def write_components_from_graph(
     new_probes = []
     probe_2_write = []
 
-    if simulation_type == "flow":
+    if channel_dev is not None:
+        chan_comp = 'Y' + channel_dev
+    elif simulation_type == "flow":
         chan_comp = 'Ychannel_flow'
     elif simulation_type == "chem":
         chan_comp = 'Ychannel'
@@ -594,12 +626,14 @@ def write_components_from_graph(
             oth_nodes.append(n)
 
     print(
-        "IN nodes", in_nodes,
-        '\nOUT nodes', out_nodes,
-        '\nCHAN nodes', wire_nodes,
-        '\nCOMP nodes', oth_nodes
+        "IN nodes:", in_nodes,
+        '\nOUT nodes:', out_nodes,
+        '\nCHANNEL nodes:', wire_nodes,
+        '\nCOMPONENT nodes:', oth_nodes
     )
-
+    print(f"""
+    SIM TYPE:{simulation_type}
+    """)
     # write nodes
     for i_n in in_nodes:
         # temp fix
@@ -672,8 +706,13 @@ def write_components_from_graph(
             e_ch2 = in_g[e[1][0]][e[1][1]]['ch_net']
 
         if HEAT_SIM:
-            e_ht1 = in_g[e[0][0]][e[0][1]]['ht_net']
-            e_ht2 = in_g[e[1][0]][e[1][1]]['ht_net']
+            if 'ht_net' in in_g[e[0][0]][e[0][1]]:
+                e_ht1 = in_g[e[0][0]][e[0][1]]['ht_net']
+                e_ht2 = in_g[e[1][0]][e[1][1]]['ht_net']
+            else:
+                e_ht1 = in_g[e[0][0]][e[0][1]]['ch_net'].replace('_chem', '_heat')
+                e_ht2 = in_g[e[1][0]][e[1][1]]['ch_net'].replace('_chem', '_heat')
+
         # need to fix addition of sets
         # if isinstance(e_fl1, set):
         #     e_fl1 = list(e_fl1)[0]
@@ -809,6 +848,9 @@ def write_components_from_graph(
                 else:
                     pass
 
+                if HEAT_SIM and 'ht_net' not in in_g.edges[(oth_n, pn)]:
+                    in_g[oth_n][pn]['ht_net'] = in_g[oth_n][pn]['ch_net'].replace('_chem', '_heat')
+
                 if HEAT_SIM and isinstance(in_g.edges[(oth_n, pn)]['ht_net'], dict):
                     ht_wr_new.append(in_g.edges[(oth_n, pn)]['ht_net']["comp_net"])
                 elif HEAT_SIM:
@@ -875,6 +917,20 @@ def write_time_lines(spice_config_class):
     pass
 
 
+def check_nets(in_graph, simulation_type='flow'):
+
+    for net_edge in in_graph.edges:
+        edge_props = in_graph[net_edge[0]][net_edge[1]]
+        if 'fl_net' not in edge_props:
+            raise Exception(f"Flow net not in {net_edge}; {in_graph[net_edge[0]][net_edge[1]]}")
+        if (simulation_type == 'chem' or simulation_type == 'heat') and \
+                'ch_net' not in edge_props:
+            raise Exception(f"Chem net not in {net_edge}; {in_graph[net_edge[0]][net_edge[1]]}")
+        if (simulation_type == 'heat') and 'ht_net' not in edge_props:
+            raise Exception(f"Heat net not in {net_edge}; {in_graph[net_edge[0]][net_edge[1]]}")
+
+
+
 def write_spice_file(
     in_netlist,
     probes_list,
@@ -888,7 +944,8 @@ def write_spice_file(
     basename_only=False,
     pcell_file=None,
     wl_graph=None,
-    simulation_type="chem"
+    simulation_type="chem",
+    channel_dev=None
 ):
 
     dev = "dev"
@@ -989,12 +1046,15 @@ def write_spice_file(
             in_netlist_temp = copy.deepcopy(in_netlist)
             in_netlist_ch = generate_spice_nets(in_netlist_temp, length_list)
 
+            # check_nets(in_netlist_ch, simulation_type=simulation_type)
+
             new_probes = write_components_from_graph(
                 in_g=in_netlist_ch,
                 of=c_of,
                 probe_list=probes_list,
                 pcell_file=pcell_file,
-                simulation_type=simulation_type
+                simulation_type=simulation_type,
+                channel_dev=channel_dev,
             )
 
             # add transient lines
@@ -1046,8 +1106,8 @@ def get_length_list(len_file):
         reader = csv.DictReader(open(len_file, 'r'))
         for r in reader:
             r['length (mm)'] = ast.literal_eval(r['length (mm)'])
-            print(r)
-            print(len(r))
+            # print(r)
+            # print(len(r))
             if len(r['length (mm)']) > 1:
                 # possibly unsafe
                 len_df[r['wire']] =r['length (mm)']
@@ -1057,8 +1117,9 @@ def get_length_list(len_file):
         len_df = pd.read_csv(len_file, index_col=2)
 
     if isinstance(len_df, pd.DataFrame):
-        print(len_df.shape[0], len_df.shape[1])
-    print(len_df)
+        # print(len_df.shape[0], len_df.shape[1])
+        pass
+    # print(len_df)
 
     return len_df
 
@@ -1220,7 +1281,8 @@ def generate_cir_main(
     basename_only=False,
     pcell_file=None,
     wl_graph_file=None,
-    simulation_type="flow"
+    simulation_type="flow",
+    channel_dev=None
 ):
 
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/v_2_NX/')
@@ -1250,6 +1312,8 @@ def generate_cir_main(
             net_graph[design]['netlist']
     )
 
+    print("ASSUMED TYPE:", assumed_sim)
+
     if assumed_sim == "chem" and simulation_type == "flow":
         simulation_type = "chem"
 
@@ -1261,7 +1325,8 @@ def generate_cir_main(
     dev_lines, chem_args = generate_source_list(
         Xcl,
         has_chem=True,
-        has_temp=(simulation_type == "heat"))
+        has_temp=(simulation_type == "heat")
+    )
 
     sim_lines = generate_time_lines(Xcl)
 
@@ -1278,7 +1343,8 @@ def generate_cir_main(
         basename_only=basename_only,
         pcell_file=pcell_file,
         wl_graph=wl_graph_file,
-        simulation_type=simulation_type
+        simulation_type=simulation_type,
+        channel_dev=channel_dev
     )
 
     for spf in sp_files.iterrows():

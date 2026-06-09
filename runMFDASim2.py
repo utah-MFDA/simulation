@@ -86,6 +86,7 @@ def runSimulation(
         plot_results=False,
         evaluate_results=False,
         xyce_run_config_file=None,
+        channel_dev=None
         # extra_args={}
 ):
 
@@ -106,7 +107,8 @@ def runSimulation(
             wd=work_dir,
             sim_config=sim_config,
             length_file=length_file,
-            pcell_file=pcell_file
+            pcell_file=pcell_file,
+            channel_dev=channel_dev
         )
 
     if _local_xyce:
@@ -237,7 +239,8 @@ def generate_cir_files_from_write_spice(
     length_file=None,
     gen_output_dir=None,
     basename_only=False,
-    pcell_file=None
+    pcell_file=None,
+    channel_dev=None,
 ):
     import writeSpice
 
@@ -256,6 +259,7 @@ def generate_cir_files_from_write_spice(
         out_file=of,
         basename_only=basename_only,
         pcell_file=pcell_file,
+        channel_dev=channel_dev,
     )
 
 
@@ -402,7 +406,7 @@ def change_results_node_ref(df, node_file, chem):
                 elif node_name_k[-2:] == 'c0':
                     new_node = 'C_'+str(chem)+'('+node_name+')'
                 elif is_temp_node:
-                    new_node = f'T_({node_name})'
+                    new_node = f'T_K({node_name})'
                 # all else are pressure nodes
                 else:
                     new_node = f'P({node_dev}-{node_name})'
@@ -636,6 +640,8 @@ if __name__ == "__main__":
     parser.add_argument('--lib',       metavar='<lib>',
                         type=str, required=True)
 
+    parser.add_argument('--channel_dev', type=str, default=None)
+
     # included with the parser
     parser.add_argument(
         '--cir_config', metavar='<cir_config>', type=str, required=True)
@@ -690,4 +696,5 @@ if __name__ == "__main__":
         plot_results=args.plot,
         evaluate_results=args.eval_result,
         xyce_run_config_file=args.xyce_run_config,
+        channel_dev=args.channel_dev,
     )
