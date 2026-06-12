@@ -114,7 +114,7 @@ def test_run_local_demo():
 
     subprocess.run(cmd_w_args)
 
-def test_run_local_demo():
+def test_run_local_demo_cnode():
 
     python_cmd = 'python3 ./runMFDASim.py'
 

@@ -1,12 +1,14 @@
 
+import os
+import sys
+from pathlib import Path
 
 """
 """
 
 
 def test_add_probes():
-    import sys
-    import os
+
     # from writeSpice import add_probes_to_device
     from add_probes import add_probes_to_device
 
@@ -578,4 +580,25 @@ def test_write_spice_main_pcell():
         length_file=length_file,
         out_file='testing_local/results/out_spice_main_1p',
         pcell_file=pcell_file
+    )
+
+
+def test_write_subcir_main():
+
+    test_dir = Path('testing_local/smart_toilet_test_subcir')
+
+    verilog_file = test_dir / 'smart_toilet_subcir.v'
+    config_file = test_dir / 'simulation.config'
+    length_file = test_dir / 'results_openmfda/smart_toilet_subcir_length.csv'
+    subcir_file = test_dir / 'mfda_subcrkt.cir'
+
+    from writeSpice import generate_cir_main
+
+    generate_cir_main(
+        design='smart_toilet_subcir',
+        verilog_file=str(verilog_file),
+        config_file=str(config_file),
+        length_file=str(length_file),
+        out_file=str(test_dir / 'simulation/subcir_sim.cir'),
+        include_file_list=[str(subcir_file)]
     )
