@@ -2,9 +2,10 @@ import yaml
 import json5
 import re
 
-
+# general SimulationXyce class or "blueprint"
 class SimulationXyce:
 
+    # subclass of SimulationXyce - Node
     class Node:
         def __init__(self, name, args):
             self.name = name
@@ -16,14 +17,19 @@ class SimulationXyce:
         def getArgs(self):
             return self.args
 
+    # subclass of Node - Inlet
     class Inlet(Node):
+        # Setup as Node
         def __init__(self, name, args):
-            super.__init__(name, args)
+            super().__init__(name, args)
 
+    # subclass of Node - Outlet
     class Outlet(Node):
+        # Setup as Node
         def __init__(self, name, args):
             super.__init__(name, args)
 
+    # subclass of SimulationXyce - Eval
     class Eval:
         def __init__(self, prop, node, value=None, time=None, device=None):
             # self.chem  = chem
@@ -62,6 +68,7 @@ device: {self.dev}
 time: {self.time}
 """
 
+    # subclass of SimulationXyce - Dev
     # this will need some more generic definitions
     class Dev:
         def __init__(self, node, dev_type, args, is_grounded=True):
@@ -88,6 +95,7 @@ net:  {self.node}
 args: {self.args}
 """
 
+    # subclass of SimulationXyce - ChemInput
     class ChemInput:
         def __init__(self, chem, node, in_value):
             self.chem = chem
@@ -109,6 +117,7 @@ net:  {self.node}
 value: {self.value}
 """
 
+    # subclass of SimulationXyce - Probe
     class Probe:
         def __init__(self, probe_type, node, device=None):
             if node is None:
@@ -135,6 +144,7 @@ net:  {self.node}
 device {self.device}
 """
 
+    # setup code when object of SimulationXyce class is created
     def __init__(self):
         self.netListFiles = []
         self.inlets = {}
@@ -154,31 +164,35 @@ device {self.device}
 
         self.simulation_type = "flow"
 
+    # assigns file type and parses accordingly
     def load_analysis_file(self, file, ftype=None):
         if '.' in file.split('/')[-1]:
             extn = file.split('.')[-1]
         else:
             extn = None
 
+        # assigns file type based on extension if None given
         if ftype is None:
             if extn == 'yaml':
                 ftype = 'YAML'
-            elif ftype in ['json', 'jsonc']:
+            elif extn in ['json', 'jsonc']:
                 ftype = 'JSONC'
             elif extn in ['config', 'conf']:
                 ftype = 'CONFIG'
             else:
                 ftype = None
 
+        # parses file according to file type
         if ftype == 'YAML':
             self.parse_yaml_file(file)
-        if ftype == 'JSONC':
+        elif ftype == 'JSONC':
             self.parse_jsonc_file(file)
         elif ftype == 'CONFIG':
             self.parse_config_file(file)
         else:  # default parser
             self.parse_config_file(file)
 
+    # parses .config files
     def parse_config_file(self, file):
         in_conf_f = open(file)
         for l_num, line in enumerate(in_conf_f):
@@ -262,7 +276,7 @@ device {self.device}
         FLOW_TYPES = ["flow"]
         CHEM_TYPES = [
             "chem",
-            "chemisty",
+            "chemistry",
             "concentration"
         ]
         HT_TYPES = [
