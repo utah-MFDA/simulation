@@ -271,7 +271,7 @@ device {self.device}
                     raise ValueError(
                         f"  sim_type expecting 1 param token found {len(params)}"
                     )
-
+    # simulation types: flow, chemical, or heat - used in parse_config_file
     def set_simulation_type(self, sim_type):
         FLOW_TYPES = ["flow"]
         CHEM_TYPES = [
@@ -303,16 +303,19 @@ device {self.device}
                 f"sim_type is not a valid input; value: '{sim_type}'"
             )
 
+    # parser for .json files
     def parse_jsonc_file(self, analysis_file):
-        # dictionaries should load identiacally
+        # dictionaries should load identically
         json_str = open(analysis_file, 'r').read()
         in_dict = json5.loads(json_str)
         self.parse_dict_from_file(in_dict)
 
+    # parser for .yaml files
     def parse_yaml_file(self, analysis_file):
         in_dict = yaml.safe_load(open(analysis_file, 'r'))
         self.parse_dict_from_file(in_dict)
 
+    # used in parse_jsonc_file and parse_yaml_file
     def parse_dict_from_file(self, in_dict):
 
         if 'analysis' in in_dict:
@@ -343,7 +346,7 @@ device {self.device}
                 if isinstance(pr_type[1], list):
                     for pr_node in pr_type[1]:
                         if isinstance(pr_node, str):
-                            # defitions are node-device
+                            # definitions are node-device
                             pr_item = pr_node.split('-')
                             if len(pr_item) == 1:
                                 self.add_probe(pr_type[0], pr_item[0], None)
@@ -361,7 +364,7 @@ device {self.device}
                                 self.add_probe(
                                     pr_type[0], pr_node['node'], None)
                         else:
-                            ValueError(
+                            raise ValueError(
                                 f"Issue with probe definition in {pr_type[0]}")
         if 'eval' in in_dict:
             for ev in in_dict['eval'].items():
@@ -420,6 +423,7 @@ device {self.device}
                             ev_time
                         )
 
+    # used in runMFDASim.py
     def parse_eval_file(self, ev_file):
 
         # reset eval list
@@ -577,6 +581,7 @@ device {self.device}
             else:
                 self.times['static'] = [params]
 
+    # converting values based on SI prefixes
     def convert_sufix_number(self, in_value):
 
         if isinstance(in_value, str):

@@ -337,9 +337,9 @@ def remove_comments(in_v):
     f_str = mo.decode("utf-8")
 
     #if write_output:
-    of_v = in_v+".uncommented"
-    of = open(in_v+".uncommented", 'w+')
-    of.write(f_str)
+    of_v = str(in_v)+".uncommented"
+    with open(str(in_v)+".uncommented", 'w+') as of:
+        of.write(f_str)
 
     return of_v
 

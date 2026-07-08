@@ -4,7 +4,6 @@ import os
 import shutil
 import subprocess
 
-import tarfile
 import json
 import re
 
@@ -86,7 +85,8 @@ def runSimulation(
         plot_results=False,
         evaluate_results=False,
         xyce_run_config_file=None,
-        channel_dev=None
+        channel_dev=None,
+        include_file_list=None
         # extra_args={}
 ):
 
@@ -108,7 +108,8 @@ def runSimulation(
             sim_config=sim_config,
             length_file=length_file,
             pcell_file=pcell_file,
-            channel_dev=channel_dev
+            channel_dev=channel_dev,
+            include_file_list=include_file_list
         )
 
     if _local_xyce:
@@ -241,6 +242,7 @@ def generate_cir_files_from_write_spice(
     basename_only=False,
     pcell_file=None,
     channel_dev=None,
+    include_file_list=None,
 ):
     import writeSpice
 
@@ -260,6 +262,7 @@ def generate_cir_files_from_write_spice(
         basename_only=basename_only,
         pcell_file=pcell_file,
         channel_dev=channel_dev,
+        include_file_list=include_file_list,
     )
 
 
@@ -675,6 +678,8 @@ if __name__ == "__main__":
     parser.add_argument('--xyce_run_config', type=str, default=None)
     parser.add_argument('--xyce_write_loc', type=str, default=None)
 
+    parser.add_argument('--include_files', type=str, default=None)
+
     args = parser.parse_args()
 
     runSimulation(
@@ -697,4 +702,5 @@ if __name__ == "__main__":
         evaluate_results=args.eval_result,
         xyce_run_config_file=args.xyce_run_config,
         channel_dev=args.channel_dev,
+        include_file_list=args.include_files
     )

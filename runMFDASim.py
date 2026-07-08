@@ -846,6 +846,8 @@ def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, s
             print("evaluating: "+chem_name)
             # chem_name = eval_obj.getChem()+'('+eval_obj.getNode()+')'
             # print(temp_df.columns.tolist())
+            print("looking for: ", repr(chem_name))
+            print("available columns: ", [repr(c) for c in temp_df.columns])
             prn_val = temp_df[chem_name][row_time_ind]
 
             exp_val = eval_obj.getValue()
