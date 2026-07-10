@@ -681,6 +681,8 @@ if __name__ == "__main__":
     parser.add_argument('--include_files', type=str, default=None)
 
     args = parser.parse_args()
+    if isinstance(args.include_files, str):
+        args.include_files = [args.include_files]
 
     runSimulation(
         design=args.design,
