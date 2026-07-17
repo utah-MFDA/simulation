@@ -1319,6 +1319,8 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                                     elif param == "0":
                                         line_nodes.append(0)
                                     else:
+                                        if param == dev_type[0]:
+                                            continue
                                         if param not in nodeList.keys():
                                             # we do not want 0
                                             nodeList[param] = len(nodeList) + 1
