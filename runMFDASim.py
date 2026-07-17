@@ -185,7 +185,7 @@ def runSimulation(
             xyceFiles=xyceFiles,
             arcName=arcName,
             convert_v=True,
-            _eval_file=False,
+            _eval_file=True,
             _main_plt_results=False
         )
 
@@ -204,7 +204,7 @@ def local_xyce_run(
         verilog_2_xyce_extras_loc=None,
         verilog_2_xyce_relative=True,
         # xyceFiles="spiceList",
-        _eval_file=False,
+        _eval_file=True,
         _main_plt_results=False
 ):
     # =======
@@ -274,7 +274,7 @@ def docker_xyce_run(
         verilog_2_xyce_extras_loc=None,
         # xyceFiles="spiceList",
         convert_v=True,
-        _eval_file=False,
+        _eval_file=True,
         _main_plt_results=False
 ):
 
@@ -350,7 +350,7 @@ def generate_report(
         prn_dir,
         sim_config,
         output_dir,
-        _eval_file=False,
+        _eval_file=True,
         _main_plt_results=False
 ):
 
@@ -444,7 +444,7 @@ def convertToCir_from_config(
         basename_only=basename_only,
         pcell_file=pcell_file,
     )
-    # locate nessary files
+    # locate necessary files
     # files = getSimFiles(verilogFile, wd)
 
     vFile = wd+"/"+verilogFile
@@ -788,7 +788,7 @@ def load_xyce_results(rDir, nodes_dir, rlist=None, chem_list=None):
 
         return r_df
 
-
+# function to create ChemEval.csv
 def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, sim_file=None):
 
     # setup
@@ -846,8 +846,6 @@ def evaluate_results(wd, results_dir, design_name, sim_obj=None, ev_file=None, s
             print("evaluating: "+chem_name)
             # chem_name = eval_obj.getChem()+'('+eval_obj.getNode()+')'
             # print(temp_df.columns.tolist())
-            print("looking for: ", repr(chem_name))
-            print("available columns: ", [repr(c) for c in temp_df.columns])
             prn_val = temp_df[chem_name][row_time_ind]
 
             exp_val = eval_obj.getValue()
