@@ -892,8 +892,9 @@ def write_components_from_graph(
         if pcell_file is not None and \
                 pcells is not None and \
                 n_type in pcells:
+            # n_type : node_type
             #out_file.write(f"Y{pcells[n_type]['base cell']} {oth_n} {fl_wr} {ch_wr} {pcells[n_type]['parameters']}\n")
-            if comp_type in subcir_list:
+            if n_type in subcir_list:
                 out_file.write(f"Y{pcells[n_type]['base cell']} {oth_n} {fl_wr}")
                 if CHEM_SIM:
                     out_file.write(f" {ch_wr}")
@@ -901,14 +902,15 @@ def write_components_from_graph(
                     out_file.write(f" {ht_wr}")
                 out_file.write(f" {pcells[n_type]['parameters']}\n")
             else:
-                print(f'SUBCKT X{x_nums} {comp_type}')
+                print(f'SUBCKT X{x_nums} {pcells[n_type]['base cell']}')
                 out_file.write(f"* {oth_n}\n")
                 out_file.write(f"X{x_nums} {fl_wr}")
                 if CHEM_SIM:
                     out_file.write(f" {ch_wr}")
                 if HEAT_SIM:
                     out_file.write(f" {ht_wr}")
-                out_file.write(f" {comp_type}")
+                out_file.write(f" {pcells[n_type]['base cell']}")
+                out_file.write(f" {pcells[n_type]['parameters']}")
                 out_file.write("\n")
                 x_nums += 1
         else:
