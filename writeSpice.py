@@ -1304,7 +1304,14 @@ def convert_nodes_2_numbers_xyce(SPfile, cir_out=False):
                             #elif arg1[0] in ['X', 'x']:
                             elif re.match(r'[Xx]\w+', arg1):
                                 device = [arg1]
-                                dev_type = [line_vars[-1]]
+                                # we need to serach for the device type since params follow
+                                dev_type = []
+                                for param_ind in range(1, len(line_vars)):
+                                    if "=" not in line_vars[-param_ind]:
+                                        dev_type = [line_vars[-param_ind]]
+                                        break
+                                if dev_type == []:
+                                    raise Exception(f"Issue with parsing line '{line}'")
                                 for param in line_vars[1:-1]:
                                     # exception for parameters which will explicitly use =
                                     if "=" in param:
