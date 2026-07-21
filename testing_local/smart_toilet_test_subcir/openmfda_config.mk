@@ -1,4 +1,4 @@
-DISTRIB_V = 0.0.0
+DISTRIB_V = 0.0.2
 
 export DESIGN_NAME     	= smart_toilet_subcir
 

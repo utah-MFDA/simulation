@@ -77,7 +77,15 @@ run_design_openmfda(
 run_design_openmfda(
     base_dir="smart_toilet_test_subcir",
     design="smart_toilet_subcir",
+    # force_deps=True,
+    design_var="sim"
+)
+
+run_design_openmfda(
+    base_dir="smart_toilet_test_subcir_pcell",
+    design="smart_toilet_subcir_pcell",
     force_deps=True,
+    make_trgt="verilog_preparse pnr scad",
     design_var="sim"
 )
 

@@ -2,6 +2,7 @@
 import os
 import sys
 from pathlib import Path
+from writeSpice import generate_cir_main
 
 """
 """
@@ -553,7 +554,8 @@ def test_write_spice_main():
 
     verilog_file = f"{test_dir}/smart_toilet.v"
     config_file = f"{test_dir}/simulation.config"
-    length_file = f"{test_dir}/smart_toilet_lengths.xlsx"
+    # length_file = f"{test_dir}/smart_toilet_lengths.xlsx"
+    length_file = f"{test_dir}/results_openmfda/smart_toilet_length.csv"
 
     generate_cir_main(
         design="smart_toilet",
@@ -566,12 +568,13 @@ def test_write_spice_main():
 
 def test_write_spice_main_pcell():
 
-    from writeSpice import generate_cir_main
+    base_test_dir = 'testing_local/smart_toilet_test_config_pcell'
 
-    verilog_file = 'testing_local/smart_toilet_test_config_pcell/smart_toilet.v'
-    config_file = "testing_local/smart_toilet_test_config_pcell/simulation.config"
-    length_file = "testing_local/smart_toilet_test_config_pcell/smart_toilet_lengths.xlsx"
-    pcell_file = "testing_local/smart_toilet_test_config_pcell/pcell_out_xyce"
+    verilog_file = f'{base_test_dir}/smart_toilet.v'
+    config_file = f"{base_test_dir}/simulation.config"
+    # length_file = "testing_local/smart_toilet_test_config_pcell/smart_toilet_lengths.xlsx"
+    length_file = f"{base_test_dir}/results_openmfda/smart_toilet_length.csv"
+    pcell_file = f"{base_test_dir}/pcell_out_xyce"
 
     generate_cir_main(
         design="smart_toilet",
@@ -592,7 +595,7 @@ def test_write_subcir_main():
     length_file = test_dir / 'results_openmfda/smart_toilet_subcir_length.csv'
     subcir_file = test_dir / 'mfda_subcrkt.cir'
 
-    from writeSpice import generate_cir_main
+    # from writeSpice import generate_cir_main
 
     generate_cir_main(
         design='smart_toilet_subcir',
@@ -601,4 +604,27 @@ def test_write_subcir_main():
         length_file=str(length_file),
         out_file=str(test_dir / 'simulation/subcir_sim.cir'),
         include_file_list=[str(subcir_file)]
+    )
+
+
+def test_write_subcir_pcell_main():
+
+    test_dir = Path('testing_local/smart_toilet_test_subcir_pcell')
+
+    verilog_file = test_dir / 'smart_toilet_subcir_pcell.v'
+    config_file = test_dir / 'simulation.config'
+    length_file = test_dir / 'results_openmfda/smart_toilet_subcir_pcell_length.csv'
+    subcir_file = test_dir / 'mfda_subcrkt.cir'
+    pcell_file  = test_dir / 'pcell_out_xyce'
+
+    from writeSpice import generate_cir_main
+
+    generate_cir_main(
+        design='smart_toilet_subcir_pcell',
+        verilog_file=str(verilog_file),
+        config_file=str(config_file),
+        length_file=str(length_file),
+        out_file=str(test_dir / 'simulation/subcir_pcell_sim.cir'),
+        include_file_list=[str(subcir_file)],
+        pcell_file=pcell_file
     )

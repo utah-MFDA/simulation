@@ -86,8 +86,8 @@ def runSimulation(
         evaluate_results=False,
         xyce_run_config_file=None,
         channel_dev=None,
-        include_file_list=None
-        # extra_args={}
+        include_file_list=None,
+        spice_include_manual_home=None
 ):
 
     xyceFiles = 'spice_files.csv'
@@ -109,7 +109,8 @@ def runSimulation(
             length_file=length_file,
             pcell_file=pcell_file,
             channel_dev=channel_dev,
-            include_file_list=include_file_list
+            include_file_list=include_file_list,
+            include_manual_home=spice_include_manual_home
         )
 
     if _local_xyce:
@@ -243,6 +244,7 @@ def generate_cir_files_from_write_spice(
     pcell_file=None,
     channel_dev=None,
     include_file_list=None,
+    include_manual_home=None
 ):
     import writeSpice
 
@@ -263,6 +265,7 @@ def generate_cir_files_from_write_spice(
         pcell_file=pcell_file,
         channel_dev=channel_dev,
         include_file_list=include_file_list,
+        include_manual_home=include_manual_home
     )
 
 
