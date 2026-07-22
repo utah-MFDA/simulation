@@ -544,7 +544,7 @@ def generate_spice_nets(
 
     return in_netlist
 
-def write_includes(file_stream, import_list):
+def write_includes(file_stream, import_list, home_dir=None):
 
     if import_list is None:
         return
@@ -552,7 +552,11 @@ def write_includes(file_stream, import_list):
         raise ValueError(f"Expecting list for import list; type:{type(import_list)}")
 
     for f in import_list:
-        file_stream.write('.include ' + str(os.path.abspath(f)) + '\n')
+        if home_dir is None:
+            file_stream.write('.include ' + str(os.path.abspath(f)) + '\n')
+        else:
+            file_stream.write('.include ' + str(home_dir).strip() + '/' + os.path.basename(str(f)) + '\n')
+
     file_stream.write('\n')
 
 
@@ -996,7 +1000,8 @@ def write_spice_file(
     simulation_type="chem",
     channel_dev=None,
     subcircuit_components=[],
-    include_file_list=None
+    include_file_list=None,
+    include_manual_home=None
 ):
 
     dev = "dev"
@@ -1081,7 +1086,7 @@ def write_spice_file(
             c_of.write(f"* Simulation of device {dev}; chem: {chem}\n\n")
 
             # add import subcircuits
-            write_includes(c_of, include_file_list)
+            write_includes(c_of, include_file_list, include_manual_home)
 
             chem_source_list = copy.deepcopy(source_lines)
             if isinstance(chem_node_dict, dict):
@@ -1383,7 +1388,8 @@ def generate_cir_main(
     wl_graph_file=None,
     simulation_type="flow",
     channel_dev=None,
-    include_file_list=None
+    include_file_list=None,
+    include_manual_home=None
 ):
 
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))+'/v_2_NX/')
@@ -1457,7 +1463,8 @@ def generate_cir_main(
         simulation_type=simulation_type,
         channel_dev=channel_dev,
         subcircuit_components=extracted_sub_components,
-        include_file_list=include_file_list
+        include_file_list=include_file_list,
+        include_manual_home=include_manual_home
     )
 
     for spf in sp_files.iterrows():

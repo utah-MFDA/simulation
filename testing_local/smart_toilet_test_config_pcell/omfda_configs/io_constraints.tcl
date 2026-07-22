@@ -9,7 +9,7 @@
 #             -pin_size <{width height}>
 
 # dx = 90 px; dy = 90 px
-place_pin -pin_name soln1 -layer met9 -location {960 930} -pin_size {1 1}
+place_pin -pin_name soln1 -layer met9 -location {960 930} -pin_size {14 14}
 # place_pin -pin_name soln2 -layer met4 -location {1050 930} -pin_size {1 1}
 # place_pin -pin_name soln3 -layer met4 -location {1140 930} -pin_size {1 1}
 # place_pin -pin_name pin_14 -layer met4 -location {1230 930} -pin_size {1 1}
@@ -18,7 +18,7 @@ place_pin -pin_name soln1 -layer met9 -location {960 930} -pin_size {1 1}
 # place_pin -pin_name pin_17 -layer met4 -location {1500 930} -pin_size {1 1}
 # place_pin -pin_name pin_18 -layer met4 -location {1590 930} -pin_size {1 1}
 
-place_pin -pin_name soln2 -layer met9 -location {960 840} -pin_size {1 1}
+place_pin -pin_name soln2 -layer met9 -location {960 840} -pin_size {14 14}
 # place_pin -pin_name pin_22 -layer met4 -location {1050 840} -pin_size {1 1}
 # place_pin -pin_name pin_23 -layer met4 -location {1140 840} -pin_size {1 1}
 # place_pin -pin_name pin_24 -layer met4 -location {1230 840} -pin_size {1 1}
@@ -27,7 +27,7 @@ place_pin -pin_name soln2 -layer met9 -location {960 840} -pin_size {1 1}
 # place_pin -pin_name pin_27 -layer met4 -location {1500 840} -pin_size {1 1}
 # place_pin -pin_name pin_28 -layer met4 -location {1590 840} -pin_size {1 1}
 
-place_pin -pin_name soln3 -layer met9 -location {1230 930} -pin_size {1 1}
+place_pin -pin_name soln3 -layer met9 -location {1230 930} -pin_size {14 14}
 # place_pin -pin_name pin_32 -layer met4 -location {1050 750} -pin_size {1 1}
 # place_pin -pin_name pin_33 -layer met4 -location {1140 750} -pin_size {1 1}
 # place_pin -pin_name pin_34 -layer met4 -location {1230 750} -pin_size {1 1}
@@ -43,4 +43,4 @@ place_pin -pin_name soln3 -layer met9 -location {1230 930} -pin_size {1 1}
 # place_pin -pin_name pin_45 -layer met4 -location {1320 660} -pin_size {1 1}
 # place_pin -pin_name pin_46 -layer met4 -location {1410 660} -pin_size {1 1}
 # place_pin -pin_name pin_47 -layer met4 -location {1500 660} -pin_size {1 1}
-place_pin -pin_name out -layer met9 -location {960 660} -pin_size {1 1}
+place_pin -pin_name out -layer met9 -location {960 660} -pin_size {14 14}
